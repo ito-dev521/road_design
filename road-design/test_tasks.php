@@ -82,8 +82,8 @@ try {
                 echo "<td>{$task['phase_name']}</td>";
                 echo "<td>" . htmlspecialchars($task['task_name']) . "</td>";
                 echo "<td>{$task['status']}</td>";
-                echo "<td>" . htmlspecialchars($task['assigned_user_name'] ?? '未割り当て') . "</td>";
-                echo "<td>{$task['planned_date'] ?? '未設定'}</td>";
+                echo "<td>" . htmlspecialchars(isset($task['assigned_user_name']) ? $task['assigned_user_name'] : '未割り当て') . "</td>";
+                echo "<td>" . (isset($task['planned_date']) ? $task['planned_date'] : '未設定') . "</td>";
                 echo "</tr>";
             }
             echo "</table>";
@@ -95,7 +95,9 @@ try {
     echo "<p>以下のURLでAPIテストを実行してください：</p>";
     echo "<ul>";
     echo "<li><a href='api.php?path=projects' target='_blank'>プロジェクト一覧API</a></li>";
-    echo "<li><a href='api.php?path=projects/{$projectId}' target='_blank'>プロジェクト詳細API</a></li>";
+    if (!empty($projects)) {
+        echo "<li><a href='api.php?path=projects/{$projectId}' target='_blank'>プロジェクト詳細API</a></li>";
+    }
     echo "</ul>";
     
 } catch (Exception $e) {
