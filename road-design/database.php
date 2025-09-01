@@ -365,9 +365,10 @@ class Database {
     public function getAllPhases() {
         try {
             $stmt = $this->getConnection()->prepare("
-                SELECT phase_name, description
+                SELECT id, name, description, order_num, is_active
                 FROM phases
-                ORDER BY phase_name
+                WHERE is_active = 1
+                ORDER BY order_num
             ");
             $stmt->execute();
             return $stmt->fetchAll();
@@ -377,39 +378,127 @@ class Database {
         }
     }
 
-    public function createPhase($phaseName, $description) {
+    public function createPhase($name, $description, $orderNum = 1) {
         try {
             $stmt = $this->getConnection()->prepare("
-                INSERT INTO phases (phase_name, description)
-                VALUES (?, ?)
+                INSERT INTO phases (name, description, order_num, is_active)
+                VALUES (?, ?, ?, 1)
             ");
-            return $stmt->execute([$phaseName, $description]);
+            return $stmt->execute([$name, $description, $orderNum]);
         } catch (PDOException $e) {
             error_log("createPhase error: " . $e->getMessage());
             return false;
         }
     }
 
-    public function updatePhase($oldPhaseName, $newPhaseName, $description) {
+    public function updatePhase($id, $name, $description, $orderNum) {
         try {
             $stmt = $this->getConnection()->prepare("
                 UPDATE phases
-                SET phase_name = ?, description = ?
-                WHERE phase_name = ?
+                SET name = ?, description = ?, order_num = ?
+                WHERE id = ?
             ");
-            return $stmt->execute([$newPhaseName, $description, $oldPhaseName]);
+            return $stmt->execute([$name, $description, $orderNum, $id]);
         } catch (PDOException $e) {
             error_log("updatePhase error: " . $e->getMessage());
             return false;
         }
     }
 
-    public function deletePhase($phaseName) {
+    public function deletePhase($id) {
         try {
-            $stmt = $this->getConnection()->prepare("DELETE FROM phases WHERE phase_name = ?");
-            return $stmt->execute([$phaseName]);
+            $stmt = $this->getConnection()->prepare("DELETE FROM phases WHERE id = ?");
+            return $stmt->execute([$id]);
         } catch (PDOException $e) {
             error_log("deletePhase error: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    // テンプレート管理
+    public function getAllTemplates() {
+        try {
+            $stmt = $this->getConnection()->prepare("
+                SELECT id, phase_name, task_name, task_order, is_technical_work, has_manual
+                FROM task_templates
+                ORDER BY phase_name, task_order
+            ");
+            $stmt->execute();
+            return $stmt->fetchAll();
+        } catch (PDOException $e) {
+            error_log("getAllTemplates error: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    // マニュアル管理
+    public function getAllManuals() {
+        try {
+            $stmt = $this->getConnection()->prepare("
+                SELECT id, file_name, description, file_size, file_path, created_at
+                FROM manuals
+                ORDER BY created_at DESC
+            ");
+            $stmt->execute();
+            return $stmt->fetchAll();
+        } catch (PDOException $e) {
+            error_log("getAllManuals error: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    // タスク管理
+    public function getAllTasks() {
+        try {
+            $stmt = $this->getConnection()->prepare("
+                SELECT t.id, t.task_name, t.status, t.planned_date, t.completed_date,
+                       p.name as project_name, tt.phase_name,
+                       u.name as assigned_user_name
+                FROM tasks t
+                LEFT JOIN projects p ON t.project_id = p.id
+                LEFT JOIN task_templates tt ON t.template_id = tt.id
+                LEFT JOIN users u ON t.assigned_to = u.id
+                ORDER BY p.name, tt.phase_name, t.planned_date
+            ");
+            $stmt->execute();
+            return $stmt->fetchAll();
+        } catch (PDOException $e) {
+            error_log("getAllTasks error: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    // システム統計
+    public function getSystemStatistics() {
+        try {
+            // プロジェクト統計
+            $stmt = $this->getConnection()->prepare("
+                SELECT 
+                    COUNT(*) as total_projects,
+                    SUM(CASE WHEN status = 'in_progress' THEN 1 ELSE 0 END) as active_projects
+                FROM projects
+            ");
+            $stmt->execute();
+            $projectStats = $stmt->fetch();
+
+            // タスク統計
+            $stmt = $this->getConnection()->prepare("
+                SELECT 
+                    COUNT(*) as total_tasks,
+                    SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as completed_tasks
+                FROM tasks
+            ");
+            $stmt->execute();
+            $taskStats = $stmt->fetch();
+
+            return [
+                'total_projects' => $projectStats['total_projects'] ?? 0,
+                'active_projects' => $projectStats['active_projects'] ?? 0,
+                'total_tasks' => $taskStats['total_tasks'] ?? 0,
+                'completed_tasks' => $taskStats['completed_tasks'] ?? 0
+            ];
+        } catch (PDOException $e) {
+            error_log("getSystemStatistics error: " . $e->getMessage());
             return false;
         }
     }

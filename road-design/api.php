@@ -73,6 +73,8 @@ class ApiController {
                 case 'phases':
                     if ($method === 'GET') {
                         return $this->getPhases();
+                    } elseif ($method === 'POST') {
+                        return $this->createPhase($input);
                     }
                     break;
 
