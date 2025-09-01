@@ -106,6 +106,8 @@ class Database {
     
     public function getAllProjects() {
         try {
+            error_log("=== getAllProjects 開始 ===");
+            
             $stmt = $this->getConnection()->prepare("
                 SELECT p.*, u.name as created_by_name,
                        COUNT(t.id) as total_tasks,
@@ -117,10 +119,50 @@ class Database {
                 GROUP BY p.id
                 ORDER BY p.created_at DESC
             ");
+            
+            error_log("SQL実行開始");
             $stmt->execute();
-            return $stmt->fetchAll();
+            $result = $stmt->fetchAll();
+            error_log("SQL実行完了: " . count($result) . "件取得");
+            
+            error_log("=== getAllProjects 完了 ===");
+            return $result;
         } catch (PDOException $e) {
             error_log("getAllProjects error: " . $e->getMessage());
+            error_log("getAllProjects error trace: " . $e->getTraceAsString());
+            return false;
+        }
+    }
+    
+    public function getTaskById($taskId) {
+        try {
+            $stmt = $this->getConnection()->prepare("
+                SELECT t.*, u.name as assigned_to_name,
+                       (SELECT GROUP_CONCAT(note SEPARATOR '|') FROM task_notes WHERE task_id = t.id ORDER BY created_at DESC) as notes
+                FROM tasks t 
+                LEFT JOIN users u ON t.assigned_to = u.id
+                WHERE t.id = ?
+            ");
+            $stmt->execute([$taskId]);
+            $task = $stmt->fetch();
+            
+            if ($task && $task['notes']) {
+                $task['notes'] = explode('|', $task['notes'])[0]; // 最新のノートのみ取得
+            }
+            
+            return $task;
+        } catch (PDOException $e) {
+            error_log("getTaskById error: " . $e->getMessage());
+            return false;
+        }
+    }
+    
+    public function addTaskNote($taskId, $userId, $note) {
+        try {
+            $stmt = $this->getConnection()->prepare("INSERT INTO task_notes (task_id, user_id, note, created_at) VALUES (?, ?, ?, NOW())");
+            return $stmt->execute([$taskId, $userId, $note]);
+        } catch (PDOException $e) {
+            error_log("addTaskNote error: " . $e->getMessage());
             return false;
         }
     }
@@ -168,6 +210,70 @@ class Database {
             return true;
         } catch (PDOException $e) {
             error_log("createTasksFromTemplates error: " . $e->getMessage());
+            return false;
+        }
+    }
+    
+    public function createTasksFromSelectedTemplates($projectId, $selectedTemplateIds) {
+        try {
+            error_log("=== createTasksFromSelectedTemplates 開始 ===");
+            error_log("プロジェクトID: $projectId");
+            error_log("選択されたテンプレートID: " . implode(', ', $selectedTemplateIds));
+            
+            if (empty($selectedTemplateIds)) {
+                error_log("選択されたテンプレートがありません");
+                return true;
+            }
+            
+            // 選択されたテンプレートを取得
+            $placeholders = str_repeat('?,', count($selectedTemplateIds) - 1) . '?';
+            $stmt = $this->getConnection()->prepare("
+                SELECT * FROM task_templates 
+                WHERE id IN ($placeholders) 
+                ORDER BY phase_name, task_order
+            ");
+            $stmt->execute($selectedTemplateIds);
+            $templates = $stmt->fetchAll();
+            
+            error_log("取得されたテンプレート数: " . count($templates));
+            
+            if (empty($templates)) {
+                error_log("テンプレートが見つかりませんでした");
+                return false;
+            }
+            
+            // タスク作成
+            $insertStmt = $this->getConnection()->prepare("
+                INSERT INTO tasks (project_id, template_id, phase_name, task_name, task_order, is_technical_work, has_manual, estimated_hours, status, created_at, updated_at) 
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'not_started', NOW(), NOW())
+            ");
+            
+            $createdCount = 0;
+            foreach ($templates as $template) {
+                try {
+                    $insertStmt->execute([
+                        $projectId,
+                        $template['id'],
+                        $template['phase_name'],
+                        $template['task_name'],
+                        $template['task_order'],
+                        $template['is_technical_work'],
+                        $template['has_manual'],
+                        $template['estimated_hours'] ?? 0
+                    ]);
+                    $createdCount++;
+                    error_log("タスク作成成功: {$template['task_name']}");
+                } catch (PDOException $e) {
+                    error_log("タスク作成失敗: {$template['task_name']} - " . $e->getMessage());
+                }
+            }
+            
+            error_log("作成されたタスク数: $createdCount");
+            error_log("=== createTasksFromSelectedTemplates 完了 ===");
+            
+            return $createdCount > 0;
+        } catch (PDOException $e) {
+            error_log("createTasksFromSelectedTemplates error: " . $e->getMessage());
             return false;
         }
     }
@@ -241,8 +347,8 @@ class Database {
             $stmt->execute([$assignedTo, $plannedDate, $taskId]);
             
             // 履歴記録
-            $oldAssignee = $currentTask['assigned_to'] ? "ID: {$currentTask['assigned_to']}" : '未割当';
-            $newAssignee = $assignedTo ? "ID: $assignedTo" : '未割当';
+            $oldAssignee = $currentTask['assigned_to'] ? "ID: {$currentTask['assigned_to']}" : "unassigned";
+            $newAssignee = $assignedTo ? "ID: $assignedTo" : "unassigned";
             $this->addProjectHistory($currentTask['project_id'], $taskId, $userId, 'assigned', $oldAssignee, $newAssignee, "タスク担当者変更: {$currentTask['task_name']}");
             
             $this->getConnection()->commit();

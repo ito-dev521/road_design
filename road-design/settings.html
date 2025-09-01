@@ -363,9 +363,28 @@
             font-size: 1rem;
         }
 
+        .form-group input[type="file"] {
+            padding: 0.5rem;
+            border: 2px dashed #ddd;
+            background-color: #f9f9f9;
+            cursor: pointer;
+        }
+
+        .form-group input[type="file"]:hover {
+            border-color: #007bff;
+            background-color: #f0f8ff;
+        }
+
         .form-group textarea {
             resize: vertical;
             min-height: 100px;
+        }
+
+        .form-help {
+            display: block;
+            margin-top: 0.25rem;
+            font-size: 0.8rem;
+            color: #666;
         }
 
         .form-actions {
@@ -373,6 +392,228 @@
             gap: 1rem;
             justify-content: flex-end;
             margin-top: 2rem;
+        }
+
+        /* ヘッダーアクション */
+        .header-actions {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .search-box {
+            display: flex;
+            align-items: center;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            overflow: hidden;
+        }
+
+        .search-box input {
+            border: none;
+            padding: 0.5rem;
+            outline: none;
+            min-width: 200px;
+        }
+
+        .search-btn {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 0.5rem 0.75rem;
+            cursor: pointer;
+        }
+
+        .search-btn:hover {
+            background: #0056b3;
+        }
+
+        #phaseFilter {
+            padding: 0.5rem;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            background: white;
+            min-width: 150px;
+        }
+
+        /* テンプレートコンテナ */
+        .templates-container {
+            margin-top: 1rem;
+        }
+
+        .phase-group {
+            margin-bottom: 2rem;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .phase-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 1rem 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .phase-title {
+            margin: 0;
+            font-size: 1.2rem;
+            font-weight: 600;
+        }
+
+        .phase-count {
+            background: rgba(255,255,255,0.2);
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.9rem;
+        }
+
+        .templates-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 1rem;
+            padding: 1.5rem;
+        }
+
+        /* テンプレートカード */
+        .template-card {
+            background: white;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        .template-card:hover {
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            transform: translateY(-2px);
+        }
+
+        .card-header {
+            background: #f8f9fa;
+            padding: 1rem;
+            border-bottom: 1px solid #e0e0e0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .task-name {
+            margin: 0;
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .task-order {
+            background: #007bff;
+            color: white;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .card-content {
+            padding: 1rem;
+            min-height: 80px;
+        }
+
+        .task-content {
+            margin: 0;
+            color: #666;
+            line-height: 1.5;
+            font-size: 0.9rem;
+        }
+
+        .card-footer {
+            padding: 1rem;
+            border-top: 1px solid #e0e0e0;
+            background: #f8f9fa;
+        }
+
+        .task-flags {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .flag {
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+
+        .flag-active {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .flag-inactive {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .card-actions {
+            display: flex;
+            gap: 0.5rem;
+            justify-content: flex-end;
+        }
+
+        .card-actions .btn-small {
+            padding: 0.5rem 1rem;
+            font-size: 0.9rem;
+        }
+
+        /* 検索結果なし */
+        .no-results {
+            text-align: center;
+            padding: 2rem;
+            color: #666;
+            background: white;
+            border-radius: 8px;
+            margin-top: 1rem;
+        }
+
+        /* レスポンシブ対応 */
+        @media (max-width: 768px) {
+            .header-actions {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 0.5rem;
+            }
+
+            .search-box {
+                order: 1;
+            }
+
+            #phaseFilter {
+                order: 2;
+            }
+
+            .add-button {
+                order: 3;
+            }
+
+            .templates-grid {
+                grid-template-columns: 1fr;
+                padding: 1rem;
+            }
+
+            .phase-header {
+                padding: 0.75rem 1rem;
+            }
+
+            .phase-title {
+                font-size: 1rem;
+            }
         }
     </style>
 </head>
@@ -389,7 +630,7 @@
             <div class="user-info">
                 <h3>管理者</h3>
                 <div class="action-buttons">
-                    <a href="admin.html" class="btn">メインページに戻る</a>
+                                         <a href="index.html" class="btn">メインページに戻る</a>
                     <a href="logout.php" class="btn">ログアウト</a>
                 </div>
             </div>
@@ -405,6 +646,10 @@
             <li><a href="#" class="nav-link active" data-tab="phases">
                 <span class="nav-icon">📊</span>
                 フェーズ管理
+            </a></li>
+            <li><a href="#" class="nav-link" data-tab="clients">
+                <span class="nav-icon">🏢</span>
+                クライアント管理
             </a></li>
             <li><a href="#" class="nav-link" data-tab="templates">
                 <span class="nav-icon">📋</span>
@@ -440,11 +685,31 @@
             </div>
         </div>
 
+        <!-- クライアント管理 -->
+        <div id="clients-tab" class="content-panel hidden">
+            <div class="panel-header">
+                <h2 class="panel-title">クライアント管理</h2>
+                <button class="add-button" onclick="showAddClientModal()">新規クライアント追加</button>
+            </div>
+            <div id="clients-content">
+                <div class="loading">クライアント一覧を読み込み中...</div>
+            </div>
+        </div>
+
         <!-- タスクテンプレート管理 -->
         <div id="templates-tab" class="content-panel hidden">
             <div class="panel-header">
                 <h2 class="panel-title">タスクテンプレート管理</h2>
-                <button class="add-button" onclick="showAddTemplateModal()">新規テンプレート追加</button>
+                <div class="header-actions">
+                    <div class="search-box">
+                        <input type="text" id="templateSearch" placeholder="タスク名で検索..." onkeyup="filterTemplates()">
+                        <button class="search-btn" onclick="filterTemplates()">🔍</button>
+                    </div>
+                    <select id="phaseFilter" onchange="filterTemplates()">
+                        <option value="">全フェーズ</option>
+                    </select>
+                    <button class="add-button" onclick="showAddTemplateModal()">新規テンプレート追加</button>
+                </div>
             </div>
             <div id="templates-content">
                 <div class="loading">テンプレート一覧を読み込み中...</div>
@@ -463,16 +728,17 @@
         </div>
     </div>
 
-    <!-- フェーズ追加モーダル -->
+    <!-- フェーズ追加・編集モーダル -->
     <div id="phaseModal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
-                <h3 class="modal-title">新規フェーズ追加</h3>
+                <h3 class="modal-title" id="phaseModalTitle">新規フェーズ追加</h3>
                 <span class="close" onclick="closeModal('phaseModal')">&times;</span>
             </div>
             <form id="phaseForm">
+                <input type="hidden" id="phaseId" name="id">
                 <div class="form-group">
-                    <label for="phaseName">フェーズ名</label>
+                    <label for="phaseName">フェーズ名 *</label>
                     <input type="text" id="phaseName" name="name" required>
                 </div>
                 <div class="form-group">
@@ -483,9 +749,189 @@
                     <label for="phaseOrder">表示順序</label>
                     <input type="number" id="phaseOrder" name="order_num" value="1" min="1">
                 </div>
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" id="phaseIsActive" name="is_active" value="1" checked>
+                        有効
+                    </label>
+                </div>
                 <div class="form-actions">
                     <button type="button" class="btn" onclick="closeModal('phaseModal')">キャンセル</button>
-                    <button type="submit" class="btn btn-primary">追加</button>
+                    <button type="submit" class="btn btn-primary" id="phaseSubmitBtn">追加</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ユーザー追加・編集モーダル -->
+    <div id="userModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title" id="userModalTitle">新規ユーザー追加</h3>
+                <span class="close" onclick="closeModal('userModal')">&times;</span>
+            </div>
+            <form id="userForm">
+                <input type="hidden" id="userId" name="id">
+                <div class="form-group">
+                    <label for="userEmail">メールアドレス *</label>
+                    <input type="email" id="userEmail" name="email" required>
+                </div>
+                <div class="form-group">
+                    <label for="userName">名前 *</label>
+                    <input type="text" id="userName" name="name" required>
+                </div>
+                <div class="form-group">
+                    <label for="userRole">役割 *</label>
+                    <select id="userRole" name="role" required>
+                        <option value="">選択してください</option>
+                        <option value="manager">管理者</option>
+                        <option value="technical">技術者</option>
+                        <option value="general">一般スタッフ</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="userPassword">パスワード <span id="passwordNote">*</span></label>
+                    <input type="password" id="userPassword" name="password">
+                </div>
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" id="userIsActive" name="is_active" value="1" checked>
+                        有効
+                    </label>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn" onclick="closeModal('userModal')">キャンセル</button>
+                    <button type="submit" class="btn btn-primary" id="userSubmitBtn">追加</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- テンプレート追加・編集モーダル -->
+    <div id="templateModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title" id="templateModalTitle">新規テンプレート追加</h3>
+                <span class="close" onclick="closeModal('templateModal')">&times;</span>
+            </div>
+            <form id="templateForm">
+                <input type="hidden" id="templateId" name="id">
+                <div class="form-group">
+                    <label for="templatePhaseName">フェーズ名 *</label>
+                    <select id="templatePhaseName" name="phase_name" required>
+                        <option value="">選択してください</option>
+                    </select>
+                </div>
+                                 <div class="form-group">
+                     <label for="templateTaskName">タスク名 *</label>
+                     <input type="text" id="templateTaskName" name="task_name" required>
+                 </div>
+                 <div class="form-group">
+                     <label for="templateContent">内容</label>
+                     <textarea id="templateContent" name="content" rows="4" placeholder="タスクの詳細な作業内容を入力してください"></textarea>
+                 </div>
+                 <div class="form-group">
+                     <label for="templateTaskOrder">表示順序</label>
+                     <input type="number" id="templateTaskOrder" name="task_order" value="1" min="1">
+                 </div>
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" id="templateIsTechnicalWork" name="is_technical_work" value="1">
+                        技術者作業
+                    </label>
+                </div>
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" id="templateHasManual" name="has_manual" value="1" disabled>
+                        マニュアルあり（自動設定）
+                    </label>
+                    <small class="form-help">マニュアルの追加・削除時に自動的に更新されます</small>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn" onclick="closeModal('templateModal')">キャンセル</button>
+                    <button type="submit" class="btn btn-primary" id="templateSubmitBtn">追加</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- クライアント追加・編集モーダル -->
+    <div id="clientModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title" id="clientModalTitle">新規クライアント追加</h3>
+                <span class="close" onclick="closeModal('clientModal')">&times;</span>
+            </div>
+            <form id="clientForm">
+                <input type="hidden" id="clientId" name="id">
+                <div class="form-group">
+                    <label for="clientName">クライアント名 *</label>
+                    <input type="text" id="clientName" name="name" required>
+                </div>
+                <div class="form-group">
+                    <label for="clientCode">クライアントコード</label>
+                    <input type="text" id="clientCode" name="code" placeholder="例: CLIENT001">
+                </div>
+                <div class="form-group">
+                    <label for="clientContactPerson">担当者名</label>
+                    <input type="text" id="clientContactPerson" name="contact_person" placeholder="担当者の名前">
+                </div>
+                <div class="form-group">
+                    <label for="clientEmail">メールアドレス</label>
+                    <input type="email" id="clientEmail" name="email" placeholder="contact@example.com">
+                </div>
+                <div class="form-group">
+                    <label for="clientPhone">電話番号</label>
+                    <input type="tel" id="clientPhone" name="phone" placeholder="03-1234-5678">
+                </div>
+                <div class="form-group">
+                    <label for="clientAddress">住所</label>
+                    <textarea id="clientAddress" name="address" rows="3" placeholder="〒100-0001 東京都千代田区..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="clientDescription">備考</label>
+                    <textarea id="clientDescription" name="description" rows="3" placeholder="クライアントに関する備考"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" id="clientIsActive" name="is_active" value="1" checked>
+                        有効
+                    </label>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn" onclick="closeModal('clientModal')">キャンセル</button>
+                    <button type="submit" class="btn btn-primary" id="clientSubmitBtn">追加</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- マニュアル追加モーダル -->
+    <div id="manualModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title" id="manualModalTitle">新規マニュアル追加</h3>
+                <span class="close" onclick="closeModal('manualModal')">&times;</span>
+            </div>
+            <form id="manualForm" enctype="multipart/form-data">
+                <div class="form-group">
+                    <label for="manualTaskName">タスク名 *</label>
+                    <select id="manualTaskName" name="task_name" required>
+                        <option value="">選択してください</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="manualFile">ファイル *</label>
+                    <input type="file" id="manualFile" name="file" accept=".pdf,.xlsx,.xls,.docx,.doc" required>
+                    <small class="form-help">対応形式: PDF, Excel (.xlsx, .xls), Word (.docx, .doc)</small>
+                </div>
+                <div class="form-group">
+                    <label for="manualDescription">説明</label>
+                    <textarea id="manualDescription" name="description" rows="3" placeholder="マニュアルの説明を入力してください"></textarea>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn" onclick="closeModal('manualModal')">キャンセル</button>
+                    <button type="submit" class="btn btn-primary" id="manualSubmitBtn">追加</button>
                 </div>
             </form>
         </div>
@@ -521,6 +967,7 @@
         // フェーズデータ読み込み
         async function loadPhases() {
             try {
+                console.log('=== フェーズ読み込み開始 ===');
                 const response = await fetch('api.php?path=phases', {
                     method: 'GET',
                     headers: {
@@ -529,32 +976,80 @@
                     }
                 });
 
+                console.log('APIレスポンス:', response);
+                console.log('ステータス:', response.status);
+
                 if (!response.ok) {
                     throw new Error('フェーズ一覧の読み込みに失敗しました');
                 }
 
                 const data = await response.json();
-                displayPhases(data);
+                console.log('取得したデータ:', data);
+                console.log('データの型:', typeof data);
+                console.log('data.success:', data.success);
+                console.log('data.phases:', data.phases);
+                console.log('phasesの型:', typeof data.phases);
+                console.log('phasesが配列か:', Array.isArray(data.phases));
+                console.log('phasesの長さ:', data.phases ? data.phases.length : 'undefined');
+
+                if (!data.success) {
+                    throw new Error(data.message || 'フェーズ一覧の取得に失敗しました');
+                }
+
+                if (!data.phases) {
+                    console.error('phasesプロパティが存在しません');
+                    throw new Error('フェーズデータが存在しません');
+                }
+
+                if (!Array.isArray(data.phases)) {
+                    console.error('phasesが配列ではありません:', data.phases);
+                    throw new Error('フェーズデータの形式が正しくありません');
+                }
+
+                console.log('=== displayPhases関数を呼び出し ===');
+                displayPhases(data.phases);
+                
             } catch (error) {
+                console.error('フェーズ読み込みエラー:', error);
                 document.getElementById('phases-content').innerHTML = 
-                    `<div class="error-message">${error.message}</div>`;
+                    `<div class="error-message">フェーズ一覧の読み込みに失敗しました: ${error.message}</div>`;
             }
         }
 
         // フェーズ表示
         function displayPhases(phases) {
+            console.log('=== displayPhases関数開始 ===');
+            console.log('受け取ったphases:', phases);
+            console.log('phasesの型:', typeof phases);
+            console.log('phasesが配列か:', Array.isArray(phases));
+            console.log('phasesの長さ:', phases ? phases.length : 'undefined');
+            
             const container = document.getElementById('phases-content');
             
-            if (!phases || phases.length === 0) {
+            // データの検証
+            if (!phases) {
+                console.error('phasesがnullまたはundefinedです');
+                container.innerHTML = '<div class="error-message">フェーズデータが取得できませんでした</div>';
+                return;
+            }
+            
+            if (!Array.isArray(phases)) {
+                console.error('phasesが配列ではありません:', phases);
+                container.innerHTML = '<div class="error-message">フェーズデータの形式が正しくありません</div>';
+                return;
+            }
+            
+            if (phases.length === 0) {
                 container.innerHTML = '<p>フェーズが登録されていません。</p>';
                 return;
             }
 
+            console.log('フェーズ数:', phases.length);
+            
             let html = `
                 <table class="data-table">
                     <thead>
                         <tr>
-                            <th>ID</th>
                             <th>フェーズ名</th>
                             <th>説明</th>
                             <th>順序</th>
@@ -565,16 +1060,16 @@
                     <tbody>
             `;
 
-            phases.forEach(phase => {
+            phases.forEach((phase, index) => {
+                console.log(`フェーズ${index + 1}:`, phase);
                 html += `
                     <tr>
-                        <td>${phase.id}</td>
                         <td>${escapeHtml(phase.name)}</td>
                         <td>${escapeHtml(phase.description || '')}</td>
                         <td>${phase.order_num}</td>
                         <td>
-                            <span class="status-badge ${phase.is_active ? 'status-active' : 'status-inactive'}">
-                                ${phase.is_active ? '有効' : '無効'}
+                            <span class="status-badge ${phase.is_active == '1' ? 'status-active' : 'status-inactive'}">
+                                ${phase.is_active == '1' ? '有効' : '無効'}
                             </span>
                         </td>
                         <td>
@@ -589,6 +1084,7 @@
 
             html += '</tbody></table>';
             container.innerHTML = html;
+            console.log('フェーズ表示完了');
         }
 
         // タブデータ読み込み
@@ -599,6 +1095,9 @@
                     break;
                 case 'users':
                     loadUsers();
+                    break;
+                case 'clients':
+                    loadClients();
                     break;
                 case 'templates':
                     loadTemplates();
@@ -612,6 +1111,7 @@
         // ユーザー読み込み
         async function loadUsers() {
             try {
+                console.log('=== ユーザー読み込み開始 ===');
                 const response = await fetch('api.php?path=users', {
                     method: 'GET',
                     headers: {
@@ -620,27 +1120,76 @@
                     }
                 });
 
+                console.log('APIレスポンス:', response);
+                console.log('ステータス:', response.status);
+
                 if (!response.ok) {
                     throw new Error('ユーザー一覧の読み込みに失敗しました');
                 }
 
                 const data = await response.json();
-                displayUsers(data);
+                console.log('取得したデータ:', data);
+                console.log('データの型:', typeof data);
+                console.log('data.success:', data.success);
+                console.log('data.users:', data.users);
+                console.log('usersの型:', typeof data.users);
+                console.log('usersが配列か:', Array.isArray(data.users));
+                console.log('usersの長さ:', data.users ? data.users.length : 'undefined');
+
+                if (!data.success) {
+                    throw new Error(data.message || 'ユーザー一覧の取得に失敗しました');
+                }
+
+                if (!data.users) {
+                    console.error('usersプロパティが存在しません');
+                    throw new Error('ユーザーデータが存在しません');
+                }
+
+                if (!Array.isArray(data.users)) {
+                    console.error('usersが配列ではありません:', data.users);
+                    throw new Error('ユーザーデータの形式が正しくありません');
+                }
+
+                console.log('=== displayUsers関数を呼び出し ===');
+                displayUsers(data.users);
+                
             } catch (error) {
+                console.error('ユーザー読み込みエラー:', error);
                 document.getElementById('users-content').innerHTML = 
-                    `<div class="error-message">${error.message}</div>`;
+                    `<div class="error-message">ユーザー一覧の読み込みに失敗しました: ${error.message}</div>`;
             }
         }
 
         // ユーザー表示
         function displayUsers(users) {
+            console.log('=== displayUsers関数開始 ===');
+            console.log('受け取ったusers:', users);
+            console.log('usersの型:', typeof users);
+            console.log('usersが配列か:', Array.isArray(users));
+            console.log('usersの長さ:', users ? users.length : 'undefined');
+            
             const container = document.getElementById('users-content');
             
-            if (!users || users.length === 0) {
+            // データの検証
+            if (!users) {
+                console.error('usersがnullまたはundefinedです');
+                container.innerHTML = '<div class="error-message">ユーザーデータが取得できませんでした</div>';
+                return;
+            }
+            
+            if (!Array.isArray(users)) {
+                console.error('usersが配列ではありません:', users);
+                container.innerHTML = '<div class="error-message">ユーザーデータの形式が正しくありません</div>';
+                return;
+            }
+            
+            if (users.length === 0) {
                 container.innerHTML = '<p>ユーザーが登録されていません。</p>';
                 return;
             }
 
+            console.log('ユーザー数:', users.length);
+            
             let html = `
                 <table class="data-table">
                     <thead>
@@ -656,7 +1205,8 @@
                     <tbody>
             `;
 
-            users.forEach(user => {
+            users.forEach((user, index) => {
+                console.log(`ユーザー${index + 1}:`, user);
                 html += `
                     <tr>
                         <td>${user.id}</td>
@@ -664,8 +1214,8 @@
                         <td>${escapeHtml(user.email)}</td>
                         <td>${getRoleName(user.role)}</td>
                         <td>
-                            <span class="status-badge ${user.is_active ? 'status-active' : 'status-inactive'}">
-                                ${user.is_active ? '有効' : '無効'}
+                            <span class="status-badge ${user.is_active == '1' ? 'status-active' : 'status-inactive'}">
+                                ${user.is_active == '1' ? '有効' : '無効'}
                             </span>
                         </td>
                         <td>
@@ -680,6 +1230,7 @@
 
             html += '</tbody></table>';
             container.innerHTML = html;
+            console.log('ユーザー表示完了');
         }
 
         // 役割名取得
@@ -692,10 +1243,11 @@
             return roles[role] || role;
         }
 
-        // テンプレート読み込み
-        async function loadTemplates() {
+        // クライアント読み込み
+        async function loadClients() {
             try {
-                const response = await fetch('api.php?path=templates', {
+                console.log('=== クライアント読み込み開始 ===');
+                const response = await fetch('api.php?path=clients', {
                     method: 'GET',
                     headers: {
                         'Content-Type': 'application/json',
@@ -703,56 +1255,102 @@
                     }
                 });
 
+                console.log('APIレスポンス:', response);
+                console.log('ステータス:', response.status);
+
                 if (!response.ok) {
-                    throw new Error('テンプレート一覧の読み込みに失敗しました');
+                    throw new Error('クライアント一覧の読み込みに失敗しました');
                 }
 
                 const data = await response.json();
-                displayTemplates(data);
+                console.log('取得したデータ:', data);
+
+                if (!data.success) {
+                    throw new Error(data.message || 'クライアント一覧の取得に失敗しました');
+                }
+
+                if (!data.clients) {
+                    console.error('clientsプロパティが存在しません');
+                    throw new Error('クライアントデータが存在しません');
+                }
+
+                if (!Array.isArray(data.clients)) {
+                    console.error('clientsが配列ではありません:', data.clients);
+                    throw new Error('クライアントデータの形式が正しくありません');
+                }
+
+                console.log('=== displayClients関数を呼び出し ===');
+                displayClients(data.clients);
+                
             } catch (error) {
-                document.getElementById('templates-content').innerHTML = 
-                    `<div class="error-message">${error.message}</div>`;
+                console.error('クライアント読み込みエラー:', error);
+                document.getElementById('clients-content').innerHTML = 
+                    `<div class="error-message">クライアント一覧の読み込みに失敗しました: ${error.message}</div>`;
             }
         }
 
-        // テンプレート表示
-        function displayTemplates(templates) {
-            const container = document.getElementById('templates-content');
+        // クライアント表示
+        function displayClients(clients) {
+            console.log('=== displayClients関数開始 ===');
+            console.log('受け取ったclients:', clients);
             
-            if (!templates || templates.length === 0) {
-                container.innerHTML = '<p>テンプレートが登録されていません。</p>';
+            const container = document.getElementById('clients-content');
+            
+            // データの検証
+            if (!clients) {
+                console.error('clientsがnullまたはundefinedです');
+                container.innerHTML = '<div class="error-message">クライアントデータが取得できませんでした</div>';
+                return;
+            }
+            
+            if (!Array.isArray(clients)) {
+                console.error('clientsが配列ではありません:', clients);
+                container.innerHTML = '<div class="error-message">クライアントデータの形式が正しくありません</div>';
+                return;
+            }
+            
+            if (clients.length === 0) {
+                container.innerHTML = '<p>クライアントが登録されていません。</p>';
                 return;
             }
 
+            console.log('クライアント数:', clients.length);
+            
             let html = `
                 <table class="data-table">
                     <thead>
                         <tr>
-                            <th>ID</th>
-                            <th>フェーズ</th>
-                            <th>タスク名</th>
-                            <th>順序</th>
-                            <th>技術作業</th>
-                            <th>マニュアル</th>
+                            <th>クライアント名</th>
+                            <th>クライアントコード</th>
+                            <th>担当者</th>
+                            <th>連絡先</th>
+                            <th>ステータス</th>
                             <th>操作</th>
                         </tr>
                     </thead>
                     <tbody>
             `;
 
-            templates.forEach(template => {
+            clients.forEach((client, index) => {
+                console.log(`クライアント${index + 1}:`, client);
                 html += `
                     <tr>
-                        <td>${template.id}</td>
-                        <td>${escapeHtml(template.phase_name)}</td>
-                        <td>${escapeHtml(template.task_name)}</td>
-                        <td>${template.task_order}</td>
-                        <td>${template.is_technical_work ? '○' : '×'}</td>
-                        <td>${template.has_manual ? '○' : '×'}</td>
+                        <td>${escapeHtml(client.name)}</td>
+                        <td>${escapeHtml(client.code || '')}</td>
+                        <td>${escapeHtml(client.contact_person || '')}</td>
+                        <td>
+                            ${client.email ? `<div>📧 ${escapeHtml(client.email)}</div>` : ''}
+                            ${client.phone ? `<div>📞 ${escapeHtml(client.phone)}</div>` : ''}
+                        </td>
+                        <td>
+                            <span class="status-badge ${client.is_active == '1' ? 'status-active' : 'status-inactive'}">
+                                ${client.is_active == '1' ? '有効' : '無効'}
+                            </span>
+                        </td>
                         <td>
                             <div class="action-buttons-small">
-                                <button class="btn-small btn-edit" onclick="editTemplate(${template.id})">編集</button>
-                                <button class="btn-small btn-delete" onclick="deleteTemplate(${template.id})">削除</button>
+                                <button class="btn-small btn-edit" onclick="editClient(${client.id})">編集</button>
+                                <button class="btn-small btn-delete" onclick="deleteClient(${client.id})">削除</button>
                             </div>
                         </td>
                     </tr>
@@ -761,11 +1359,186 @@
 
             html += '</tbody></table>';
             container.innerHTML = html;
+            console.log('クライアント表示完了');
+        }
+
+        // テンプレート読み込み
+        async function loadTemplates() {
+            try {
+                console.log('=== テンプレート読み込み開始 ===');
+                const response = await fetch('api.php?path=templates', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                });
+
+                console.log('APIレスポンス:', response);
+                console.log('ステータス:', response.status);
+                console.log('ステータステキスト:', response.statusText);
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error('HTTPエラー:', response.status, errorText);
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const responseText = await response.text();
+                console.log('生のレスポンス:', responseText);
+
+                let data;
+                try {
+                    data = JSON.parse(responseText);
+                    console.log('JSONパース成功');
+                } catch (parseError) {
+                    console.error('JSONパースエラー:', parseError);
+                    throw new Error('APIレスポンスの解析に失敗しました');
+                }
+
+                console.log('取得したデータ:', data);
+                console.log('データの型:', typeof data);
+                console.log('data.success:', data.success);
+                console.log('data.templates:', data.templates);
+                console.log('templatesの型:', typeof data.templates);
+                console.log('templatesが配列か:', Array.isArray(data.templates));
+                console.log('templatesの長さ:', data.templates ? data.templates.length : 'undefined');
+
+                if (!data.success) {
+                    throw new Error(data.message || 'テンプレート一覧の取得に失敗しました');
+                }
+
+                if (!data.templates) {
+                    console.error('templatesプロパティが存在しません');
+                    throw new Error('テンプレートデータが存在しません');
+                }
+
+                if (!Array.isArray(data.templates)) {
+                    console.error('templatesが配列ではありません:', data.templates);
+                    throw new Error('テンプレートデータの形式が正しくありません');
+                }
+
+                console.log('=== displayTemplates関数を呼び出し ===');
+                displayTemplates(data.templates);
+                
+            } catch (error) {
+                console.error('テンプレート読み込みエラー:', error);
+                document.getElementById('templates-content').innerHTML = 
+                    `<div class="error-message">テンプレート一覧の読み込みに失敗しました: ${error.message}</div>`;
+            }
+        }
+
+        // テンプレート表示
+        function displayTemplates(templates) {
+            console.log('=== displayTemplates関数開始 ===');
+            console.log('受け取ったtemplates:', templates);
+            console.log('templatesの型:', typeof templates);
+            console.log('templatesが配列か:', Array.isArray(templates));
+            console.log('templatesの長さ:', templates ? templates.length : 'undefined');
+            
+            const container = document.getElementById('templates-content');
+            
+            // データの検証
+            if (!templates) {
+                console.error('templatesがnullまたはundefinedです');
+                container.innerHTML = '<div class="error-message">テンプレートデータが取得できませんでした</div>';
+                return;
+            }
+            
+            if (!Array.isArray(templates)) {
+                console.error('templatesが配列ではありません:', templates);
+                container.innerHTML = '<div class="error-message">テンプレートデータの形式が正しくありません</div>';
+                return;
+            }
+            
+            if (templates.length === 0) {
+                container.innerHTML = '<p>テンプレートが登録されていません。</p>';
+                return;
+            }
+
+            console.log('テンプレート数:', templates.length);
+            
+            // フェーズ別にグループ化
+            const groupedTemplates = {};
+            templates.forEach(template => {
+                if (!groupedTemplates[template.phase_name]) {
+                    groupedTemplates[template.phase_name] = [];
+                }
+                groupedTemplates[template.phase_name].push(template);
+            });
+            
+            // フェーズ順にソート
+            const sortedPhases = Object.keys(groupedTemplates).sort();
+            
+            let html = '<div class="templates-container">';
+            
+            sortedPhases.forEach(phaseName => {
+                const phaseTemplates = groupedTemplates[phaseName];
+                
+                html += `
+                    <div class="phase-group" data-phase="${escapeHtml(phaseName)}">
+                        <div class="phase-header">
+                            <h3 class="phase-title">${escapeHtml(phaseName)}</h3>
+                            <span class="phase-count">${phaseTemplates.length}件</span>
+                        </div>
+                        <div class="templates-grid">
+                `;
+                
+                // タスク順にソート
+                phaseTemplates.sort((a, b) => a.task_order - b.task_order);
+                
+                phaseTemplates.forEach((template, index) => {
+                    console.log(`テンプレート${index + 1}:`, template);
+                    html += `
+                        <div class="template-card" data-task="${escapeHtml(template.task_name)}">
+                            <div class="card-header">
+                                <h4 class="task-name">${escapeHtml(template.task_name)}</h4>
+                                <div class="task-order">#${template.task_order}</div>
+                            </div>
+                            <div class="card-content">
+                                <p class="task-content">${escapeHtml(template.content || '内容なし')}</p>
+                            </div>
+                            <div class="card-footer">
+                                <div class="task-flags">
+                                    <span class="flag ${template.is_technical_work == '1' ? 'flag-active' : 'flag-inactive'}" title="技術作業">
+                                        🔧 ${template.is_technical_work == '1' ? '技術作業' : '一般作業'}
+                                    </span>
+                                    <span class="flag ${template.has_manual == '1' ? 'flag-active' : 'flag-inactive'}" title="マニュアル">
+                                        📚 ${template.has_manual == '1' ? 'マニュアルあり' : 'マニュアルなし'}
+                                    </span>
+                                </div>
+                                <div class="card-actions">
+                                    <button class="btn-small btn-edit" onclick="editTemplate(${template.id})" title="編集">
+                                        ✏️ 編集
+                                    </button>
+                                    <button class="btn-small btn-delete" onclick="deleteTemplate(${template.id})" title="削除">
+                                        🗑️ 削除
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                html += `
+                        </div>
+                    </div>
+                `;
+            });
+            
+            html += '</div>';
+            container.innerHTML = html;
+            
+            // フェーズフィルターの選択肢を更新
+            updatePhaseFilter(sortedPhases);
+            
+            console.log('テンプレート表示完了');
         }
 
         // マニュアル読み込み
         async function loadManuals() {
             try {
+                console.log('=== マニュアル読み込み開始 ===');
                 const response = await fetch('api.php?path=manuals', {
                     method: 'GET',
                     headers: {
@@ -774,32 +1547,82 @@
                     }
                 });
 
+                console.log('APIレスポンス:', response);
+                console.log('ステータス:', response.status);
+
                 if (!response.ok) {
                     throw new Error('マニュアル一覧の読み込みに失敗しました');
                 }
 
                 const data = await response.json();
-                displayManuals(data);
+                console.log('取得したデータ:', data);
+                console.log('データの型:', typeof data);
+                console.log('data.success:', data.success);
+                console.log('data.manuals:', data.manuals);
+                console.log('manualsの型:', typeof data.manuals);
+                console.log('manualsが配列か:', Array.isArray(data.manuals));
+                console.log('manualsの長さ:', data.manuals ? data.manuals.length : 'undefined');
+
+                if (!data.success) {
+                    throw new Error(data.message || 'マニュアル一覧の取得に失敗しました');
+                }
+
+                if (!data.manuals) {
+                    console.error('manualsプロパティが存在しません');
+                    throw new Error('マニュアルデータが存在しません');
+                }
+
+                if (!Array.isArray(data.manuals)) {
+                    console.error('manualsが配列ではありません:', data.manuals);
+                    throw new Error('マニュアルデータの形式が正しくありません');
+                }
+
+                console.log('=== displayManuals関数を呼び出し ===');
+                displayManuals(data.manuals);
+                
             } catch (error) {
+                console.error('マニュアル読み込みエラー:', error);
                 document.getElementById('manuals-content').innerHTML = 
-                    `<div class="error-message">${error.message}</div>`;
+                    `<div class="error-message">マニュアル一覧の読み込みに失敗しました: ${error.message}</div>`;
             }
         }
 
         // マニュアル表示
         function displayManuals(manuals) {
+            console.log('=== displayManuals関数開始 ===');
+            console.log('受け取ったmanuals:', manuals);
+            console.log('manualsの型:', typeof manuals);
+            console.log('manualsが配列か:', Array.isArray(manuals));
+            console.log('manualsの長さ:', manuals ? manuals.length : 'undefined');
+            
             const container = document.getElementById('manuals-content');
             
-            if (!manuals || manuals.length === 0) {
-                container.innerHTML = '<p>マニュアルが登録されていません。</p>';
+            // データの検証
+            if (!manuals) {
+                console.error('manualsがnullまたはundefinedです');
+                container.innerHTML = '<div class="error-message">マニュアルデータが取得できませんでした</div>';
                 return;
             }
+            
+            if (!Array.isArray(manuals)) {
+                console.error('manualsが配列ではありません:', manuals);
+                container.innerHTML = '<div class="error-message">マニュアルデータの形式が正しくありません</div>';
+                return;
+            }
+            
+            if (manuals.length === 0) {
+                container.innerHTML = '<p>マニュアルが登録されていません。</p>';
+                console.log('マニュアルデータが0件です');
+                return;
+            }
+
+            console.log('マニュアル数:', manuals.length);
 
             let html = `
                 <table class="data-table">
                     <thead>
                         <tr>
-                            <th>ID</th>
+                            <th>タスク名</th>
                             <th>ファイル名</th>
                             <th>説明</th>
                             <th>サイズ</th>
@@ -810,10 +1633,11 @@
                     <tbody>
             `;
 
-            manuals.forEach(manual => {
+            manuals.forEach((manual, index) => {
+                console.log(`マニュアル${index + 1}:`, manual);
                 html += `
                     <tr>
-                        <td>${manual.id}</td>
+                        <td>${escapeHtml(manual.task_name || '')}</td>
                         <td>${escapeHtml(manual.file_name)}</td>
                         <td>${escapeHtml(manual.description || '')}</td>
                         <td>${formatFileSize(manual.file_size)}</td>
@@ -830,27 +1654,334 @@
 
             html += '</tbody></table>';
             container.innerHTML = html;
+            console.log('マニュアル表示完了');
         }
 
         // モーダル表示
         function showAddPhaseModal() {
+            // モーダルを新規追加モードに設定
+            document.getElementById('phaseModalTitle').textContent = '新規フェーズ追加';
+            document.getElementById('phaseSubmitBtn').textContent = '追加';
+            
+            // フォームをリセット
+            document.getElementById('phaseForm').reset();
+            document.getElementById('phaseId').value = '';
+            document.getElementById('phaseIsActive').checked = true;
+            
+            // モーダル表示
             document.getElementById('phaseModal').style.display = 'block';
+        }
+
+        function showAddUserModal() {
+            // モーダルを新規追加モードに設定
+            document.getElementById('userModalTitle').textContent = '新規ユーザー追加';
+            document.getElementById('userSubmitBtn').textContent = '追加';
+            document.getElementById('passwordNote').textContent = '*';
+            
+            // フォームをリセット
+            document.getElementById('userForm').reset();
+            document.getElementById('userId').value = '';
+            document.getElementById('userIsActive').checked = true;
+            
+            // モーダル表示
+            document.getElementById('userModal').style.display = 'block';
+        }
+
+        function showAddTemplateModal() {
+            // モーダルを新規追加モードに設定
+            document.getElementById('templateModalTitle').textContent = '新規テンプレート追加';
+            document.getElementById('templateSubmitBtn').textContent = '追加';
+            
+                         // フォームをリセット
+             document.getElementById('templateForm').reset();
+             document.getElementById('templateId').value = '';
+             document.getElementById('templateContent').value = '';
+             document.getElementById('templateIsTechnicalWork').checked = false;
+             document.getElementById('templateHasManual').checked = false;
+            
+            // フェーズ選択肢を設定
+            loadPhaseOptions();
+            
+            // モーダル表示
+            document.getElementById('templateModal').style.display = 'block';
+        }
+
+        function showAddClientModal() {
+            // モーダルを新規追加モードに設定
+            document.getElementById('clientModalTitle').textContent = '新規クライアント追加';
+            document.getElementById('clientSubmitBtn').textContent = '追加';
+            
+            // フォームをリセット
+            document.getElementById('clientForm').reset();
+            document.getElementById('clientId').value = '';
+            document.getElementById('clientIsActive').checked = true;
+            
+            // モーダル表示
+            document.getElementById('clientModal').style.display = 'block';
+        }
+
+        // フェーズ選択肢を読み込み
+        async function loadPhaseOptions() {
+            try {
+                console.log('フェーズ選択肢読み込み開始');
+                const response = await fetch('api.php?path=phases', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    console.log('フェーズデータ取得:', data);
+                    if (data.success && data.phases) {
+                        const select = document.getElementById('templatePhaseName');
+                        select.innerHTML = '<option value="">選択してください</option>';
+                        
+                        data.phases.forEach(phase => {
+                            const option = document.createElement('option');
+                            option.value = phase.name;
+                            option.textContent = phase.name;
+                            select.appendChild(option);
+                        });
+                        console.log('フェーズ選択肢設定完了:', data.phases.length, '件');
+                    }
+                }
+            } catch (error) {
+                console.error('フェーズ選択肢読み込みエラー:', error);
+            }
+        }
+
+        // タスク名選択肢を読み込み
+        async function loadTaskOptions() {
+            try {
+                console.log('タスク選択肢読み込み開始');
+                const response = await fetch('api.php?path=templates', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    console.log('タスクテンプレートデータ取得:', data);
+                    if (data.success && data.templates) {
+                        const select = document.getElementById('manualTaskName');
+                        select.innerHTML = '<option value="">選択してください</option>';
+                        
+                        // フェーズごとにグループ化
+                        const groupedTasks = {};
+                        data.templates.forEach(template => {
+                            if (!groupedTasks[template.phase_name]) {
+                                groupedTasks[template.phase_name] = [];
+                            }
+                            groupedTasks[template.phase_name].push(template);
+                        });
+                        
+                        // フェーズ順にソートして表示
+                        Object.keys(groupedTasks).sort().forEach(phaseName => {
+                            const phaseGroup = document.createElement('optgroup');
+                            phaseGroup.label = phaseName;
+                            
+                            groupedTasks[phaseName].forEach(template => {
+                                const option = document.createElement('option');
+                                option.value = template.task_name;
+                                option.textContent = template.task_name;
+                                phaseGroup.appendChild(option);
+                            });
+                            
+                            select.appendChild(phaseGroup);
+                        });
+                        console.log('タスク選択肢設定完了:', data.templates.length, '件');
+                    }
+                }
+            } catch (error) {
+                console.error('タスク選択肢読み込みエラー:', error);
+            }
+        }
+
+        // フェーズフィルター更新
+        function updatePhaseFilter(phases) {
+            const phaseFilter = document.getElementById('phaseFilter');
+            if (phaseFilter) {
+                // 既存のオプションを保持（全フェーズ）
+                const allPhasesOption = phaseFilter.querySelector('option[value=""]');
+                phaseFilter.innerHTML = '';
+                if (allPhasesOption) {
+                    phaseFilter.appendChild(allPhasesOption);
+                }
+                
+                phases.forEach(phase => {
+                    const option = document.createElement('option');
+                    option.value = phase;
+                    option.textContent = phase;
+                    phaseFilter.appendChild(option);
+                });
+            }
+        }
+
+        // テンプレート検索・フィルター
+        function filterTemplates() {
+            const searchTerm = document.getElementById('templateSearch').value.toLowerCase();
+            const selectedPhase = document.getElementById('phaseFilter').value;
+            
+            const phaseGroups = document.querySelectorAll('.phase-group');
+            const templateCards = document.querySelectorAll('.template-card');
+            
+            let visibleCount = 0;
+            
+            phaseGroups.forEach(phaseGroup => {
+                const phaseName = phaseGroup.getAttribute('data-phase');
+                const cards = phaseGroup.querySelectorAll('.template-card');
+                let phaseVisibleCount = 0;
+                
+                cards.forEach(card => {
+                    const taskName = card.getAttribute('data-task').toLowerCase();
+                    const matchesSearch = searchTerm === '' || taskName.includes(searchTerm);
+                    const matchesPhase = selectedPhase === '' || phaseName === selectedPhase;
+                    
+                    if (matchesSearch && matchesPhase) {
+                        card.style.display = 'block';
+                        phaseVisibleCount++;
+                        visibleCount++;
+                    } else {
+                        card.style.display = 'none';
+                    }
+                });
+                
+                // フェーズグループの表示/非表示
+                if (phaseVisibleCount > 0) {
+                    phaseGroup.style.display = 'block';
+                    // カウント更新
+                    const countElement = phaseGroup.querySelector('.phase-count');
+                    if (countElement) {
+                        countElement.textContent = `${phaseVisibleCount}件`;
+                    }
+                } else {
+                    phaseGroup.style.display = 'none';
+                }
+            });
+            
+            // 検索結果がない場合のメッセージ
+            const container = document.getElementById('templates-content');
+            let noResultsMsg = container.querySelector('.no-results');
+            
+            if (visibleCount === 0) {
+                if (!noResultsMsg) {
+                    noResultsMsg = document.createElement('div');
+                    noResultsMsg.className = 'no-results';
+                    noResultsMsg.innerHTML = '<p>検索条件に一致するテンプレートが見つかりませんでした。</p>';
+                    container.appendChild(noResultsMsg);
+                }
+            } else if (noResultsMsg) {
+                noResultsMsg.remove();
+            }
         }
 
         function closeModal(modalId) {
             document.getElementById(modalId).style.display = 'none';
         }
 
-        // フェーズ追加
+        // フェーズ追加・編集
         document.getElementById('phaseForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            console.log('=== フェーズフォーム送信開始 ===');
+            
+            const formData = new FormData(this);
+            const data = Object.fromEntries(formData.entries());
+            console.log('フォームデータ（raw）:', data);
+            
+            // チェックボックスの値を適切に設定
+            data.is_active = document.getElementById('phaseIsActive').checked ? '1' : '0';
+            console.log('フォームデータ（処理後）:', data);
+            
+            const isEdit = data.id && data.id !== '';
+            const method = isEdit ? 'PUT' : 'POST';
+            const url = isEdit ? `api.php?path=phases/${data.id}` : 'api.php?path=phases';
+            
+            console.log('リクエスト情報:');
+            console.log('- 編集モード:', isEdit);
+            console.log('- メソッド:', method);
+            console.log('- URL:', url);
+            console.log('- 送信データ:', JSON.stringify(data));
+            
+            try {
+                const response = await fetch(url, {
+                    method: method,
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                console.log('レスポンス情報:');
+                console.log('- ステータス:', response.status);
+                console.log('- ステータステキスト:', response.statusText);
+                console.log('- OK:', response.ok);
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error('HTTPエラーレスポンス:', errorText);
+                    throw new Error('フェーズの処理に失敗しました: HTTP ' + response.status);
+                }
+
+                const responseText = await response.text();
+                console.log('生のレスポンス:', responseText);
+
+                let result;
+                try {
+                    result = JSON.parse(responseText);
+                    console.log('JSONパース成功:', result);
+                } catch (parseError) {
+                    console.error('JSONパースエラー:', parseError);
+                    console.error('レスポンステキスト:', responseText);
+                    throw new Error('サーバーレスポンスの解析に失敗しました');
+                }
+
+                if (result.success) {
+                    console.log('フェーズ処理成功');
+                    closeModal('phaseModal');
+                    this.reset();
+                    loadPhases();
+                    
+                    const message = isEdit ? 'フェーズが更新されました' : 'フェーズが正常に追加されました';
+                    showMessage(message, 'success');
+                } else {
+                    console.error('API処理失敗:', result);
+                    throw new Error(result.message || 'フェーズの処理に失敗しました');
+                }
+            } catch (error) {
+                console.error('フェーズ処理エラー:', error);
+                showMessage(error.message, 'error');
+            }
+        });
+
+        // ユーザー追加・編集
+        document.getElementById('userForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             
             const formData = new FormData(this);
             const data = Object.fromEntries(formData.entries());
             
+            // チェックボックスの値を適切に設定
+            data.is_active = document.getElementById('userIsActive').checked ? '1' : '0';
+            
+            const isEdit = data.id && data.id !== '';
+            const method = isEdit ? 'PUT' : 'POST';
+            const url = isEdit ? `api.php?path=admin/users/${data.id}` : 'api.php?path=admin/users';
+            
+            // 編集時でパスワードが空の場合は削除
+            if (isEdit && !data.password) {
+                delete data.password;
+            }
+            
             try {
-                const response = await fetch('api.php?path=phases', {
-                    method: 'POST',
+                const response = await fetch(url, {
+                    method: method,
                     headers: {
                         'Content-Type': 'application/json',
                         'X-Requested-With': 'XMLHttpRequest'
@@ -859,15 +1990,147 @@
                 });
 
                 if (!response.ok) {
-                    throw new Error('フェーズの追加に失敗しました');
+                    throw new Error('ユーザーの処理に失敗しました');
                 }
 
-                closeModal('phaseModal');
-                this.reset();
-                loadPhases();
-                
-                // 成功メッセージ表示
-                showMessage('フェーズが正常に追加されました', 'success');
+                const result = await response.json();
+                if (result.success) {
+                    closeModal('userModal');
+                    this.reset();
+                    loadUsers();
+                    
+                    const message = isEdit ? 'ユーザーが更新されました' : 'ユーザーが正常に追加されました';
+                    showMessage(message, 'success');
+                } else {
+                    throw new Error(result.message || 'ユーザーの処理に失敗しました');
+                }
+            } catch (error) {
+                showMessage(error.message, 'error');
+            }
+        });
+
+        // テンプレート追加・編集
+        document.getElementById('templateForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            const data = Object.fromEntries(formData.entries());
+            
+            // チェックボックスの値を適切に設定
+            data.is_technical_work = document.getElementById('templateIsTechnicalWork').checked ? '1' : '0';
+            // マニュアルありは自動設定のため、送信しない
+            delete data.has_manual;
+            
+            const isEdit = data.id && data.id !== '';
+            const method = isEdit ? 'PUT' : 'POST';
+            const url = isEdit ? `api.php?path=admin/templates/${data.id}` : 'api.php?path=admin/templates';
+            
+            try {
+                const response = await fetch(url, {
+                    method: method,
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                if (!response.ok) {
+                    throw new Error('テンプレートの処理に失敗しました');
+                }
+
+                const result = await response.json();
+                if (result.success) {
+                    closeModal('templateModal');
+                    this.reset();
+                    loadTemplates();
+                    
+                    const message = isEdit ? 'テンプレートが更新されました' : 'テンプレートが正常に追加されました';
+                    showMessage(message, 'success');
+                } else {
+                    throw new Error(result.message || 'テンプレートの処理に失敗しました');
+                }
+            } catch (error) {
+                showMessage(error.message, 'error');
+            }
+        });
+
+        // クライアント追加・編集
+        document.getElementById('clientForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            const data = Object.fromEntries(formData.entries());
+            
+            // チェックボックスの値を適切に設定
+            data.is_active = document.getElementById('clientIsActive').checked ? '1' : '0';
+            
+            const isEdit = data.id && data.id !== '';
+            const method = isEdit ? 'PUT' : 'POST';
+            const url = isEdit ? `api.php?path=admin/clients/${data.id}` : 'api.php?path=admin/clients';
+            
+            try {
+                const response = await fetch(url, {
+                    method: method,
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                if (!response.ok) {
+                    throw new Error('クライアントの処理に失敗しました');
+                }
+
+                const result = await response.json();
+                if (result.success) {
+                    closeModal('clientModal');
+                    this.reset();
+                    loadClients();
+                    
+                    const message = isEdit ? 'クライアントが更新されました' : 'クライアントが正常に追加されました';
+                    showMessage(message, 'success');
+                } else {
+                    throw new Error(result.message || 'クライアントの処理に失敗しました');
+                }
+            } catch (error) {
+                showMessage(error.message, 'error');
+            }
+        });
+
+        // マニュアル追加
+        document.getElementById('manualForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            
+            // ファイルサイズチェック（10MB制限）
+            const file = document.getElementById('manualFile').files[0];
+            if (file && file.size > 10 * 1024 * 1024) {
+                showMessage('ファイルサイズは10MB以下にしてください', 'error');
+                return;
+            }
+            
+            try {
+                const response = await fetch('api.php?path=admin/manuals', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    throw new Error('マニュアルのアップロードに失敗しました');
+                }
+
+                const result = await response.json();
+                if (result.success) {
+                    closeModal('manualModal');
+                    this.reset();
+                    loadManuals();
+                    showMessage('マニュアルが正常にアップロードされました', 'success');
+                } else {
+                    throw new Error(result.message || 'マニュアルのアップロードに失敗しました');
+                }
             } catch (error) {
                 showMessage(error.message, 'error');
             }
@@ -905,40 +2168,324 @@
             }, 5000);
         }
 
-        // 編集・削除関数（プレースホルダー）
+        // フェーズ編集・削除
         function editPhase(id) {
-            alert('編集機能は実装予定です。ID: ' + id);
+            console.log('フェーズ編集開始:', id);
+            
+            // フェーズデータを取得
+            fetch(`api.php?path=phases/${id}`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success && data.phase) {
+                    const phase = data.phase;
+                    
+                    // モーダルを編集モードに設定
+                    document.getElementById('phaseModalTitle').textContent = 'フェーズ編集';
+                    document.getElementById('phaseSubmitBtn').textContent = '更新';
+                    
+                    // フォームに値を設定
+                    document.getElementById('phaseId').value = phase.id;
+                    document.getElementById('phaseName').value = phase.name;
+                    document.getElementById('phaseDescription').value = phase.description || '';
+                    document.getElementById('phaseOrder').value = phase.order_num || 1;
+                    document.getElementById('phaseIsActive').checked = phase.is_active == '1';
+                    
+                    // モーダル表示
+                    document.getElementById('phaseModal').style.display = 'block';
+                } else {
+                    alert('フェーズデータの取得に失敗しました');
+                }
+            })
+            .catch(error => {
+                console.error('フェーズ編集エラー:', error);
+                alert('フェーズデータの取得に失敗しました');
+            });
         }
 
         function deletePhase(id) {
-            if (confirm('このフェーズを削除しますか？')) {
-                alert('削除機能は実装予定です。ID: ' + id);
+            if (confirm('このフェーズを削除しますか？\n※関連するタスクテンプレートも削除されます')) {
+                fetch(`api.php?path=phases/${id}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        showMessage('フェーズが削除されました', 'success');
+                        loadPhases(); // 一覧を再読み込み
+                    } else {
+                        showMessage('フェーズの削除に失敗しました: ' + data.message, 'error');
+                    }
+                })
+                .catch(error => {
+                    console.error('フェーズ削除エラー:', error);
+                    showMessage('フェーズの削除に失敗しました', 'error');
+                });
             }
         }
 
+        // ユーザー編集・削除
         function editUser(id) {
-            alert('編集機能は実装予定です。ID: ' + id);
+            console.log('ユーザー編集開始:', id);
+            
+            // ユーザーデータを取得
+            fetch(`api.php?path=admin/users/${id}`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success && data.user) {
+                    const user = data.user;
+                    
+                    // モーダルを編集モードに設定
+                    document.getElementById('userModalTitle').textContent = 'ユーザー編集';
+                    document.getElementById('userSubmitBtn').textContent = '更新';
+                    document.getElementById('passwordNote').textContent = '(変更時のみ入力)';
+                    
+                    // フォームに値を設定
+                    document.getElementById('userId').value = user.id;
+                    document.getElementById('userEmail').value = user.email;
+                    document.getElementById('userName').value = user.name;
+                    document.getElementById('userRole').value = user.role;
+                    document.getElementById('userPassword').value = ''; // パスワードは空
+                    document.getElementById('userIsActive').checked = user.is_active == '1';
+                    
+                    // モーダル表示
+                    document.getElementById('userModal').style.display = 'block';
+                } else {
+                    alert('ユーザーデータの取得に失敗しました');
+                }
+            })
+            .catch(error => {
+                console.error('ユーザー編集エラー:', error);
+                alert('ユーザーデータの取得に失敗しました');
+            });
         }
 
         function deleteUser(id) {
-            if (confirm('このユーザーを削除しますか？')) {
-                alert('削除機能は実装予定です。ID: ' + id);
+            if (confirm('このユーザーを削除しますか？\n※関連するデータも削除されます')) {
+                fetch(`api.php?path=admin/users/${id}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        showMessage('ユーザーが削除されました', 'success');
+                        loadUsers(); // 一覧を再読み込み
+                    } else {
+                        showMessage('ユーザーの削除に失敗しました: ' + data.message, 'error');
+                    }
+                })
+                .catch(error => {
+                    console.error('ユーザー削除エラー:', error);
+                    showMessage('ユーザーの削除に失敗しました', 'error');
+                });
             }
         }
 
+        // テンプレート編集・削除
         function editTemplate(id) {
-            alert('編集機能は実装予定です。ID: ' + id);
+            console.log('テンプレート編集開始:', id);
+            
+            // まずフェーズ選択肢を読み込んでから、テンプレートデータを取得
+            loadPhaseOptions().then(() => {
+                console.log('フェーズ選択肢読み込み完了');
+                
+                // テンプレートデータを取得
+                fetch(`api.php?path=admin/templates/${id}`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success && data.template) {
+                        const template = data.template;
+                        console.log('テンプレートデータ取得:', template);
+                        
+                        // モーダルを編集モードに設定
+                        document.getElementById('templateModalTitle').textContent = 'テンプレート編集';
+                        document.getElementById('templateSubmitBtn').textContent = '更新';
+                        
+                        // フォームに値を設定
+                        document.getElementById('templateId').value = template.id;
+                        
+                        // フェーズ名を設定（少し遅延を入れて確実に選択肢が読み込まれた後に設定）
+                        setTimeout(() => {
+                            const phaseSelect = document.getElementById('templatePhaseName');
+                            console.log('フェーズ選択肢設定:', template.phase_name);
+                            console.log('利用可能な選択肢:', Array.from(phaseSelect.options).map(opt => opt.value));
+                            phaseSelect.value = template.phase_name;
+                        }, 100);
+                        
+                                                 document.getElementById('templateTaskName').value = template.task_name;
+                         document.getElementById('templateContent').value = template.content || '';
+                         document.getElementById('templateTaskOrder').value = template.task_order || 1;
+                         document.getElementById('templateIsTechnicalWork').checked = template.is_technical_work == '1';
+                         // マニュアルありは自動設定のため、表示のみ（編集不可）
+                         document.getElementById('templateHasManual').checked = template.has_manual == '1';
+                        
+                        // モーダル表示
+                        document.getElementById('templateModal').style.display = 'block';
+                    } else {
+                        alert('テンプレートデータの取得に失敗しました');
+                    }
+                })
+                .catch(error => {
+                    console.error('テンプレート編集エラー:', error);
+                    alert('テンプレートデータの取得に失敗しました');
+                });
+            });
         }
 
         function deleteTemplate(id) {
-            if (confirm('このテンプレートを削除しますか？')) {
-                alert('削除機能は実装予定です。ID: ' + id);
+            if (confirm('このテンプレートを削除しますか？\n※関連するタスクも削除されます')) {
+                fetch(`api.php?path=admin/templates/${id}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        showMessage('テンプレートが削除されました', 'success');
+                        loadTemplates(); // 一覧を再読み込み
+                    } else {
+                        showMessage('テンプレートの削除に失敗しました: ' + data.message, 'error');
+                    }
+                })
+                .catch(error => {
+                    console.error('テンプレート削除エラー:', error);
+                    showMessage('テンプレートの削除に失敗しました', 'error');
+                });
             }
         }
 
+        // マニュアル追加モーダル表示
+        function showAddManualModal() {
+            document.getElementById('manualModalTitle').textContent = '新規マニュアル追加';
+            document.getElementById('manualSubmitBtn').textContent = '追加';
+            document.getElementById('manualForm').reset();
+            
+            // タスク名のプルダウンを読み込む
+            loadTaskOptions().then(() => {
+                document.getElementById('manualModal').style.display = 'block';
+            });
+        }
+
+        // クライアント編集・削除
+        function editClient(id) {
+            console.log('クライアント編集開始:', id);
+            
+            // クライアントデータを取得
+            fetch(`api.php?path=admin/clients/${id}`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success && data.client) {
+                    const client = data.client;
+                    
+                    // モーダルを編集モードに設定
+                    document.getElementById('clientModalTitle').textContent = 'クライアント編集';
+                    document.getElementById('clientSubmitBtn').textContent = '更新';
+                    
+                    // フォームに値を設定
+                    document.getElementById('clientId').value = client.id;
+                    document.getElementById('clientName').value = client.name;
+                    document.getElementById('clientCode').value = client.code || '';
+                    document.getElementById('clientContactPerson').value = client.contact_person || '';
+                    document.getElementById('clientEmail').value = client.email || '';
+                    document.getElementById('clientPhone').value = client.phone || '';
+                    document.getElementById('clientAddress').value = client.address || '';
+                    document.getElementById('clientDescription').value = client.description || '';
+                    document.getElementById('clientIsActive').checked = client.is_active == '1';
+                    
+                    // モーダル表示
+                    document.getElementById('clientModal').style.display = 'block';
+                } else {
+                    alert('クライアントデータの取得に失敗しました');
+                }
+            })
+            .catch(error => {
+                console.error('クライアント編集エラー:', error);
+                alert('クライアントデータの取得に失敗しました');
+            });
+        }
+
+        function deleteClient(id) {
+            if (confirm('このクライアントを削除しますか？\n※関連するプロジェクトも削除されます')) {
+                fetch(`api.php?path=admin/clients/${id}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        showMessage('クライアントが削除されました', 'success');
+                        loadClients(); // 一覧を再読み込み
+                    } else {
+                        showMessage('クライアントの削除に失敗しました: ' + data.message, 'error');
+                    }
+                })
+                .catch(error => {
+                    console.error('クライアント削除エラー:', error);
+                    showMessage('クライアントの削除に失敗しました', 'error');
+                });
+            }
+        }
+
+        // マニュアル削除
         function deleteManual(id) {
-            if (confirm('このマニュアルを削除しますか？')) {
-                alert('削除機能は実装予定です。ID: ' + id);
+            if (confirm('このマニュアルを削除しますか？\n※ファイルも削除されます')) {
+                fetch(`api.php?path=admin/manuals/${id}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        showMessage('マニュアルが削除されました', 'success');
+                        loadManuals(); // 一覧を再読み込み
+                    } else {
+                        showMessage('マニュアルの削除に失敗しました: ' + data.message, 'error');
+                    }
+                })
+                .catch(error => {
+                    console.error('マニュアル削除エラー:', error);
+                    showMessage('マニュアルの削除に失敗しました', 'error');
+                });
             }
         }
 
