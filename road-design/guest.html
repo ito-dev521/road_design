@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ゲストアクセス - 道路詳細設計管理システム</title>
+    <link rel="stylesheet" href="assets/css/style.css">
+    <style>
+        .guest-notice {
+            background: linear-gradient(135deg, #e3f2fd 0%, #f3e5f5 100%);
+            border: 1px solid #bbdefb;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 24px;
+            text-align: center;
+        }
+
+        .guest-notice h3 {
+            color: #1976d2;
+            margin-bottom: 8px;
+            font-size: 18px;
+        }
+
+        .guest-notice p {
+            color: #666;
+            margin: 0;
+            font-size: 14px;
+        }
+
+        .guest-actions {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            margin-bottom: 24px;
+        }
+
+        .guest-mode-badge {
+            background: #e8f5e8;
+            color: #2e7d32;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+            display: inline-block;
+            margin-left: 8px;
+        }
+
+        .project-guest-view {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 16px;
+        }
+
+        .project-guest-view h4 {
+            margin: 0 0 8px 0;
+            color: #495057;
+        }
+
+        .project-meta-guest {
+            display: flex;
+            gap: 16px;
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 12px;
+        }
+
+        .login-prompt {
+            text-align: center;
+            margin-top: 32px;
+            padding: 24px;
+            background: linear-gradient(135deg, #fff3e0 0%, #fce4ec 100%);
+            border-radius: 8px;
+            border: 1px solid #ffcc02;
+        }
+
+        .login-prompt h3 {
+            color: #f57c00;
+            margin-bottom: 8px;
+        }
+
+        .login-prompt p {
+            color: #666;
+            margin-bottom: 16px;
+        }
+
+        .restricted-feature {
+            position: relative;
+            opacity: 0.6;
+            pointer-events: none;
+        }
+
+        .restricted-feature::after {
+            content: '🔒 ログインが必要です';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 4px;
+            font-size: 14px;
+            z-index: 10;
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- ヘッダー -->
+        <header class="header">
+            <div class="header-left">
+                <h1 class="app-title">🛣️ 道路詳細設計管理システム</h1>
+                <span class="guest-mode-badge">ゲストモード</span>
+            </div>
+            <div class="header-right">
+                <button class="btn btn-primary" id="loginBtn">ログイン</button>
+            </div>
+        </header>
+
+        <!-- メインコンテンツ -->
+        <main class="main-content">
+            <!-- ゲスト通知 -->
+            <div class="guest-notice">
+                <h3>👁️ ゲストアクセスモード</h3>
+                <p>プロジェクトの基本情報と進捗状況を閲覧できます。一部の機能はログインが必要です。</p>
+            </div>
+
+            <!-- アクションボタン -->
+            <div class="guest-actions">
+                <button class="btn btn-info" onclick="refreshProjects()">🔄 更新</button>
+                <button class="btn btn-success" onclick="showLoginPrompt()">🚀 ログイン</button>
+            </div>
+
+            <!-- プロジェクト一覧 -->
+            <section class="project-section">
+                <div class="project-header">
+                    <h2>プロジェクト一覧</h2>
+                    <span id="projectCount">読み込み中...</span>
+                </div>
+
+                <div id="projectsContainer">
+                    <div class="loading" style="text-align: center; padding: 40px;">
+                        <div class="loading-spinner" style="display: inline-block; margin-right: 8px;"></div>
+                        プロジェクト情報を読み込み中...
+                    </div>
+                </div>
+            </section>
+
+            <!-- 機能制限のお知らせ -->
+            <div class="login-prompt">
+                <h3>🚀 より多くの機能を利用する</h3>
+                <p>ログインすることで、タスクの編集、ファイルのアップロード、管理者機能など<br>すべての機能をご利用いただけます。</p>
+                <button class="btn btn-primary" onclick="window.location.href='login.html'">ログイン画面へ</button>
+            </div>
+        </main>
+    </div>
+
+    <!-- ログインプロンプトモーダル -->
+    <div class="modal-overlay" id="loginPromptModal" style="display: none;">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>ログインが必要です</h3>
+                <button class="modal-close" onclick="hideLoginPrompt()">&times;</button>
+            </div>
+            <div class="modal-body" style="text-align: center; padding: 24px;">
+                <p style="margin-bottom: 20px;">この機能を利用するにはログインが必要です。</p>
+                <button class="btn btn-primary" onclick="window.location.href='login.html'">ログインする</button>
+                <button class="btn btn-secondary" onclick="hideLoginPrompt()" style="margin-left: 12px;">キャンセル</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ローディング -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-spinner"></div>
+        <div class="loading-text">読み込み中...</div>
+    </div>
+
+    <script>
+        let projects = [];
+
+        // ページ初期化
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Guest page initialized');
+
+            // イベントリスナー設定
+            setupGuestPage();
+
+            // プロジェクト読み込み
+            loadProjects();
+        });
+
+        // ゲストページのセットアップ
+        function setupGuestPage() {
+            // ログインボタンのイベント
+            document.getElementById('loginBtn').addEventListener('click', function() {
+                window.location.href = 'login.html';
+            });
+        }
+
+        // プロジェクト読み込み
+        async function loadProjects() {
+            const loading = document.getElementById('loadingOverlay');
+            loading.classList.add('active');
+
+            try {
+                console.log('Loading projects for guest...');
+
+                const response = await fetch('api.php?path=projects', {
+                    method: 'GET',
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                });
+
+                const result = await response.json();
+                console.log('Projects loaded:', result);
+
+                if (result.success) {
+                    projects = result.projects || [];
+                    displayProjects(projects);
+                } else {
+                    console.error('Failed to load projects:', result.message);
+                    showError('プロジェクトの読み込みに失敗しました。');
+                }
+            } catch (error) {
+                console.error('Error loading projects:', error);
+                showError('ネットワークエラーが発生しました。');
+            } finally {
+                loading.classList.remove('active');
+            }
+        }
+
+        // プロジェクト表示
+        function displayProjects(projects) {
+            const container = document.getElementById('projectsContainer');
+            const countElement = document.getElementById('projectCount');
+
+            countElement.textContent = `${projects.length}件`;
+
+            if (projects.length === 0) {
+                container.innerHTML = '<div class="empty-state">プロジェクトがありません。</div>';
+                return;
+            }
+
+            container.innerHTML = '';
+
+            projects.forEach(project => {
+                const projectElement = createProjectElement(project);
+                container.appendChild(projectElement);
+            });
+        }
+
+        // プロジェクト要素作成
+        function createProjectElement(project) {
+            const projectDiv = document.createElement('div');
+            projectDiv.className = 'project-guest-view';
+
+            // 完了タスク数と総タスク数を計算
+            const totalTasks = project.total_tasks || 0;
+            const completedTasks = project.completed_tasks || 0;
+            const progressPercent = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+
+            projectDiv.innerHTML = `
+                <h4>${project.name || 'プロジェクト名なし'}</h4>
+                <div class="project-meta-guest">
+                    <span>📅 ${project.start_date || '開始日未設定'} ～ ${project.target_end_date || '終了日未設定'}</span>
+                    <span>📊 進捗: ${progressPercent}% (${completedTasks}/${totalTasks})</span>
+                    <span>🏢 ${project.client_name || '発注者未設定'}</span>
+                </div>
+                <div style="margin-top: 12px;">
+                    <div style="background: #e9ecef; border-radius: 4px; height: 8px; overflow: hidden;">
+                        <div style="background: linear-gradient(90deg, #28a745, #20c997); height: 100%; width: ${progressPercent}%; transition: width 0.3s ease;"></div>
+                    </div>
+                </div>
+                <div style="margin-top: 12px; font-size: 12px; color: #666;">
+                    <button class="btn btn-sm btn-info" onclick="showLoginPrompt()" style="font-size: 12px; padding: 4px 8px;">詳細を見る</button>
+                </div>
+            `;
+
+            return projectDiv;
+        }
+
+        // プロジェクト更新
+        function refreshProjects() {
+            loadProjects();
+        }
+
+        // ログインプロンプト表示
+        function showLoginPrompt() {
+            document.getElementById('loginPromptModal').style.display = 'flex';
+        }
+
+        // ログインプロンプト非表示
+        function hideLoginPrompt() {
+            document.getElementById('loginPromptModal').style.display = 'none';
+        }
+
+        // エラー表示
+        function showError(message) {
+            const container = document.getElementById('projectsContainer');
+            container.innerHTML = `
+                <div style="text-align: center; padding: 40px; color: #dc3545;">
+                    <h3>⚠️ エラー</h3>
+                    <p>${message}</p>
+                    <button class="btn btn-primary" onclick="loadProjects()">再試行</button>
+                </div>
+            `;
+        }
+
+        // グローバル関数
+        window.refreshProjects = refreshProjects;
+        window.showLoginPrompt = showLoginPrompt;
+        window.hideLoginPrompt = hideLoginPrompt;
+    </script>
+</body>
+</html>

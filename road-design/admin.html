@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>設定 - 道路詳細設計管理システム</title>
+    <link rel="stylesheet" href="assets/css/style.css">
+    <link rel="stylesheet" href="assets/css/admin.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- ヘッダー -->
+        <header class="header">
+            <div class="header-left">
+                <h1 class="app-title">🛣️ 道路詳細設計管理システム - 設定</h1>
+            </div>
+            <div class="header-right">
+                <div class="user-info">
+                    <span id="userName">Loading...</span>
+                    <span class="user-role" id="userRole"></span>
+                </div>
+                <button class="btn btn-outline" id="backToMain">メインページに戻る</button>
+                <button class="btn btn-outline" id="logoutBtn">ログアウト</button>
+            </div>
+        </header>
+
+        <!-- メインコンテンツ -->
+        <main class="main-content">
+            <!-- 管理メニュー -->
+            <section class="admin-menu">
+                <div class="menu-tabs">
+                    <button class="menu-tab active" data-tab="users">👥 ユーザー管理</button>
+                    <button class="menu-tab" data-tab="phases">📊 フェーズ管理</button>
+                    <button class="menu-tab" data-tab="templates">📋 タスクテンプレート管理</button>
+                    <button class="menu-tab" data-tab="manuals">📚 マニュアル管理</button>
+                </div>
+            </section>
+
+            <!-- ユーザー管理タブ -->
+            <section class="admin-content" id="users-tab">
+                <div class="content-header">
+                    <h2>ユーザー管理</h2>
+                    <button class="btn btn-primary" id="addUserBtn">新規ユーザー追加</button>
+                </div>
+
+                <div class="users-list" id="usersList">
+                    <!-- ユーザー一覧はJavaScriptで動的生成 -->
+                </div>
+            </section>
+
+            <!-- フェーズ管理タブ -->
+            <section class="admin-content" id="phases-tab" style="display: none;">
+                <div class="content-header">
+                    <h2>フェーズ管理</h2>
+                    <button class="btn btn-primary" id="addPhaseBtn">新規フェーズ追加</button>
+                </div>
+
+                <div class="phases-list" id="phasesList">
+                    <!-- フェーズ一覧はJavaScriptで動的生成 -->
+                </div>
+            </section>
+
+            <!-- タスクテンプレート管理タブ -->
+            <section class="admin-content" id="templates-tab" style="display: none;">
+                <div class="content-header">
+                    <h2>タスクテンプレート管理</h2>
+                    <button class="btn btn-primary" id="addTemplateBtn">新規テンプレート追加</button>
+                </div>
+
+                <div class="templates-list" id="templatesList">
+                    <!-- テンプレート一覧はJavaScriptで動的生成 -->
+                </div>
+            </section>
+
+            <!-- マニュアル管理タブ -->
+            <section class="admin-content" id="manuals-tab" style="display: none;">
+                <div class="content-header">
+                    <h2>マニュアル管理</h2>
+                    <button class="btn btn-primary" id="uploadManualBtn">マニュアルアップロード</button>
+                </div>
+
+                <div class="manuals-list" id="manualsList">
+                    <!-- マニュアル一覧はJavaScriptで動的生成 -->
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- モーダル: 新規ユーザー追加 -->
+    <div class="modal-overlay" id="addUserModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>新規ユーザー追加</h3>
+                <button class="modal-close" id="closeAddUserModal">&times;</button>
+            </div>
+            <form id="addUserForm">
+                <div class="form-group">
+                    <label for="userEmail">メールアドレス *</label>
+                    <input type="email" id="userEmail" required>
+                </div>
+                <div class="form-group">
+                    <label for="userName">名前 *</label>
+                    <input type="text" id="userName" required>
+                </div>
+                <div class="form-group">
+                    <label for="userRole">権限 *</label>
+                    <select id="userRole" required>
+                        <option value="general">一般スタッフ</option>
+                        <option value="technical">技術者</option>
+                        <option value="manager">管理者</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="userPassword">初期パスワード *</label>
+                    <input type="password" id="userPassword" required>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" id="cancelAddUser">キャンセル</button>
+                    <button type="submit" class="btn btn-primary">追加</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- モーダル: ユーザー編集 -->
+    <div class="modal-overlay" id="editUserModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>ユーザー編集</h3>
+                <button class="modal-close" id="closeEditUserModal">&times;</button>
+            </div>
+            <form id="editUserForm">
+                <div class="form-group">
+                    <label for="editUserEmail">メールアドレス</label>
+                    <input type="email" id="editUserEmail" readonly>
+                </div>
+                <div class="form-group">
+                    <label for="editUserName">名前</label>
+                    <input type="text" id="editUserName" required>
+                </div>
+                <div class="form-group">
+                    <label for="editUserRole">権限</label>
+                    <select id="editUserRole" required>
+                        <option value="general">一般スタッフ</option>
+                        <option value="technical">技術者</option>
+                        <option value="manager">管理者</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="editUserStatus">ステータス</label>
+                    <select id="editUserStatus">
+                        <option value="1">有効</option>
+                        <option value="0">無効</option>
+                    </select>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" id="cancelEditUser">キャンセル</button>
+                    <button type="submit" class="btn btn-primary">更新</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- モーダル: フェーズ追加/編集 -->
+    <div class="modal-overlay" id="phaseModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 id="phaseModalTitle">新規フェーズ追加</h3>
+                <button class="modal-close" id="closePhaseModal">&times;</button>
+            </div>
+            <form id="phaseForm">
+                <div class="form-group">
+                    <label for="phaseName">フェーズ名 *</label>
+                    <input type="text" id="phaseName" required>
+                </div>
+                <div class="form-group">
+                    <label for="phaseDescription">説明</label>
+                    <textarea id="phaseDescription" rows="3"></textarea>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" id="cancelPhase">キャンセル</button>
+                    <button type="submit" class="btn btn-primary">保存</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- モーダル: タスクテンプレート追加/編集 -->
+    <div class="modal-overlay" id="templateModal">
+        <div class="modal modal-large">
+            <div class="modal-header">
+                <h3 id="templateModalTitle">新規タスクテンプレート追加</h3>
+                <button class="modal-close" id="closeTemplateModal">&times;</button>
+            </div>
+            <form id="templateForm">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="templatePhase">フェーズ *</label>
+                        <select id="templatePhase" required>
+                            <option value="">フェーズを選択</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="templateOrder">順序 *</label>
+                        <input type="number" id="templateOrder" min="1" required>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="templateName">タスク名 *</label>
+                    <input type="text" id="templateName" required>
+                </div>
+                <div class="form-group">
+                    <label for="templateDescription">説明</label>
+                    <textarea id="templateDescription" rows="3"></textarea>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="templateHours">所要時間（時間）</label>
+                        <input type="number" id="templateHours" min="0" step="0.5">
+                    </div>
+                    <div class="form-group">
+                        <label for="templateTechnical">技術者作業</label>
+                        <input type="checkbox" id="templateTechnical">
+                    </div>
+                    <div class="form-group">
+                        <label for="templateManual">マニュアルあり</label>
+                        <input type="checkbox" id="templateManual">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" id="cancelTemplate">キャンセル</button>
+                    <button type="submit" class="btn btn-primary">保存</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- モーダル: マニュアルアップロード -->
+    <div class="modal-overlay" id="manualModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>マニュアルアップロード</h3>
+                <button class="modal-close" id="closeManualModal">&times;</button>
+            </div>
+            <form id="manualForm">
+                <div class="form-group">
+                    <label for="manualFile">ファイル選択 *</label>
+                    <input type="file" id="manualFile" accept=".pdf,.doc,.docx,.xls,.xlsx" required>
+                </div>
+                <div class="form-group">
+                    <label for="manualName">ファイル名</label>
+                    <input type="text" id="manualName" placeholder="自動設定されます">
+                </div>
+                <div class="form-group">
+                    <label for="manualDescription">説明</label>
+                    <textarea id="manualDescription" rows="3" placeholder="ファイルの説明を入力"></textarea>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" id="cancelManual">キャンセル</button>
+                    <button type="submit" class="btn btn-primary">アップロード</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ローディング -->
+    <div class="loading-overlay" id="loadingOverlay" style="display: none;">
+        <div class="loading-spinner"></div>
+        <div class="loading-text">読み込み中...</div>
+    </div>
+
+    <!-- アラート -->
+    <div class="alert-container" id="alertContainer"></div>
+
+    <script src="assets/js/admin.js"></script>
+</body>
+</html>

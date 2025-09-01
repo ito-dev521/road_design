@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>道路詳細設計管理システム</title>
+    <link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- ヘッダー -->
+        <header class="header">
+            <div class="header-left">
+                <h1 class="app-title">🛣️ 道路詳細設計管理システム</h1>
+            </div>
+            <div class="header-right">
+                <div class="user-info">
+                    <span id="userName">Loading...</span>
+                    <span class="user-role" id="userRole"></span>
+                </div>
+                <a href="admin.html" class="btn btn-info" id="settingsLink">設定</a>
+                <button class="btn btn-outline" id="logoutBtn">ログアウト</button>
+            </div>
+        </header>
+
+        <!-- メインコンテンツ -->
+        <main class="main-content">
+            <!-- プロジェクト選択/作成エリア -->
+            <section class="project-section">
+                <div class="project-header">
+                    <h2>プロジェクト管理</h2>
+                    <button class="btn btn-primary" id="newProjectBtn">新規プロジェクト</button>
+                </div>
+                
+                <div class="project-selector">
+                    <select id="projectSelect" class="project-select">
+                        <option value="">プロジェクトを選択してください</option>
+                    </select>
+                </div>
+            </section>
+
+            <!-- プロジェクト情報 -->
+            <section class="project-info" id="projectInfo" style="display: none;">
+                <div class="project-details">
+                    <h3 id="projectName"></h3>
+                    <div class="project-meta">
+                        <span id="projectClient"></span>
+                        <span id="projectPeriod"></span>
+                        <span class="project-status" id="projectStatus"></span>
+                    </div>
+                </div>
+                
+                <!-- 進捗サマリー -->
+                <div class="progress-summary">
+                    <div class="progress-card">
+                        <div class="progress-number" id="totalTasks">0</div>
+                        <div class="progress-label">総タスク数</div>
+                    </div>
+                    <div class="progress-card">
+                        <div class="progress-number" id="completedTasks">0</div>
+                        <div class="progress-label">完了済み</div>
+                    </div>
+                    <div class="progress-card">
+                        <div class="progress-number" id="inProgressTasks">0</div>
+                        <div class="progress-label">進行中</div>
+                    </div>
+                    <div class="progress-card">
+                        <div class="progress-number danger" id="overdueTasks">0</div>
+                        <div class="progress-label">遅延</div>
+                    </div>
+                </div>
+                
+                <!-- プログレスバー -->
+                <div class="overall-progress">
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progressFill"></div>
+                    </div>
+                    <span class="progress-text" id="progressText">0%</span>
+                </div>
+            </section>
+
+            <!-- タスク管理エリア -->
+            <section class="task-section" id="taskSection" style="display: none;">
+                <div class="task-filters">
+                    <button class="filter-btn active" data-phase="all">すべて</button>
+                    <button class="filter-btn" data-phase="フェーズ1">フェーズ1</button>
+                    <button class="filter-btn" data-phase="フェーズ2">フェーズ2</button>
+                    <button class="filter-btn" data-phase="フェーズ3">フェーズ3</button>
+                </div>
+
+                <!-- フェーズコンテナはJavaScriptで動的生成 -->
+            </section>
+        </main>
+    </div>
+
+    <!-- モーダル: 新規プロジェクト作成 -->
+    <div class="modal-overlay" id="newProjectModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>新規プロジェクト作成</h3>
+                <button class="modal-close" id="closeNewProjectModal">&times;</button>
+            </div>
+            <form id="newProjectForm">
+                <div class="form-group">
+                    <label for="projectNameInput">プロジェクト名 *</label>
+                    <input type="text" id="projectNameInput" required>
+                </div>
+                <div class="form-group">
+                    <label for="projectCodeInput">プロジェクトコード</label>
+                    <input type="text" id="projectCodeInput" placeholder="例: RD2024-001">
+                </div>
+                <div class="form-group">
+                    <label for="clientNameInput">発注者名</label>
+                    <input type="text" id="clientNameInput">
+                </div>
+                <div class="form-group">
+                    <label for="descriptionInput">概要</label>
+                    <textarea id="descriptionInput" rows="3"></textarea>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="startDateInput">開始予定日</label>
+                        <input type="date" id="startDateInput">
+                    </div>
+                    <div class="form-group">
+                        <label for="endDateInput">完了予定日</label>
+                        <input type="date" id="endDateInput">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" id="cancelNewProject">キャンセル</button>
+                    <button type="submit" class="btn btn-primary">作成</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- モーダル: タスク詳細 -->
+    <div class="modal-overlay" id="taskModal">
+        <div class="modal task-modal">
+            <div class="modal-header">
+                <h3 id="taskModalTitle"></h3>
+                <button class="modal-close" id="closeTaskModal">&times;</button>
+            </div>
+            <div class="task-modal-content">
+                <div class="task-info">
+                    <div class="task-status-selector">
+                        <label>ステータス:</label>
+                        <select id="taskStatusSelect">
+                            <option value="not_started">未着手</option>
+                            <option value="in_progress">進行中</option>
+                            <option value="completed">完了</option>
+                            <option value="not_applicable">対象外</option>
+                        </select>
+                    </div>
+                    
+                    <div class="task-assignment">
+                        <label>担当者:</label>
+                        <select id="taskAssigneeSelect">
+                            <option value="">未割当</option>
+                        </select>
+                    </div>
+                    
+                    <div class="task-date">
+                        <label>予定日:</label>
+                        <input type="date" id="taskPlannedDate">
+                    </div>
+                    
+                    <div class="task-meta">
+                        <div class="task-meta-item">
+                            <span class="meta-label">技術者作業:</span>
+                            <span id="taskTechnical"></span>
+                        </div>
+                        <div class="task-meta-item">
+                            <span class="meta-label">マニュアル:</span>
+                            <span id="taskManual"></span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="task-notes">
+                    <label>作業メモ:</label>
+                    <textarea id="taskNotesInput" rows="4" placeholder="作業に関するメモを入力してください..."></textarea>
+                </div>
+                
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" id="cancelTaskEdit">キャンセル</button>
+                    <button type="button" class="btn btn-primary" id="saveTaskChanges">保存</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ローディング -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-spinner"></div>
+        <div class="loading-text">読み込み中...</div>
+    </div>
+
+    <script src="assets/js/main.js"></script>
+    <script>
+        console.log('HTML script tag executed');
+
+        // JavaScriptファイルの読み込み確認
+        function checkJavaScriptLoad() {
+            console.log('Checking JavaScript status...');
+
+            if (typeof RoadDesignApp === 'function') {
+                console.log('✓ RoadDesignApp class is available');
+            } else {
+                console.error('✗ RoadDesignApp class not found');
+            }
+
+            if (window.roadDesignApp) {
+                console.log('✓ RoadDesignApp instance exists');
+            } else {
+                console.log('✗ RoadDesignApp instance not found');
+            }
+
+            // グローバル関数の確認
+            if (typeof debugRoadDesign === 'function') {
+                console.log('✓ debugRoadDesign function is available');
+            } else {
+                console.error('✗ debugRoadDesign function not found');
+            }
+
+            if (typeof goToAdmin === 'function') {
+                console.log('✓ goToAdmin function is available');
+            } else {
+                console.error('✗ goToAdmin function not found');
+            }
+
+            // ボタンの存在確認とイベントリスナー設定
+            const debugBtn = document.getElementById('settingsLink');
+            const adminBtn = null;
+            const directAdminBtn = null;
+
+            console.log('Settings link element:', debugBtn);
+
+            // デバッグボタンにイベントリスナーを設定
+            // a要素で直接遷移するため追加イベントは不要
+        }
+
+        // DOMが完全に読み込まれた後にチェックを実行
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', checkJavaScriptLoad);
+        } else {
+            checkJavaScriptLoad();
+        }
+
+        // 追加のチェック（念のため）
+        setTimeout(checkJavaScriptLoad, 1000);
+        setTimeout(checkJavaScriptLoad, 3000);
+    </script>
+</body>
+</html>
