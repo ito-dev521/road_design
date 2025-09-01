@@ -684,6 +684,116 @@ class ApiController {
             'message' => 'フェーズが削除されました'
         ];
     }
+
+    // テンプレート一覧（一般ユーザー向け）
+    public function getTemplates() {
+        $this->auth->requireLogin();
+
+        $templates = $this->db->getAllTemplates();
+        if ($templates === false) {
+            throw new Exception('Failed to retrieve templates');
+        }
+
+        return [
+            'success' => true,
+            'templates' => $templates
+        ];
+    }
+
+    // マニュアル一覧（一般ユーザー向け）
+    public function getManuals() {
+        $this->auth->requireLogin();
+
+        $manuals = $this->db->getAllManuals();
+        if ($manuals === false) {
+            throw new Exception('Failed to retrieve manuals');
+        }
+
+        return [
+            'success' => true,
+            'manuals' => $manuals
+        ];
+    }
+
+    // タスク一覧
+    public function getTasks() {
+        $this->auth->requireLogin();
+
+        $projectId = $_GET['project_id'] ?? null;
+        
+        if ($projectId) {
+            $tasks = $this->db->getProjectTasks($projectId);
+        } else {
+            $tasks = $this->db->getAllTasks();
+        }
+
+        if ($tasks === false) {
+            throw new Exception('Failed to retrieve tasks');
+        }
+
+        return [
+            'success' => true,
+            'tasks' => $tasks
+        ];
+    }
+
+    // 統計概要
+    public function getStatsOverview() {
+        $this->auth->requireLogin();
+
+        $stats = $this->db->getSystemStatistics();
+        if ($stats === false) {
+            throw new Exception('Failed to retrieve statistics');
+        }
+
+        return [
+            'success' => true,
+            'total_projects' => $stats['total_projects'] ?? 0,
+            'active_projects' => $stats['active_projects'] ?? 0,
+            'total_tasks' => $stats['total_tasks'] ?? 0,
+            'completed_tasks' => $stats['completed_tasks'] ?? 0
+        ];
+    }
+
+    // ユーザープロフィール
+    public function getUserProfile() {
+        $this->auth->requireLogin();
+
+        $user = $this->auth->getCurrentUser();
+        if (!$user) {
+            throw new Exception('User not found');
+        }
+
+        return [
+            'success' => true,
+            'name' => $user['name'],
+            'email' => $user['email'],
+            'role' => $user['role']
+        ];
+    }
+
+    // フェーズ作成（一般ユーザー向け）
+    public function createPhase($input) {
+        $this->auth->requirePermission('manager');
+
+        $name = trim($input['name'] ?? '');
+        $description = trim($input['description'] ?? '');
+        $orderNum = intval($input['order_num'] ?? 1);
+
+        if (empty($name)) {
+            throw new Exception('Phase name is required', 400);
+        }
+
+        $result = $this->db->createPhase($name, $description, $orderNum);
+        if (!$result) {
+            throw new Exception('Failed to create phase');
+        }
+
+        return [
+            'success' => true,
+            'message' => 'フェーズが作成されました'
+        ];
+    }
 }
 
 // エラーハンドリング
