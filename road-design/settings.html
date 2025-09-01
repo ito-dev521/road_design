@@ -1,0 +1,953 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>道路詳細設計管理システム - 設定</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f5f5f5;
+            color: #333;
+        }
+
+        .header {
+            background: white;
+            padding: 1rem 2rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .logo-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #ffd700, #ffed4e);
+            border-radius: 8px;
+            position: relative;
+        }
+
+        .logo-icon::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 30%;
+            background: #666;
+            border-radius: 0 0 8px 8px;
+        }
+
+        .logo-text h1 {
+            font-size: 1.5rem;
+            color: #333;
+            margin-bottom: 0.25rem;
+        }
+
+        .logo-text p {
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+        .user-section {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .user-info {
+            text-align: right;
+        }
+
+        .user-info h3 {
+            font-size: 1rem;
+            color: #333;
+            margin-bottom: 0.5rem;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .btn {
+            padding: 0.5rem 1rem;
+            border: 2px solid #007bff;
+            background: white;
+            color: #007bff;
+            border-radius: 6px;
+            text-decoration: none;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .btn:hover {
+            background: #007bff;
+            color: white;
+        }
+
+        .btn-primary {
+            background: #007bff;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #0056b3;
+        }
+
+        .nav-tabs {
+            background: white;
+            padding: 0 2rem;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .nav-tabs ul {
+            list-style: none;
+            display: flex;
+            gap: 0;
+        }
+
+        .nav-tabs li {
+            margin: 0;
+        }
+
+        .nav-tabs a {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 1rem 1.5rem;
+            text-decoration: none;
+            color: #666;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s ease;
+        }
+
+        .nav-tabs a:hover {
+            color: #007bff;
+            background: #f8f9fa;
+        }
+
+        .nav-tabs a.active {
+            color: #007bff;
+            border-bottom-color: #007bff;
+            background: #f8f9fa;
+        }
+
+        .nav-icon {
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .main-content {
+            padding: 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .content-panel {
+            background: white;
+            border-radius: 12px;
+            padding: 2rem;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            min-height: 400px;
+        }
+
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 2px solid #f0f0f0;
+        }
+
+        .panel-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .add-button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 6px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+
+        .add-button:hover {
+            background: #0056b3;
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+
+        .data-table th,
+        .data-table td {
+            padding: 1rem;
+            text-align: left;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .data-table th {
+            background: #f8f9fa;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .data-table tr:hover {
+            background: #f8f9fa;
+        }
+
+        .status-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+
+        .status-active {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-inactive {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .action-buttons-small {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .btn-small {
+            padding: 0.25rem 0.5rem;
+            border: 1px solid #ddd;
+            background: white;
+            color: #666;
+            border-radius: 4px;
+            text-decoration: none;
+            font-size: 0.8rem;
+            cursor: pointer;
+        }
+
+        .btn-small:hover {
+            background: #f8f9fa;
+        }
+
+        .btn-edit {
+            border-color: #ffc107;
+            color: #856404;
+        }
+
+        .btn-delete {
+            border-color: #dc3545;
+            color: #721c24;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 2rem;
+            color: #666;
+        }
+
+        .error-message {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 1rem;
+            border-radius: 6px;
+            margin-bottom: 1rem;
+        }
+
+        .success-message {
+            background: #d4edda;
+            color: #155724;
+            padding: 1rem;
+            border-radius: 6px;
+            margin-bottom: 1rem;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        /* モーダルスタイル */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+        }
+
+        .modal-content {
+            background-color: white;
+            margin: 5% auto;
+            padding: 2rem;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .modal-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+        }
+
+        .close {
+            color: #aaa;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .close:hover {
+            color: #000;
+        }
+
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            color: #333;
+        }
+
+        .form-group input,
+        .form-group textarea,
+        .form-group select {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 1rem;
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .form-actions {
+            display: flex;
+            gap: 1rem;
+            justify-content: flex-end;
+            margin-top: 2rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="logo">
+            <div class="logo-icon"></div>
+            <div class="logo-text">
+                <h1>道路詳細設計管理システム</h1>
+                <p>設定</p>
+            </div>
+        </div>
+        <div class="user-section">
+            <div class="user-info">
+                <h3>管理者</h3>
+                <div class="action-buttons">
+                    <a href="admin.html" class="btn">メインページに戻る</a>
+                    <a href="logout.php" class="btn">ログアウト</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="nav-tabs">
+        <ul>
+            <li><a href="#" class="nav-link" data-tab="users">
+                <span class="nav-icon">👥</span>
+                ユーザー管理
+            </a></li>
+            <li><a href="#" class="nav-link active" data-tab="phases">
+                <span class="nav-icon">📊</span>
+                フェーズ管理
+            </a></li>
+            <li><a href="#" class="nav-link" data-tab="templates">
+                <span class="nav-icon">📋</span>
+                タスクテンプレート管理
+            </a></li>
+            <li><a href="#" class="nav-link" data-tab="manuals">
+                <span class="nav-icon">📚</span>
+                マニュアル管理
+            </a></li>
+        </ul>
+    </div>
+
+    <div class="main-content">
+        <!-- フェーズ管理 -->
+        <div id="phases-tab" class="content-panel">
+            <div class="panel-header">
+                <h2 class="panel-title">フェーズ管理</h2>
+                <button class="add-button" onclick="showAddPhaseModal()">新規フェーズ追加</button>
+            </div>
+            <div id="phases-content">
+                <div class="loading">フェーズ一覧を読み込み中...</div>
+            </div>
+        </div>
+
+        <!-- ユーザー管理 -->
+        <div id="users-tab" class="content-panel hidden">
+            <div class="panel-header">
+                <h2 class="panel-title">ユーザー管理</h2>
+                <button class="add-button" onclick="showAddUserModal()">新規ユーザー追加</button>
+            </div>
+            <div id="users-content">
+                <div class="loading">ユーザー一覧を読み込み中...</div>
+            </div>
+        </div>
+
+        <!-- タスクテンプレート管理 -->
+        <div id="templates-tab" class="content-panel hidden">
+            <div class="panel-header">
+                <h2 class="panel-title">タスクテンプレート管理</h2>
+                <button class="add-button" onclick="showAddTemplateModal()">新規テンプレート追加</button>
+            </div>
+            <div id="templates-content">
+                <div class="loading">テンプレート一覧を読み込み中...</div>
+            </div>
+        </div>
+
+        <!-- マニュアル管理 -->
+        <div id="manuals-tab" class="content-panel hidden">
+            <div class="panel-header">
+                <h2 class="panel-title">マニュアル管理</h2>
+                <button class="add-button" onclick="showAddManualModal()">新規マニュアル追加</button>
+            </div>
+            <div id="manuals-content">
+                <div class="loading">マニュアル一覧を読み込み中...</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- フェーズ追加モーダル -->
+    <div id="phaseModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">新規フェーズ追加</h3>
+                <span class="close" onclick="closeModal('phaseModal')">&times;</span>
+            </div>
+            <form id="phaseForm">
+                <div class="form-group">
+                    <label for="phaseName">フェーズ名</label>
+                    <input type="text" id="phaseName" name="name" required>
+                </div>
+                <div class="form-group">
+                    <label for="phaseDescription">説明</label>
+                    <textarea id="phaseDescription" name="description"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="phaseOrder">表示順序</label>
+                    <input type="number" id="phaseOrder" name="order_num" value="1" min="1">
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn" onclick="closeModal('phaseModal')">キャンセル</button>
+                    <button type="submit" class="btn btn-primary">追加</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // タブ切り替え
+        document.querySelectorAll('.nav-link').forEach(link => {
+            link.addEventListener('click', function(e) {
+                e.preventDefault();
+                
+                // アクティブタブを更新
+                document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+                this.classList.add('active');
+                
+                // コンテンツを切り替え
+                const tabName = this.getAttribute('data-tab');
+                document.querySelectorAll('.content-panel').forEach(panel => {
+                    panel.classList.add('hidden');
+                });
+                document.getElementById(tabName + '-tab').classList.remove('hidden');
+                
+                // データを読み込み
+                loadTabData(tabName);
+            });
+        });
+
+        // 初期データ読み込み
+        document.addEventListener('DOMContentLoaded', function() {
+            loadPhases();
+        });
+
+        // フェーズデータ読み込み
+        async function loadPhases() {
+            try {
+                const response = await fetch('api.php?path=phases', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error('フェーズ一覧の読み込みに失敗しました');
+                }
+
+                const data = await response.json();
+                displayPhases(data);
+            } catch (error) {
+                document.getElementById('phases-content').innerHTML = 
+                    `<div class="error-message">${error.message}</div>`;
+            }
+        }
+
+        // フェーズ表示
+        function displayPhases(phases) {
+            const container = document.getElementById('phases-content');
+            
+            if (!phases || phases.length === 0) {
+                container.innerHTML = '<p>フェーズが登録されていません。</p>';
+                return;
+            }
+
+            let html = `
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>フェーズ名</th>
+                            <th>説明</th>
+                            <th>順序</th>
+                            <th>ステータス</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+            phases.forEach(phase => {
+                html += `
+                    <tr>
+                        <td>${phase.id}</td>
+                        <td>${escapeHtml(phase.name)}</td>
+                        <td>${escapeHtml(phase.description || '')}</td>
+                        <td>${phase.order_num}</td>
+                        <td>
+                            <span class="status-badge ${phase.is_active ? 'status-active' : 'status-inactive'}">
+                                ${phase.is_active ? '有効' : '無効'}
+                            </span>
+                        </td>
+                        <td>
+                            <div class="action-buttons-small">
+                                <button class="btn-small btn-edit" onclick="editPhase(${phase.id})">編集</button>
+                                <button class="btn-small btn-delete" onclick="deletePhase(${phase.id})">削除</button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            html += '</tbody></table>';
+            container.innerHTML = html;
+        }
+
+        // タブデータ読み込み
+        function loadTabData(tabName) {
+            switch(tabName) {
+                case 'phases':
+                    loadPhases();
+                    break;
+                case 'users':
+                    loadUsers();
+                    break;
+                case 'templates':
+                    loadTemplates();
+                    break;
+                case 'manuals':
+                    loadManuals();
+                    break;
+            }
+        }
+
+        // ユーザー読み込み
+        async function loadUsers() {
+            try {
+                const response = await fetch('api.php?path=users', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error('ユーザー一覧の読み込みに失敗しました');
+                }
+
+                const data = await response.json();
+                displayUsers(data);
+            } catch (error) {
+                document.getElementById('users-content').innerHTML = 
+                    `<div class="error-message">${error.message}</div>`;
+            }
+        }
+
+        // ユーザー表示
+        function displayUsers(users) {
+            const container = document.getElementById('users-content');
+            
+            if (!users || users.length === 0) {
+                container.innerHTML = '<p>ユーザーが登録されていません。</p>';
+                return;
+            }
+
+            let html = `
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>名前</th>
+                            <th>メールアドレス</th>
+                            <th>役割</th>
+                            <th>ステータス</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+            users.forEach(user => {
+                html += `
+                    <tr>
+                        <td>${user.id}</td>
+                        <td>${escapeHtml(user.name)}</td>
+                        <td>${escapeHtml(user.email)}</td>
+                        <td>${getRoleName(user.role)}</td>
+                        <td>
+                            <span class="status-badge ${user.is_active ? 'status-active' : 'status-inactive'}">
+                                ${user.is_active ? '有効' : '無効'}
+                            </span>
+                        </td>
+                        <td>
+                            <div class="action-buttons-small">
+                                <button class="btn-small btn-edit" onclick="editUser(${user.id})">編集</button>
+                                <button class="btn-small btn-delete" onclick="deleteUser(${user.id})">削除</button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            html += '</tbody></table>';
+            container.innerHTML = html;
+        }
+
+        // 役割名取得
+        function getRoleName(role) {
+            const roles = {
+                'manager': '管理者',
+                'technical': '技術者',
+                'general': '一般スタッフ'
+            };
+            return roles[role] || role;
+        }
+
+        // テンプレート読み込み
+        async function loadTemplates() {
+            try {
+                const response = await fetch('api.php?path=templates', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error('テンプレート一覧の読み込みに失敗しました');
+                }
+
+                const data = await response.json();
+                displayTemplates(data);
+            } catch (error) {
+                document.getElementById('templates-content').innerHTML = 
+                    `<div class="error-message">${error.message}</div>`;
+            }
+        }
+
+        // テンプレート表示
+        function displayTemplates(templates) {
+            const container = document.getElementById('templates-content');
+            
+            if (!templates || templates.length === 0) {
+                container.innerHTML = '<p>テンプレートが登録されていません。</p>';
+                return;
+            }
+
+            let html = `
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>フェーズ</th>
+                            <th>タスク名</th>
+                            <th>順序</th>
+                            <th>技術作業</th>
+                            <th>マニュアル</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+            templates.forEach(template => {
+                html += `
+                    <tr>
+                        <td>${template.id}</td>
+                        <td>${escapeHtml(template.phase_name)}</td>
+                        <td>${escapeHtml(template.task_name)}</td>
+                        <td>${template.task_order}</td>
+                        <td>${template.is_technical_work ? '○' : '×'}</td>
+                        <td>${template.has_manual ? '○' : '×'}</td>
+                        <td>
+                            <div class="action-buttons-small">
+                                <button class="btn-small btn-edit" onclick="editTemplate(${template.id})">編集</button>
+                                <button class="btn-small btn-delete" onclick="deleteTemplate(${template.id})">削除</button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            html += '</tbody></table>';
+            container.innerHTML = html;
+        }
+
+        // マニュアル読み込み
+        async function loadManuals() {
+            try {
+                const response = await fetch('api.php?path=manuals', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error('マニュアル一覧の読み込みに失敗しました');
+                }
+
+                const data = await response.json();
+                displayManuals(data);
+            } catch (error) {
+                document.getElementById('manuals-content').innerHTML = 
+                    `<div class="error-message">${error.message}</div>`;
+            }
+        }
+
+        // マニュアル表示
+        function displayManuals(manuals) {
+            const container = document.getElementById('manuals-content');
+            
+            if (!manuals || manuals.length === 0) {
+                container.innerHTML = '<p>マニュアルが登録されていません。</p>';
+                return;
+            }
+
+            let html = `
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>ファイル名</th>
+                            <th>説明</th>
+                            <th>サイズ</th>
+                            <th>アップロード日</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+            manuals.forEach(manual => {
+                html += `
+                    <tr>
+                        <td>${manual.id}</td>
+                        <td>${escapeHtml(manual.file_name)}</td>
+                        <td>${escapeHtml(manual.description || '')}</td>
+                        <td>${formatFileSize(manual.file_size)}</td>
+                        <td>${formatDate(manual.created_at)}</td>
+                        <td>
+                            <div class="action-buttons-small">
+                                <a href="${manual.file_path}" class="btn-small" target="_blank">ダウンロード</a>
+                                <button class="btn-small btn-delete" onclick="deleteManual(${manual.id})">削除</button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            html += '</tbody></table>';
+            container.innerHTML = html;
+        }
+
+        // モーダル表示
+        function showAddPhaseModal() {
+            document.getElementById('phaseModal').style.display = 'block';
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).style.display = 'none';
+        }
+
+        // フェーズ追加
+        document.getElementById('phaseForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            const data = Object.fromEntries(formData.entries());
+            
+            try {
+                const response = await fetch('api.php?path=phases', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                if (!response.ok) {
+                    throw new Error('フェーズの追加に失敗しました');
+                }
+
+                closeModal('phaseModal');
+                this.reset();
+                loadPhases();
+                
+                // 成功メッセージ表示
+                showMessage('フェーズが正常に追加されました', 'success');
+            } catch (error) {
+                showMessage(error.message, 'error');
+            }
+        });
+
+        // ユーティリティ関数
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function formatFileSize(bytes) {
+            if (!bytes) return '不明';
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(1024));
+            return Math.round(bytes / Math.pow(1024, i) * 100) / 100 + ' ' + sizes[i];
+        }
+
+        function formatDate(dateString) {
+            if (!dateString) return '不明';
+            return new Date(dateString).toLocaleDateString('ja-JP');
+        }
+
+        function showMessage(message, type) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = type === 'success' ? 'success-message' : 'error-message';
+            messageDiv.textContent = message;
+            
+            const container = document.querySelector('.main-content');
+            container.insertBefore(messageDiv, container.firstChild);
+            
+            setTimeout(() => {
+                messageDiv.remove();
+            }, 5000);
+        }
+
+        // 編集・削除関数（プレースホルダー）
+        function editPhase(id) {
+            alert('編集機能は実装予定です。ID: ' + id);
+        }
+
+        function deletePhase(id) {
+            if (confirm('このフェーズを削除しますか？')) {
+                alert('削除機能は実装予定です。ID: ' + id);
+            }
+        }
+
+        function editUser(id) {
+            alert('編集機能は実装予定です。ID: ' + id);
+        }
+
+        function deleteUser(id) {
+            if (confirm('このユーザーを削除しますか？')) {
+                alert('削除機能は実装予定です。ID: ' + id);
+            }
+        }
+
+        function editTemplate(id) {
+            alert('編集機能は実装予定です。ID: ' + id);
+        }
+
+        function deleteTemplate(id) {
+            if (confirm('このテンプレートを削除しますか？')) {
+                alert('削除機能は実装予定です。ID: ' + id);
+            }
+        }
+
+        function deleteManual(id) {
+            if (confirm('このマニュアルを削除しますか？')) {
+                alert('削除機能は実装予定です。ID: ' + id);
+            }
+        }
+
+        // モーダル外クリックで閉じる
+        window.onclick = function(event) {
+            if (event.target.classList.contains('modal')) {
+                event.target.style.display = 'none';
+            }
+        }
+    </script>
+</body>
+</html>

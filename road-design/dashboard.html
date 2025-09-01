@@ -1,0 +1,991 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>道路詳細設計管理システム - ダッシュボード</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f5f5f5;
+            color: #333;
+        }
+
+        .header {
+            background: white;
+            padding: 1rem 2rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .logo-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #ffd700, #ffed4e);
+            border-radius: 8px;
+            position: relative;
+        }
+
+        .logo-icon::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 30%;
+            background: #666;
+            border-radius: 0 0 8px 8px;
+        }
+
+        .logo-text h1 {
+            font-size: 1.5rem;
+            color: #333;
+            margin-bottom: 0.25rem;
+        }
+
+        .logo-text p {
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+        .user-section {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .user-info {
+            text-align: right;
+        }
+
+        .user-info h3 {
+            font-size: 1rem;
+            color: #333;
+            margin-bottom: 0.5rem;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .btn {
+            padding: 0.5rem 1rem;
+            border: 2px solid #007bff;
+            background: white;
+            color: #007bff;
+            border-radius: 6px;
+            text-decoration: none;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .btn:hover {
+            background: #007bff;
+            color: white;
+        }
+
+        .btn-primary {
+            background: #007bff;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #0056b3;
+        }
+
+        .nav-tabs {
+            background: white;
+            padding: 0 2rem;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .nav-tabs ul {
+            list-style: none;
+            display: flex;
+            gap: 0;
+        }
+
+        .nav-tabs li {
+            margin: 0;
+        }
+
+        .nav-tabs a {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 1rem 1.5rem;
+            text-decoration: none;
+            color: #666;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s ease;
+        }
+
+        .nav-tabs a:hover {
+            color: #007bff;
+            background: #f8f9fa;
+        }
+
+        .nav-tabs a.active {
+            color: #007bff;
+            border-bottom-color: #007bff;
+            background: #f8f9fa;
+        }
+
+        .nav-icon {
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .main-content {
+            padding: 2rem;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .content-panel {
+            background: white;
+            border-radius: 12px;
+            padding: 2rem;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            min-height: 400px;
+        }
+
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 2px solid #f0f0f0;
+        }
+
+        .panel-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .add-button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 6px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+
+        .add-button:hover {
+            background: #0056b3;
+        }
+
+        .project-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 1.5rem;
+            margin-top: 1rem;
+        }
+
+        .project-card {
+            background: white;
+            border: 1px solid #e0e0e0;
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .project-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        }
+
+        .project-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 1rem;
+        }
+
+        .project-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 0.5rem;
+        }
+
+        .project-status {
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+
+        .status-planning {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .status-in_progress {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+
+        .status-completed {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-cancelled {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .project-info {
+            margin-bottom: 1rem;
+        }
+
+        .project-info p {
+            margin-bottom: 0.5rem;
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .project-info strong {
+            color: #333;
+        }
+
+        .progress-section {
+            margin-bottom: 1rem;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #e9ecef;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 0.5rem;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #007bff, #0056b3);
+            border-radius: 4px;
+            transition: width 0.3s ease;
+        }
+
+        .progress-text {
+            font-size: 0.8rem;
+            color: #666;
+            text-align: center;
+        }
+
+        .task-summary {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .task-stat {
+            text-align: center;
+            padding: 0.5rem;
+            background: #f8f9fa;
+            border-radius: 6px;
+        }
+
+        .task-stat-number {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #007bff;
+        }
+
+        .task-stat-label {
+            font-size: 0.7rem;
+            color: #666;
+            margin-top: 0.25rem;
+        }
+
+        .project-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .btn-small {
+            padding: 0.5rem 1rem;
+            border: 1px solid #ddd;
+            background: white;
+            color: #666;
+            border-radius: 6px;
+            text-decoration: none;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-small:hover {
+            background: #f8f9fa;
+            border-color: #007bff;
+            color: #007bff;
+        }
+
+        .btn-view {
+            border-color: #007bff;
+            color: #007bff;
+        }
+
+        .btn-view:hover {
+            background: #007bff;
+            color: white;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 2rem;
+            color: #666;
+        }
+
+        .error-message {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 1rem;
+            border-radius: 6px;
+            margin-bottom: 1rem;
+        }
+
+        .success-message {
+            background: #d4edda;
+            color: #155724;
+            padding: 1rem;
+            border-radius: 6px;
+            margin-bottom: 1rem;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 12px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 2rem;
+            font-weight: 600;
+            color: #007bff;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-label {
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .recent-activity {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-top: 1rem;
+        }
+
+        .activity-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: #333;
+        }
+
+        .activity-list {
+            list-style: none;
+        }
+
+        .activity-item {
+            padding: 0.75rem 0;
+            border-bottom: 1px solid #f0f0f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .activity-item:last-child {
+            border-bottom: none;
+        }
+
+        .activity-text {
+            color: #333;
+        }
+
+        .activity-time {
+            color: #666;
+            font-size: 0.8rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="logo">
+            <div class="logo-icon"></div>
+            <div class="logo-text">
+                <h1>道路詳細設計管理システム</h1>
+                <p>ダッシュボード</p>
+            </div>
+        </div>
+        <div class="user-section">
+            <div class="user-info">
+                <h3 id="userName">ユーザー</h3>
+                <div class="action-buttons">
+                    <a href="settings.html" class="btn">設定</a>
+                    <a href="logout.php" class="btn">ログアウト</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="nav-tabs">
+        <ul>
+            <li><a href="#" class="nav-link active" data-tab="overview">
+                <span class="nav-icon">📊</span>
+                概要
+            </a></li>
+            <li><a href="#" class="nav-link" data-tab="projects">
+                <span class="nav-icon">📁</span>
+                プロジェクト
+            </a></li>
+            <li><a href="#" class="nav-link" data-tab="tasks">
+                <span class="nav-icon">📋</span>
+                タスク
+            </a></li>
+            <li><a href="#" class="nav-link" data-tab="reports">
+                <span class="nav-icon">📈</span>
+                レポート
+            </a></li>
+        </ul>
+    </div>
+
+    <div class="main-content">
+        <!-- 概要タブ -->
+        <div id="overview-tab" class="content-panel">
+            <div class="panel-header">
+                <h2 class="panel-title">システム概要</h2>
+                <button class="add-button" onclick="showNewProjectModal()">新規プロジェクト作成</button>
+            </div>
+            
+            <!-- 統計カード -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-number" id="totalProjects">-</div>
+                    <div class="stat-label">総プロジェクト数</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="activeProjects">-</div>
+                    <div class="stat-label">進行中プロジェクト</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="totalTasks">-</div>
+                    <div class="stat-label">総タスク数</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="completedTasks">-</div>
+                    <div class="stat-label">完了タスク数</div>
+                </div>
+            </div>
+
+            <!-- プロジェクト一覧 -->
+            <div class="recent-activity">
+                <h3 class="activity-title">最近のプロジェクト</h3>
+                <div id="recentProjects">
+                    <div class="loading">プロジェクト情報を読み込み中...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- プロジェクトタブ -->
+        <div id="projects-tab" class="content-panel hidden">
+            <div class="panel-header">
+                <h2 class="panel-title">プロジェクト一覧</h2>
+                <button class="add-button" onclick="showNewProjectModal()">新規プロジェクト作成</button>
+            </div>
+            <div id="projects-content">
+                <div class="loading">プロジェクト一覧を読み込み中...</div>
+            </div>
+        </div>
+
+        <!-- タスクタブ -->
+        <div id="tasks-tab" class="content-panel hidden">
+            <div class="panel-header">
+                <h2 class="panel-title">タスク管理</h2>
+                <div>
+                    <select id="projectFilter" style="margin-right: 1rem; padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px;">
+                        <option value="">全プロジェクト</option>
+                    </select>
+                    <button class="add-button" onclick="showNewTaskModal()">新規タスク作成</button>
+                </div>
+            </div>
+            <div id="tasks-content">
+                <div class="loading">タスク一覧を読み込み中...</div>
+            </div>
+        </div>
+
+        <!-- レポートタブ -->
+        <div id="reports-tab" class="content-panel hidden">
+            <div class="panel-header">
+                <h2 class="panel-title">レポート・分析</h2>
+            </div>
+            <div id="reports-content">
+                <div class="loading">レポートを読み込み中...</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // タブ切り替え
+        document.querySelectorAll('.nav-link').forEach(link => {
+            link.addEventListener('click', function(e) {
+                e.preventDefault();
+                
+                // アクティブタブを更新
+                document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+                this.classList.add('active');
+                
+                // コンテンツを切り替え
+                const tabName = this.getAttribute('data-tab');
+                document.querySelectorAll('.content-panel').forEach(panel => {
+                    panel.classList.add('hidden');
+                });
+                document.getElementById(tabName + '-tab').classList.remove('hidden');
+                
+                // データを読み込み
+                loadTabData(tabName);
+            });
+        });
+
+        // 初期データ読み込み
+        document.addEventListener('DOMContentLoaded', function() {
+            loadUserInfo();
+            loadOverview();
+        });
+
+        // ユーザー情報読み込み
+        async function loadUserInfo() {
+            try {
+                const response = await fetch('api.php?path=user/profile', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                });
+
+                if (response.ok) {
+                    const userData = await response.json();
+                    document.getElementById('userName').textContent = userData.name || 'ユーザー';
+                }
+            } catch (error) {
+                console.error('ユーザー情報の読み込みに失敗:', error);
+            }
+        }
+
+        // 概要データ読み込み
+        async function loadOverview() {
+            try {
+                // 統計データを読み込み
+                const statsResponse = await fetch('api.php?path=stats/overview', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                });
+
+                if (statsResponse.ok) {
+                    const stats = await statsResponse.json();
+                    updateStats(stats);
+                }
+
+                // 最近のプロジェクトを読み込み
+                const projectsResponse = await fetch('api.php?path=projects?limit=5', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                });
+
+                if (projectsResponse.ok) {
+                    const projects = await projectsResponse.json();
+                    displayRecentProjects(projects);
+                }
+            } catch (error) {
+                console.error('概要データの読み込みに失敗:', error);
+            }
+        }
+
+        // 統計更新
+        function updateStats(stats) {
+            document.getElementById('totalProjects').textContent = stats.total_projects || 0;
+            document.getElementById('activeProjects').textContent = stats.active_projects || 0;
+            document.getElementById('totalTasks').textContent = stats.total_tasks || 0;
+            document.getElementById('completedTasks').textContent = stats.completed_tasks || 0;
+        }
+
+        // 最近のプロジェクト表示
+        function displayRecentProjects(projects) {
+            const container = document.getElementById('recentProjects');
+            
+            if (!projects || projects.length === 0) {
+                container.innerHTML = '<p>プロジェクトが登録されていません。</p>';
+                return;
+            }
+
+            let html = '<div class="project-grid">';
+            projects.forEach(project => {
+                html += createProjectCard(project);
+            });
+            html += '</div>';
+            
+            container.innerHTML = html;
+        }
+
+        // プロジェクトカード作成
+        function createProjectCard(project) {
+            const progress = calculateProgress(project);
+            const statusClass = getStatusClass(project.status);
+            const statusText = getStatusText(project.status);
+
+            return `
+                <div class="project-card">
+                    <div class="project-header">
+                        <div>
+                            <div class="project-title">${escapeHtml(project.name)}</div>
+                            <div class="project-info">
+                                <p><strong>クライアント:</strong> ${escapeHtml(project.client_name || '未設定')}</p>
+                                <p><strong>開始日:</strong> ${formatDate(project.start_date)}</p>
+                                <p><strong>目標完了:</strong> ${formatDate(project.target_end_date)}</p>
+                            </div>
+                        </div>
+                        <span class="project-status ${statusClass}">${statusText}</span>
+                    </div>
+                    
+                    <div class="progress-section">
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: ${progress}%"></div>
+                        </div>
+                        <div class="progress-text">進捗: ${progress}%</div>
+                    </div>
+                    
+                    <div class="task-summary">
+                        <div class="task-stat">
+                            <div class="task-stat-number">${project.total_tasks || 0}</div>
+                            <div class="task-stat-label">総タスク</div>
+                        </div>
+                        <div class="task-stat">
+                            <div class="task-stat-number">${project.completed_tasks || 0}</div>
+                            <div class="task-stat-label">完了</div>
+                        </div>
+                        <div class="task-stat">
+                            <div class="task-stat-number">${project.in_progress_tasks || 0}</div>
+                            <div class="task-stat-label">進行中</div>
+                        </div>
+                    </div>
+                    
+                    <div class="project-actions">
+                        <a href="project-detail.html?id=${project.id}" class="btn-small btn-view">詳細表示</a>
+                        <button class="btn-small" onclick="editProject(${project.id})">編集</button>
+                    </div>
+                </div>
+            `;
+        }
+
+        // 進捗計算
+        function calculateProgress(project) {
+            if (!project.total_tasks || project.total_tasks === 0) return 0;
+            return Math.round((project.completed_tasks / project.total_tasks) * 100);
+        }
+
+        // ステータスクラス取得
+        function getStatusClass(status) {
+            const classes = {
+                'planning': 'status-planning',
+                'in_progress': 'status-in_progress',
+                'completed': 'status-completed',
+                'cancelled': 'status-cancelled'
+            };
+            return classes[status] || 'status-planning';
+        }
+
+        // ステータステキスト取得
+        function getStatusText(status) {
+            const texts = {
+                'planning': '計画中',
+                'in_progress': '進行中',
+                'completed': '完了',
+                'cancelled': 'キャンセル'
+            };
+            return texts[status] || '計画中';
+        }
+
+        // タブデータ読み込み
+        function loadTabData(tabName) {
+            switch(tabName) {
+                case 'overview':
+                    loadOverview();
+                    break;
+                case 'projects':
+                    loadProjects();
+                    break;
+                case 'tasks':
+                    loadTasks();
+                    break;
+                case 'reports':
+                    loadReports();
+                    break;
+            }
+        }
+
+        // プロジェクト読み込み
+        async function loadProjects() {
+            try {
+                const response = await fetch('api.php?path=projects', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error('プロジェクト一覧の読み込みに失敗しました');
+                }
+
+                const data = await response.json();
+                displayProjects(data);
+            } catch (error) {
+                document.getElementById('projects-content').innerHTML = 
+                    `<div class="error-message">${error.message}</div>`;
+            }
+        }
+
+        // プロジェクト表示
+        function displayProjects(projects) {
+            const container = document.getElementById('projects-content');
+            
+            if (!projects || projects.length === 0) {
+                container.innerHTML = '<p>プロジェクトが登録されていません。</p>';
+                return;
+            }
+
+            let html = '<div class="project-grid">';
+            projects.forEach(project => {
+                html += createProjectCard(project);
+            });
+            html += '</div>';
+            
+            container.innerHTML = html;
+        }
+
+        // タスク読み込み
+        async function loadTasks() {
+            try {
+                const projectFilter = document.getElementById('projectFilter').value;
+                const url = projectFilter ? 
+                    `api.php?path=tasks&project_id=${projectFilter}` : 
+                    'api.php?path=tasks';
+
+                const response = await fetch(url, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error('タスク一覧の読み込みに失敗しました');
+                }
+
+                const data = await response.json();
+                displayTasks(data);
+            } catch (error) {
+                document.getElementById('tasks-content').innerHTML = 
+                    `<div class="error-message">${error.message}</div>`;
+            }
+        }
+
+        // タスク表示
+        function displayTasks(tasks) {
+            const container = document.getElementById('tasks-content');
+            
+            if (!tasks || tasks.length === 0) {
+                container.innerHTML = '<p>タスクが登録されていません。</p>';
+                return;
+            }
+
+            let html = `
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>プロジェクト</th>
+                            <th>フェーズ</th>
+                            <th>タスク名</th>
+                            <th>担当者</th>
+                            <th>ステータス</th>
+                            <th>予定日</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+            tasks.forEach(task => {
+                html += `
+                    <tr>
+                        <td>${escapeHtml(task.project_name || '')}</td>
+                        <td>${escapeHtml(task.phase_name)}</td>
+                        <td>${escapeHtml(task.task_name)}</td>
+                        <td>${escapeHtml(task.assigned_user_name || '未割り当て')}</td>
+                        <td>
+                            <span class="status-badge ${getTaskStatusClass(task.status)}">
+                                ${getTaskStatusText(task.status)}
+                            </span>
+                        </td>
+                        <td>${formatDate(task.planned_date)}</td>
+                        <td>
+                            <div class="action-buttons-small">
+                                <button class="btn-small btn-edit" onclick="editTask(${task.id})">編集</button>
+                                <button class="btn-small btn-view" onclick="viewTask(${task.id})">詳細</button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            html += '</tbody></table>';
+            container.innerHTML = html;
+        }
+
+        // タスクステータスクラス取得
+        function getTaskStatusClass(status) {
+            const classes = {
+                'not_started': 'status-planning',
+                'in_progress': 'status-in_progress',
+                'completed': 'status-completed',
+                'not_applicable': 'status-cancelled'
+            };
+            return classes[status] || 'status-planning';
+        }
+
+        // タスクステータステキスト取得
+        function getTaskStatusText(status) {
+            const texts = {
+                'not_started': '未開始',
+                'in_progress': '進行中',
+                'completed': '完了',
+                'not_applicable': '該当なし'
+            };
+            return texts[status] || '未開始';
+        }
+
+        // レポート読み込み
+        async function loadReports() {
+            try {
+                const response = await fetch('api.php?path=reports/summary', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error('レポートの読み込みに失敗しました');
+                }
+
+                const data = await response.json();
+                displayReports(data);
+            } catch (error) {
+                document.getElementById('reports-content').innerHTML = 
+                    `<div class="error-message">${error.message}</div>`;
+            }
+        }
+
+        // レポート表示
+        function displayReports(data) {
+            const container = document.getElementById('reports-content');
+            container.innerHTML = '<p>レポート機能は実装予定です。</p>';
+        }
+
+        // ユーティリティ関数
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function formatDate(dateString) {
+            if (!dateString) return '未設定';
+            return new Date(dateString).toLocaleDateString('ja-JP');
+        }
+
+        // モーダル表示関数（プレースホルダー）
+        function showNewProjectModal() {
+            alert('新規プロジェクト作成機能は実装予定です。');
+        }
+
+        function showNewTaskModal() {
+            alert('新規タスク作成機能は実装予定です。');
+        }
+
+        // 編集・表示関数（プレースホルダー）
+        function editProject(id) {
+            alert('プロジェクト編集機能は実装予定です。ID: ' + id);
+        }
+
+        function editTask(id) {
+            alert('タスク編集機能は実装予定です。ID: ' + id);
+        }
+
+        function viewTask(id) {
+            alert('タスク詳細表示機能は実装予定です。ID: ' + id);
+        }
+
+        // プロジェクトフィルター変更
+        document.getElementById('projectFilter').addEventListener('change', function() {
+            loadTasks();
+        });
+    </script>
+</body>
+</html>
