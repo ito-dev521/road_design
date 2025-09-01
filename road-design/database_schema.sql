@@ -16,6 +16,19 @@ CREATE TABLE users (
     INDEX idx_role (role)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- フェーズテーブル
+CREATE TABLE phases (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    description TEXT,
+    order_num INT DEFAULT 0,
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_order (order_num),
+    INDEX idx_active (is_active)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- プロジェクトテーブル
 CREATE TABLE projects (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -141,6 +154,12 @@ INSERT INTO users (email, password_hash, name, role) VALUES
 ('admin@ii-stylelab.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', '管理者', 'manager'),
 ('tech@ii-stylelab.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', '技術者', 'technical'),
 ('staff@ii-stylelab.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', '一般スタッフ', 'general');
+
+-- フェーズデータ
+INSERT INTO phases (name, description, order_num) VALUES
+('フェーズ1', '基本設計・調査', 1),
+('フェーズ2', '詳細設計', 2),
+('フェーズ3', '施工・監理', 3);
 
 -- タスクテンプレートデータ
 INSERT INTO task_templates (phase_name, task_name, task_order, is_technical_work, has_manual) VALUES
