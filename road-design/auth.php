@@ -127,8 +127,8 @@ class Auth {
             'manager' => 3
         ];
         
-        $userLevel = $roleHierarchy[$user['role']] ?? 0;
-        $requiredLevel = $roleHierarchy[$requiredRole] ?? 999;
+        $userLevel = isset($roleHierarchy[$user['role']]) ? $roleHierarchy[$user['role']] : 0;
+        $requiredLevel = isset($roleHierarchy[$requiredRole]) ? $roleHierarchy[$requiredRole] : 999;
         
         return $userLevel >= $requiredLevel;
     }

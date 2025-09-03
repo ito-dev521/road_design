@@ -194,13 +194,23 @@ class RoadDesignApp {
             btn.addEventListener('click', this.filterTasks.bind(this));
         });
 
-        // モーダル外クリックで閉じる
+        // モーダル外クリックで閉じる機能を完全に無効化
+        // ユーザーが意図しない操作でモーダルが閉じることを防ぐ
         document.querySelectorAll('.modal-overlay').forEach(modal => {
+            // 背景クリックを完全に無効化
             modal.addEventListener('click', (e) => {
-                if (e.target === modal) {
-                    modal.classList.remove('active');
-                }
-            });
+                e.preventDefault();
+                e.stopPropagation();
+                return false;
+            }, true);
+            
+            // モーダル内のクリックは正常に動作させる
+            const modalContent = modal.querySelector('.modal');
+            if (modalContent) {
+                modalContent.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                });
+            }
         });
     }
 

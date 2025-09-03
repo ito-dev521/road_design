@@ -350,7 +350,7 @@ body {
 .task-card {
     border: 1px solid #dee2e6;
     border-radius: 6px;
-    padding: 1rem;
+    padding: 0.75rem;
     background: white;
     transition: all 0.2s ease;
     cursor: pointer;
@@ -370,7 +370,7 @@ body {
     display: flex;
     align-items: flex-start;
     gap: 0.75rem;
-    margin-bottom: 0.75rem;
+    margin-bottom: 0.5rem;
 }
 
 .task-checkbox {
@@ -465,6 +465,23 @@ body {
     z-index: 1000;
     align-items: center;
     justify-content: center;
+    /* 枠外クリックでのモーダル閉じる機能を完全に無効化 */
+    pointer-events: none !important;
+}
+
+.modal-overlay .modal {
+    pointer-events: auto !important;
+}
+
+/* モーダルの背景クリックを完全に無効化 */
+.modal-overlay::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
 }
 
 .modal-overlay.active {
@@ -589,6 +606,28 @@ body {
     border-radius: 6px;
 }
 
+.task-content {
+    margin-bottom: 1rem;
+}
+
+.task-content label {
+    display: block;
+    font-weight: 600;
+    color: #374151;
+    margin-bottom: 0.5rem;
+}
+
+.task-content-display {
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 1rem;
+    min-height: 60px;
+    color: #374151;
+    line-height: 1.5;
+    font-size: 0.95rem;
+}
+
 .task-meta-item {
     display: flex;
     justify-content: space-between;
@@ -599,11 +638,143 @@ body {
     color: #6c757d;
 }
 
+.task-notes {
+    width: 100%;
+}
+
 .task-notes label {
     display: block;
     margin-bottom: 0.5rem;
-    font-weight: 500;
-    color: #333;
+    font-weight: 600;
+    color: #374151;
+}
+
+.task-notes textarea {
+    width: 100%;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 1rem;
+    font-size: 0.95rem;
+    line-height: 1.5;
+    resize: vertical;
+    min-height: 120px;
+    font-family: inherit;
+}
+
+.task-notes textarea:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+/* メモ履歴のスタイル */
+.notes-history {
+    max-height: 200px;
+    overflow-y: auto;
+    margin-bottom: 1rem;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    background: #f9fafb;
+}
+
+.note-item {
+    padding: 1rem;
+    border-bottom: 1px solid #e5e7eb;
+    background: white;
+}
+
+.note-item:last-child {
+    border-bottom: none;
+}
+
+.note-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+    font-size: 0.8rem;
+    color: #6b7280;
+}
+
+.note-user {
+    font-weight: 600;
+    color: #374151;
+}
+
+.note-date {
+    color: #9ca3af;
+}
+
+.note-content {
+    color: #374151;
+    line-height: 1.5;
+    white-space: pre-wrap;
+}
+
+.add-note-section {
+    display: flex;
+    gap: 0.5rem;
+    align-items: flex-start;
+    width: 100%;
+}
+
+.add-note-section textarea {
+    flex: 1;
+    margin-bottom: 0;
+    min-width: 300px;
+    width: 100%;
+}
+
+.add-note-section .btn {
+    flex-shrink: 0;
+    margin-top: 0;
+    white-space: nowrap;
+}
+
+/* タスク編集フォームのレイアウト */
+.task-form-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.task-form-row > div {
+    min-width: 0;
+}
+
+.task-status-selector,
+.task-assignment,
+.task-date {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.task-status-selector label,
+.task-assignment label,
+.task-date label {
+    font-weight: 600;
+    color: #374151;
+    font-size: 0.9rem;
+}
+
+.task-status-selector select,
+.task-assignment select,
+.task-date input {
+    padding: 0.75rem;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    background: white;
+}
+
+.task-status-selector select:focus,
+.task-assignment select:focus,
+.task-date input:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
 /* Loading styles */

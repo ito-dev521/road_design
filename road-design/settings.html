@@ -305,6 +305,23 @@
             width: 100%;
             height: 100%;
             background-color: rgba(0,0,0,0.5);
+            /* 枠外クリックでのモーダル閉じる機能を完全に無効化 */
+            pointer-events: none !important;
+        }
+
+        .modal .modal-content {
+            pointer-events: auto !important;
+        }
+        
+        /* モーダルの背景クリックを完全に無効化 */
+        .modal::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
         }
 
         .modal-content {
@@ -639,17 +656,9 @@
 
     <div class="nav-tabs">
         <ul>
-            <li><a href="#" class="nav-link" data-tab="users">
-                <span class="nav-icon">👥</span>
-                ユーザー管理
-            </a></li>
             <li><a href="#" class="nav-link active" data-tab="phases">
                 <span class="nav-icon">📊</span>
                 フェーズ管理
-            </a></li>
-            <li><a href="#" class="nav-link" data-tab="clients">
-                <span class="nav-icon">🏢</span>
-                クライアント管理
             </a></li>
             <li><a href="#" class="nav-link" data-tab="templates">
                 <span class="nav-icon">📋</span>
@@ -658,6 +667,14 @@
             <li><a href="#" class="nav-link" data-tab="manuals">
                 <span class="nav-icon">📚</span>
                 マニュアル管理
+            </a></li>
+            <li><a href="#" class="nav-link" data-tab="clients">
+                <span class="nav-icon">🏢</span>
+                クライアント管理
+            </a></li>
+            <li><a href="#" class="nav-link" data-tab="users">
+                <span class="nav-icon">👥</span>
+                ユーザー管理
             </a></li>
         </ul>
     </div>
@@ -868,18 +885,7 @@
                     <label for="clientName">クライアント名 *</label>
                     <input type="text" id="clientName" name="name" required>
                 </div>
-                <div class="form-group">
-                    <label for="clientCode">クライアントコード</label>
-                    <input type="text" id="clientCode" name="code" placeholder="例: CLIENT001">
-                </div>
-                <div class="form-group">
-                    <label for="clientContactPerson">担当者名</label>
-                    <input type="text" id="clientContactPerson" name="contact_person" placeholder="担当者の名前">
-                </div>
-                <div class="form-group">
-                    <label for="clientEmail">メールアドレス</label>
-                    <input type="email" id="clientEmail" name="email" placeholder="contact@example.com">
-                </div>
+
                 <div class="form-group">
                     <label for="clientPhone">電話番号</label>
                     <input type="tel" id="clientPhone" name="phone" placeholder="03-1234-5678">
@@ -1321,8 +1327,6 @@
                     <thead>
                         <tr>
                             <th>クライアント名</th>
-                            <th>クライアントコード</th>
-                            <th>担当者</th>
                             <th>連絡先</th>
                             <th>ステータス</th>
                             <th>操作</th>
@@ -1336,10 +1340,7 @@
                 html += `
                     <tr>
                         <td>${escapeHtml(client.name)}</td>
-                        <td>${escapeHtml(client.code || '')}</td>
-                        <td>${escapeHtml(client.contact_person || '')}</td>
                         <td>
-                            ${client.email ? `<div>📧 ${escapeHtml(client.email)}</div>` : ''}
                             ${client.phone ? `<div>📞 ${escapeHtml(client.phone)}</div>` : ''}
                         </td>
                         <td>
@@ -1644,7 +1645,7 @@
                         <td>${formatDate(manual.created_at)}</td>
                         <td>
                             <div class="action-buttons-small">
-                                <a href="${manual.file_path}" class="btn-small" target="_blank">ダウンロード</a>
+                                <a href="api.php?path=admin/manuals/${manual.id}" class="btn-small" download>ダウンロード</a>
                                 <button class="btn-small btn-delete" onclick="deleteManual(${manual.id})">削除</button>
                             </div>
                         </td>
@@ -1974,9 +1975,32 @@
             const method = isEdit ? 'PUT' : 'POST';
             const url = isEdit ? `api.php?path=admin/users/${data.id}` : 'api.php?path=admin/users';
             
+            // デバッグログ
+            console.log('ユーザーフォーム送信:', {
+                isEdit: isEdit,
+                data: data,
+                method: method,
+                url: url
+            });
+            
+            // パスワード処理の詳細ログ
+            if (isEdit) {
+                console.log('編集モード - パスワード処理開始');
+                console.log('元のパスワード値:', data.password);
+                console.log('パスワードの型:', typeof data.password);
+                console.log('パスワードが空か:', !data.password);
+                console.log('パスワードが空文字列か:', data.password === '');
+                console.log('パスワードが空白のみか:', data.password && data.password.trim() === '');
+            }
+            
             // 編集時でパスワードが空の場合は削除
-            if (isEdit && !data.password) {
+            if (isEdit && (!data.password || data.password.trim() === '')) {
                 delete data.password;
+                console.log('パスワードが空のため、パスワード更新をスキップ');
+            } else if (isEdit && data.password && data.password.trim() !== '') {
+                console.log('パスワードが設定されているため、パスワード更新を実行');
+                console.log('パスワード長:', data.password.length);
+                console.log('パスワードの最初の文字:', data.password.charAt(0));
             }
             
             try {
@@ -1994,6 +2018,11 @@
                 }
 
                 const result = await response.json();
+                console.log('APIレスポンス:', result);
+                console.log('APIレスポンスの型:', typeof result);
+                console.log('APIレスポンスのsuccess:', result.success);
+                console.log('APIレスポンスのmessage:', result.message);
+                
                 if (result.success) {
                     closeModal('userModal');
                     this.reset();
@@ -2002,9 +2031,16 @@
                     const message = isEdit ? 'ユーザーが更新されました' : 'ユーザーが正常に追加されました';
                     showMessage(message, 'success');
                 } else {
+                    console.error('API処理失敗:', result);
                     throw new Error(result.message || 'ユーザーの処理に失敗しました');
                 }
             } catch (error) {
+                console.error('ユーザー処理エラー:', error);
+                console.error('エラーの詳細:', {
+                    name: error.name,
+                    message: error.message,
+                    stack: error.stack
+                });
                 showMessage(error.message, 'error');
             }
         });
@@ -2059,15 +2095,22 @@
         document.getElementById('clientForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             
+            console.log('クライアントフォーム送信開始');
+            
             const formData = new FormData(this);
             const data = Object.fromEntries(formData.entries());
             
             // チェックボックスの値を適切に設定
             data.is_active = document.getElementById('clientIsActive').checked ? '1' : '0';
             
+            console.log('送信データ:', data);
+            
             const isEdit = data.id && data.id !== '';
             const method = isEdit ? 'PUT' : 'POST';
             const url = isEdit ? `api.php?path=admin/clients/${data.id}` : 'api.php?path=admin/clients';
+            
+            console.log('リクエストURL:', url);
+            console.log('リクエストメソッド:', method);
             
             try {
                 const response = await fetch(url, {
@@ -2079,12 +2122,30 @@
                     body: JSON.stringify(data)
                 });
 
+                console.log('レスポンス:', response);
+                console.log('レスポンスステータス:', response.status);
+                console.log('レスポンスステータステキスト:', response.statusText);
+
                 if (!response.ok) {
-                    throw new Error('クライアントの処理に失敗しました');
+                    const errorText = await response.text();
+                    console.error('HTTPエラー:', response.status, errorText);
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
                 }
 
-                const result = await response.json();
+                const responseText = await response.text();
+                console.log('生のレスポンス:', responseText);
+                
+                let result;
+                try {
+                    result = JSON.parse(responseText);
+                    console.log('パースされた結果:', result);
+                } catch (parseError) {
+                    console.error('JSONパースエラー:', parseError);
+                    throw new Error('APIレスポンスの解析に失敗しました');
+                }
+                
                 if (result.success) {
+                    console.log('クライアント処理成功');
                     closeModal('clientModal');
                     this.reset();
                     loadClients();
@@ -2092,9 +2153,11 @@
                     const message = isEdit ? 'クライアントが更新されました' : 'クライアントが正常に追加されました';
                     showMessage(message, 'success');
                 } else {
+                    console.error('API処理失敗:', result.message);
                     throw new Error(result.message || 'クライアントの処理に失敗しました');
                 }
             } catch (error) {
+                console.error('クライアント処理エラー:', error);
                 showMessage(error.message, 'error');
             }
         });
@@ -2243,36 +2306,53 @@
                 headers: {
                     'Content-Type': 'application/json',
                     'X-Requested-With': 'XMLHttpRequest'
-                }
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success && data.user) {
-                    const user = data.user;
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    console.log('ユーザーデータ取得結果:', data);
                     
-                    // モーダルを編集モードに設定
-                    document.getElementById('userModalTitle').textContent = 'ユーザー編集';
-                    document.getElementById('userSubmitBtn').textContent = '更新';
-                    document.getElementById('passwordNote').textContent = '(変更時のみ入力)';
-                    
-                    // フォームに値を設定
-                    document.getElementById('userId').value = user.id;
-                    document.getElementById('userEmail').value = user.email;
-                    document.getElementById('userName').value = user.name;
-                    document.getElementById('userRole').value = user.role;
-                    document.getElementById('userPassword').value = ''; // パスワードは空
-                    document.getElementById('userIsActive').checked = user.is_active == '1';
-                    
-                    // モーダル表示
-                    document.getElementById('userModal').style.display = 'block';
-                } else {
+                    if (data.success && data.user) {
+                        const user = data.user;
+                        console.log('編集対象ユーザー:', user);
+                        
+                        // モーダルを編集モードに設定
+                        document.getElementById('userModalTitle').textContent = 'ユーザー編集';
+                        document.getElementById('userSubmitBtn').textContent = '更新';
+                        document.getElementById('passwordNote').textContent = '(変更時のみ入力)';
+                        
+                        // フォームに値を設定
+                        document.getElementById('userId').value = user.id;
+                        document.getElementById('userEmail').value = user.email;
+                        document.getElementById('userName').value = user.name;
+                        document.getElementById('userRole').value = user.role;
+                        document.getElementById('userPassword').value = ''; // パスワードは空
+                        document.getElementById('userPassword').placeholder = '変更時のみ入力してください';
+                        document.getElementById('userIsActive').checked = user.is_active == '1';
+                        
+                        console.log('パスワードフィールド初期化完了:', {
+                            value: document.getElementById('userPassword').value,
+                            placeholder: document.getElementById('userPassword').placeholder
+                        });
+                        
+                        console.log('フォーム設定完了:', {
+                            id: document.getElementById('userId').value,
+                            email: document.getElementById('userEmail').value,
+                            name: document.getElementById('userName').value,
+                            role: document.getElementById('userRole').value,
+                            isActive: document.getElementById('userIsActive').checked
+                        });
+                        
+                        // モーダル表示
+                        document.getElementById('userModal').style.display = 'block';
+                    } else {
+                        alert('ユーザーデータの取得に失敗しました');
+                    }
+                })
+                .catch(error => {
+                    console.error('ユーザー編集エラー:', error);
                     alert('ユーザーデータの取得に失敗しました');
-                }
-            })
-            .catch(error => {
-                console.error('ユーザー編集エラー:', error);
-                alert('ユーザーデータの取得に失敗しました');
-            });
+                });
         }
 
         function deleteUser(id) {
@@ -2418,9 +2498,6 @@
                     // フォームに値を設定
                     document.getElementById('clientId').value = client.id;
                     document.getElementById('clientName').value = client.name;
-                    document.getElementById('clientCode').value = client.code || '';
-                    document.getElementById('clientContactPerson').value = client.contact_person || '';
-                    document.getElementById('clientEmail').value = client.email || '';
                     document.getElementById('clientPhone').value = client.phone || '';
                     document.getElementById('clientAddress').value = client.address || '';
                     document.getElementById('clientDescription').value = client.description || '';

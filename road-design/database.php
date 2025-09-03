@@ -11,7 +11,7 @@ class Database {
     
     public function __construct() {
         $this->host = DB_HOST;
-        $this->port = DB_PORT ?? '3306';
+        $this->port = defined('DB_PORT') ? DB_PORT : '3306';
         $this->dbname = DB_NAME;
         $this->username = DB_USER;
         $this->password = DB_PASS;
@@ -138,9 +138,11 @@ class Database {
         try {
             $stmt = $this->getConnection()->prepare("
                 SELECT t.*, u.name as assigned_to_name,
+                       tt.content as template_content,
                        (SELECT GROUP_CONCAT(note SEPARATOR '|') FROM task_notes WHERE task_id = t.id ORDER BY created_at DESC) as notes
                 FROM tasks t 
                 LEFT JOIN users u ON t.assigned_to = u.id
+                LEFT JOIN task_templates tt ON t.template_id = tt.id
                 WHERE t.id = ?
             ");
             $stmt->execute([$taskId]);
@@ -163,6 +165,24 @@ class Database {
             return $stmt->execute([$taskId, $userId, $note]);
         } catch (PDOException $e) {
             error_log("addTaskNote error: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    // タスクメモ取得（ユーザー名付き）
+    public function getTaskNotes($taskId) {
+        try {
+            $stmt = $this->getConnection()->prepare("
+                SELECT tn.*, u.name as user_name
+                FROM task_notes tn
+                LEFT JOIN users u ON tn.user_id = u.id
+                WHERE tn.task_id = ?
+                ORDER BY tn.created_at DESC
+            ");
+            $stmt->execute([$taskId]);
+            return $stmt->fetchAll();
+        } catch (PDOException $e) {
+            error_log("getTaskNotes error: " . $e->getMessage());
             return false;
         }
     }
@@ -259,7 +279,7 @@ class Database {
                         $template['task_order'],
                         $template['is_technical_work'],
                         $template['has_manual'],
-                        $template['estimated_hours'] ?? 0
+                        isset($template['estimated_hours']) ? $template['estimated_hours'] : 0
                     ]);
                     $createdCount++;
                     error_log("タスク作成成功: {$template['task_name']}");
@@ -281,11 +301,14 @@ class Database {
     public function getProjectTasks($projectId) {
         try {
             $stmt = $this->getConnection()->prepare("
-                SELECT t.*, u.name as assigned_to_name
+                SELECT t.*, t.task_name as name, u.name as assigned_user_name, tt.name as template_name, tt.content as template_content, 
+                       tt.is_technical_work, tt.has_manual, tt.phase_id, tt.task_order, p.name as phase_name
                 FROM tasks t 
                 LEFT JOIN users u ON t.assigned_to = u.id
+                LEFT JOIN task_templates tt ON t.template_id = tt.id
+                LEFT JOIN phases p ON tt.phase_id = p.id
                 WHERE t.project_id = ?
-                ORDER BY t.phase_name, t.task_order
+                ORDER BY tt.phase_id, tt.task_order
             ");
             $stmt->execute([$projectId]);
             return $stmt->fetchAll();
@@ -313,9 +336,9 @@ class Database {
                 $updateData['actual_end_date'] = date('Y-m-d');
             }
             
-            $setClause = implode(', ', array_map(fn($key) => "$key = ?", array_keys($updateData)));
+            $setClause = implode(', ', array_map(function($key) { return "$key = ?"; }, array_keys($updateData)));
             $stmt = $this->getConnection()->prepare("UPDATE tasks SET $setClause WHERE id = ?");
-            $stmt->execute([...array_values($updateData), $taskId]);
+            $stmt->execute(array_merge(array_values($updateData), [$taskId]));
             
             // ノート追加
             if ($notes) {
@@ -429,28 +452,58 @@ class Database {
         }
     }
 
-    public function createUser($email, $passwordHash, $name, $role) {
+    public function createUser($email, $passwordHash, $name, $role, $isActive = 1) {
         try {
+            error_log("Database createUser called with: email=$email, name=$name, role=$role, isActive=$isActive");
+            
             $stmt = $this->getConnection()->prepare("
                 INSERT INTO users (email, password_hash, name, role, is_active)
-                VALUES (?, ?, ?, ?, 1)
+                VALUES (?, ?, ?, ?, ?)
             ");
-            $stmt->execute([$email, $passwordHash, $name, $role]);
-            return $this->getConnection()->lastInsertId();
+            $result = $stmt->execute([$email, $passwordHash, $name, $role, $isActive]);
+            
+            if ($result) {
+                $userId = $this->getConnection()->lastInsertId();
+                error_log("User created successfully with ID: $userId");
+                return $userId;
+            } else {
+                error_log("User creation failed - execute returned false");
+                return false;
+            }
         } catch (PDOException $e) {
-            error_log("createUser error: " . $e->getMessage());
+            error_log("createUser PDO error: " . $e->getMessage());
+            error_log("createUser PDO error code: " . $e->getCode());
             return false;
         }
     }
 
-    public function updateUser($userId, $name, $role, $isActive) {
+    public function updateUser($userId, $email, $name, $role, $password = null, $isActive = 1) {
         try {
-            $stmt = $this->getConnection()->prepare("
-                UPDATE users
-                SET name = ?, role = ?, is_active = ?
-                WHERE id = ?
-            ");
-            return $stmt->execute([$name, $role, $isActive, $userId]);
+            error_log("Database updateUser called with: userId=$userId, email=$email, name=$name, role=$role, password=" . ($password ? 'set' : 'null') . ", isActive=$isActive");
+            
+            if ($password && trim($password) !== '') {
+                // パスワードも更新する場合
+                error_log("Password update requested for user ID: $userId");
+                $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
+                $stmt = $this->getConnection()->prepare("
+                    UPDATE users
+                    SET email = ?, name = ?, role = ?, password = ?, is_active = ?
+                    WHERE id = ?
+                ");
+                $result = $stmt->execute([$email, $name, $role, $hashedPassword, $isActive, $userId]);
+            } else {
+                // パスワードは更新しない場合
+                error_log("Password update skipped for user ID: $userId (password is empty or null)");
+                $stmt = $this->getConnection()->prepare("
+                    UPDATE users
+                    SET email = ?, name = ?, role = ?, is_active = ?
+                    WHERE id = ?
+                ");
+                $result = $stmt->execute([$email, $name, $role, $isActive, $userId]);
+            }
+            
+            error_log("updateUser result: " . ($result ? 'success' : 'failed'));
+            return $result;
         } catch (PDOException $e) {
             error_log("updateUser error: " . $e->getMessage());
             return false;
@@ -470,16 +523,25 @@ class Database {
     // フェーズ管理
     public function getAllPhases() {
         try {
+            error_log("Database getAllPhases called");
+            
             $stmt = $this->getConnection()->prepare("
                 SELECT id, name, description, order_num, is_active
                 FROM phases
                 WHERE is_active = 1
                 ORDER BY order_num
             ");
+            
+            error_log("SQL prepared, executing...");
             $stmt->execute();
-            return $stmt->fetchAll();
+            $result = $stmt->fetchAll();
+            
+            error_log("getAllPhases result: " . print_r($result, true));
+            return $result;
+            
         } catch (PDOException $e) {
-            error_log("getAllPhases error: " . $e->getMessage());
+            error_log("getAllPhases PDO error: " . $e->getMessage());
+            error_log("getAllPhases PDO error code: " . $e->getCode());
             return false;
         }
     }
@@ -521,18 +583,149 @@ class Database {
         }
     }
 
+    // フェーズ詳細取得
+    public function getPhaseById($id) {
+        try {
+            error_log("Database getPhaseById called with id: $id");
+            
+            $stmt = $this->getConnection()->prepare("
+                SELECT id, name, description, order_num, is_active
+                FROM phases
+                WHERE id = ?
+            ");
+            
+            error_log("SQL prepared, executing with id: $id");
+            $stmt->execute([$id]);
+            $result = $stmt->fetch();
+            
+            error_log("getPhaseById result: " . print_r($result, true));
+            return $result;
+            
+        } catch (PDOException $e) {
+            error_log("getPhaseById PDO error: " . $e->getMessage());
+            error_log("getPhaseById PDO error code: " . $e->getCode());
+            return false;
+        }
+    }
+
     // テンプレート管理
     public function getAllTemplates() {
         try {
+            error_log("Database getAllTemplates called");
+            
             $stmt = $this->getConnection()->prepare("
-                SELECT id, phase_name, task_name, task_order, is_technical_work, has_manual
+                SELECT id, phase_name, task_name, task_order, is_technical_work, has_manual, content
                 FROM task_templates
                 ORDER BY phase_name, task_order
             ");
+            
+            error_log("SQL prepared, executing...");
             $stmt->execute();
-            return $stmt->fetchAll();
+            $result = $stmt->fetchAll();
+            
+            error_log("getAllTemplates result: " . print_r($result, true));
+            return $result;
+            
         } catch (PDOException $e) {
-            error_log("getAllTemplates error: " . $e->getMessage());
+            error_log("getAllTemplates PDO error: " . $e->getMessage());
+            error_log("getAllTemplates PDO error code: " . $e->getCode());
+            return false;
+        }
+    }
+
+    // タスクテンプレート詳細取得
+    public function getTaskTemplateById($id) {
+        try {
+            error_log("Database getTaskTemplateById called with id: $id");
+            
+            $stmt = $this->getConnection()->prepare("
+                SELECT id, phase_name, task_name, task_order, is_technical_work, has_manual, content
+                FROM task_templates
+                WHERE id = ?
+            ");
+            
+            error_log("SQL prepared, executing with id: $id");
+            $stmt->execute([$id]);
+            $result = $stmt->fetch();
+            
+            error_log("getTaskTemplateById result: " . print_r($result, true));
+            return $result;
+            
+        } catch (PDOException $e) {
+            error_log("getTaskTemplateById PDO error: " . $e->getMessage());
+            error_log("getTaskTemplateById PDO error code: " . $e->getCode());
+            return false;
+        }
+    }
+
+    // テンプレート作成
+    public function createTaskTemplate($phaseName, $taskName, $content, $taskOrder, $isTechnicalWork, $hasManual) {
+        try {
+            error_log("Database createTaskTemplate called with: phase=$phaseName, task=$taskName, content=$content, order=$taskOrder, tech=$isTechnicalWork, manual=$hasManual");
+            
+            $stmt = $this->getConnection()->prepare("
+                INSERT INTO task_templates (phase_name, task_name, content, task_order, is_technical_work, has_manual)
+                VALUES (?, ?, ?, ?, ?, ?)
+            ");
+            
+            $result = $stmt->execute([$phaseName, $taskName, $content, $taskOrder, $isTechnicalWork, $hasManual]);
+            
+            if ($result) {
+                error_log("Task template created successfully with ID: " . $this->getConnection()->lastInsertId());
+                return true;
+            } else {
+                error_log("Failed to create task template");
+                return false;
+            }
+        } catch (PDOException $e) {
+            error_log("createTaskTemplate PDO error: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    // テンプレート更新（マニュアル情報除く）
+    public function updateTaskTemplateWithoutManual($id, $phaseName, $taskName, $content, $taskOrder, $isTechnicalWork) {
+        try {
+            error_log("Database updateTaskTemplateWithoutManual called with: id=$id, phase=$phaseName, task=$taskName, content=$content, order=$taskOrder, tech=$isTechnicalWork");
+            
+            $stmt = $this->getConnection()->prepare("
+                UPDATE task_templates 
+                SET phase_name = ?, task_name = ?, content = ?, task_order = ?, is_technical_work = ?
+                WHERE id = ?
+            ");
+            
+            $result = $stmt->execute([$phaseName, $taskName, $content, $taskOrder, $isTechnicalWork, $id]);
+            
+            if ($result) {
+                error_log("Task template updated successfully");
+                return true;
+            } else {
+                error_log("Failed to update task template");
+                return false;
+            }
+        } catch (PDOException $e) {
+            error_log("updateTaskTemplateWithoutManual PDO error: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    // テンプレート削除
+    public function deleteTaskTemplate($id) {
+        try {
+            error_log("Database deleteTaskTemplate called with id: $id");
+            
+            $stmt = $this->getConnection()->prepare("DELETE FROM task_templates WHERE id = ?");
+            $result = $stmt->execute([$id]);
+            
+            if ($result) {
+                error_log("Task template deleted successfully");
+                return true;
+            } else {
+                error_log("Failed to delete task template");
+                return false;
+            }
+        } catch (PDOException $e) {
+            error_log("deleteTaskTemplate PDO error: " . $e->getMessage());
             return false;
         }
     }
@@ -540,15 +733,169 @@ class Database {
     // マニュアル管理
     public function getAllManuals() {
         try {
+            error_log("Database getAllManuals called");
+            
             $stmt = $this->getConnection()->prepare("
-                SELECT id, file_name, description, file_size, file_path, created_at
+                SELECT id, task_name, file_name, original_name, description, file_size, file_path, created_at
                 FROM manuals
                 ORDER BY created_at DESC
             ");
+            
+            error_log("SQL prepared, executing...");
             $stmt->execute();
-            return $stmt->fetchAll();
+            $result = $stmt->fetchAll();
+            
+            error_log("getAllManuals result: " . print_r($result, true));
+            return $result;
+            
         } catch (PDOException $e) {
-            error_log("getAllManuals error: " . $e->getMessage());
+            error_log("getAllManuals PDO error: " . $e->getMessage());
+            error_log("getAllManuals PDO error code: " . $e->getCode());
+            return false;
+        }
+    }
+
+    // マニュアル削除
+    public function deleteManual($id) {
+        try {
+            error_log("Database deleteManual called with id: $id");
+            
+            // まずファイルパスを取得
+            $stmt = $this->getConnection()->prepare("
+                SELECT file_path FROM manuals WHERE id = ?
+            ");
+            
+            error_log("SQL prepared for file path, executing with id: $id");
+            $stmt->execute([$id]);
+            $manual = $stmt->fetch();
+            
+            if (!$manual) {
+                error_log("Manual not found with id: $id");
+                return false;
+            }
+            
+            error_log("Found manual with file_path: " . $manual['file_path']);
+            
+            // ファイルを削除
+            if (!empty($manual['file_path']) && file_exists($manual['file_path'])) {
+                if (unlink($manual['file_path'])) {
+                    error_log("File deleted successfully: " . $manual['file_path']);
+                } else {
+                    error_log("Failed to delete file: " . $manual['file_path']);
+                }
+            }
+            
+            // データベースからレコードを削除
+            $stmt = $this->getConnection()->prepare("DELETE FROM manuals WHERE id = ?");
+            error_log("SQL prepared for deletion, executing with id: $id");
+            $result = $stmt->execute([$id]);
+            
+            error_log("deleteManual result: " . ($result ? 'true' : 'false'));
+            return $result;
+            
+        } catch (PDOException $e) {
+            error_log("deleteManual PDO error: " . $e->getMessage());
+            error_log("deleteManual PDO error code: " . $e->getCode());
+            return false;
+        }
+    }
+
+    // マニュアル詳細取得
+    public function getManualById($id) {
+        try {
+            error_log("Database getManualById called with id: $id");
+            
+            $stmt = $this->getConnection()->prepare("
+                SELECT * FROM manuals WHERE id = ?
+            ");
+            
+            error_log("SQL prepared, executing with id: $id");
+            $stmt->execute([$id]);
+            $result = $stmt->fetch();
+            
+            error_log("getManualById result: " . print_r($result, true));
+            return $result;
+            
+        } catch (PDOException $e) {
+            error_log("getManualById PDO error: " . $e->getMessage());
+            error_log("getManualById PDO error code: " . $e->getCode());
+            return false;
+        }
+    }
+
+    // タスク名によるマニュアル取得
+    public function getManualsByTaskName($taskName) {
+        try {
+            error_log("Database getManualsByTaskName called with taskName: $taskName");
+            
+            $stmt = $this->getConnection()->prepare("
+                SELECT * FROM manuals WHERE task_name = ?
+            ");
+            
+            error_log("SQL prepared, executing with taskName: $taskName");
+            $stmt->execute([$taskName]);
+            $result = $stmt->fetchAll();
+            
+            error_log("getManualsByTaskName result: " . print_r($result, true));
+            return $result;
+            
+        } catch (PDOException $e) {
+            error_log("getManualsByTaskName PDO error: " . $e->getMessage());
+            error_log("getManualsByTaskName PDO error code: " . $e->getCode());
+            return false;
+        }
+    }
+
+    // マニュアル作成
+    public function createManual($taskName, $fileName, $originalName, $description, $fileSize) {
+        try {
+            error_log("Database createManual called with taskName: $taskName, fileName: $fileName");
+            
+            $stmt = $this->getConnection()->prepare("
+                INSERT INTO manuals (task_name, file_name, original_name, file_path, description, file_size, created_at, updated_at) 
+                VALUES (?, ?, ?, ?, ?, ?, NOW(), NOW())
+            ");
+            
+            // 絶対パスでファイルパスを設定
+            $filePath = __DIR__ . '/uploads/manuals/' . $fileName;
+            error_log("SQL prepared, executing with filePath: $filePath");
+            $result = $stmt->execute([$taskName, $fileName, $originalName, $filePath, $description, $fileSize]);
+            
+            error_log("createManual result: " . ($result ? 'true' : 'false'));
+            if ($result) {
+                error_log("Manual created successfully, last insert ID: " . $this->getConnection()->lastInsertId());
+            }
+            
+            return $result;
+            
+        } catch (PDOException $e) {
+            error_log("createManual PDO error: " . $e->getMessage());
+            error_log("createManual PDO error code: " . $e->getCode());
+            return false;
+        }
+    }
+
+    // タスクテンプレートのマニュアルありフラグ更新
+    public function updateTaskTemplateHasManual($taskName, $hasManual = true) {
+        try {
+            error_log("Database updateTaskTemplateHasManual called with taskName: $taskName, hasManual: " . ($hasManual ? 'true' : 'false'));
+            
+            $stmt = $this->getConnection()->prepare("
+                UPDATE task_templates 
+                SET has_manual = ?, updated_at = NOW()
+                WHERE task_name = ?
+            ");
+            
+            $value = $hasManual ? 1 : 0;
+            error_log("SQL prepared, executing with hasManual: $value, taskName: $taskName");
+            $result = $stmt->execute([$value, $taskName]);
+            
+            error_log("updateTaskTemplateHasManual result: " . ($result ? 'true' : 'false'));
+            return $result;
+            
+        } catch (PDOException $e) {
+            error_log("updateTaskTemplateHasManual PDO error: " . $e->getMessage());
+            error_log("updateTaskTemplateHasManual PDO error code: " . $e->getCode());
             return false;
         }
     }
@@ -598,13 +945,134 @@ class Database {
             $taskStats = $stmt->fetch();
 
             return [
-                'total_projects' => $projectStats['total_projects'] ?? 0,
-                'active_projects' => $projectStats['active_projects'] ?? 0,
-                'total_tasks' => $taskStats['total_tasks'] ?? 0,
-                'completed_tasks' => $taskStats['completed_tasks'] ?? 0
+                            'total_projects' => isset($projectStats['total_projects']) ? $projectStats['total_projects'] : 0,
+            'active_projects' => isset($projectStats['active_projects']) ? $projectStats['active_projects'] : 0,
+            'total_tasks' => isset($taskStats['total_tasks']) ? $taskStats['total_tasks'] : 0,
+            'completed_tasks' => isset($taskStats['completed_tasks']) ? $taskStats['completed_tasks'] : 0
             ];
         } catch (PDOException $e) {
             error_log("getSystemStatistics error: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    // クライアント関連メソッド
+    public function getAllClients() {
+        try {
+            $stmt = $this->getConnection()->prepare("
+                SELECT * FROM clients 
+                ORDER BY name
+            ");
+            $stmt->execute();
+            return $stmt->fetchAll();
+        } catch (PDOException $e) {
+            error_log("getAllClients error: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function getClientById($id) {
+        try {
+            $stmt = $this->getConnection()->prepare("
+                SELECT * FROM clients 
+                WHERE id = ?
+            ");
+            $stmt->execute([$id]);
+            return $stmt->fetch();
+        } catch (PDOException $e) {
+            error_log("getClientById error: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function createClient($name, $code, $contactPerson, $email, $phone, $address, $description, $isActive) {
+        try {
+            error_log("Database createClient called with parameters: name='$name', code='$code', contactPerson='$contactPerson', email='$email', phone='$phone', address='$address', description='$description', isActive='$isActive'");
+            
+            $stmt = $this->getConnection()->prepare("
+                INSERT INTO clients (name, code, contact_person, email, phone, address, description, is_active, created_at, updated_at) 
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
+            ");
+            
+            error_log("SQL prepared, executing with parameters...");
+            $result = $stmt->execute([$name, $code, $contactPerson, $email, $phone, $address, $description, $isActive]);
+            error_log("SQL execute result: " . ($result ? 'true' : 'false'));
+            
+            if ($result) {
+                error_log("Client inserted successfully, last insert ID: " . $this->getConnection()->lastInsertId());
+            } else {
+                error_log("SQL execute failed, error info: " . print_r($stmt->errorInfo(), true));
+            }
+            
+            return $result;
+        } catch (PDOException $e) {
+            error_log("createClient PDO error: " . $e->getMessage());
+            error_log("createClient PDO error code: " . $e->getCode());
+            error_log("createClient PDO error trace: " . $e->getTraceAsString());
+            return false;
+        }
+    }
+
+    public function updateClient($id, $name, $code, $contactPerson, $email, $phone, $address, $description, $isActive) {
+        try {
+            $stmt = $this->getConnection()->prepare("
+                UPDATE clients 
+                SET name = ?, code = ?, contact_person = ?, email = ?, phone = ?, address = ?, description = ?, is_active = ?, updated_at = NOW()
+                WHERE id = ?
+            ");
+            return $stmt->execute([$name, $code, $contactPerson, $email, $phone, $address, $description, $isActive, $id]);
+        } catch (PDOException $e) {
+            error_log("updateClient error: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function deleteClient($id) {
+        try {
+            $stmt = $this->getConnection()->prepare("DELETE FROM clients WHERE id = ?");
+            return $stmt->execute([$id]);
+        } catch (PDOException $e) {
+            error_log("deleteClient error: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    // プロジェクト削除
+    public function deleteProject($projectId) {
+        try {
+            error_log("Database deleteProject called with ID: $projectId");
+            
+            $this->getConnection()->beginTransaction();
+            
+            // 関連するタスクを削除
+            $stmt = $this->getConnection()->prepare("DELETE FROM tasks WHERE project_id = ?");
+            $taskResult = $stmt->execute([$projectId]);
+            error_log("Tasks deletion result: " . ($taskResult ? 'success' : 'failed'));
+            
+            // プロジェクト履歴を削除
+            $stmt = $this->getConnection()->prepare("DELETE FROM project_history WHERE project_id = ?");
+            $historyResult = $stmt->execute([$projectId]);
+            error_log("Project history deletion result: " . ($historyResult ? 'success' : 'failed'));
+            
+            // プロジェクトを削除
+            $stmt = $this->getConnection()->prepare("DELETE FROM projects WHERE id = ?");
+            $projectResult = $stmt->execute([$projectId]);
+            error_log("Project deletion result: " . ($projectResult ? 'success' : 'failed'));
+            
+            if ($projectResult) {
+                $this->getConnection()->commit();
+                error_log("Project deleted successfully from database: $projectId");
+                return true;
+            } else {
+                $this->getConnection()->rollBack();
+                error_log("Project deletion failed, rolling back transaction");
+                return false;
+            }
+        } catch (PDOException $e) {
+            $this->getConnection()->rollBack();
+            error_log("deleteProject PDO error: " . $e->getMessage());
+            error_log("deleteProject PDO error code: " . $e->getCode());
+            error_log("deleteProject PDO error trace: " . $e->getTraceAsString());
             return false;
         }
     }
