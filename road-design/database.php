@@ -77,29 +77,50 @@ class Database {
     }
     
     // プロジェクト関連メソッド
-    public function createProject($name, $description, $clientName, $projectCode, $startDate, $targetEndDate, $createdBy) {
+    public function createProject($name, $description, $clientId, $projectCode, $startDate, $endDate, $createdBy) {
         try {
-            $this->getConnection()->beginTransaction();
+            error_log("Database createProject called with: name=$name, clientId=$clientId, startDate=$startDate, endDate=$endDate");
+            
+            $connection = $this->getConnection();
+            if (!$connection) {
+                error_log("Database createProject error: No database connection");
+                return false;
+            }
+            
+            $connection->beginTransaction();
             
             // プロジェクト作成
-            $stmt = $this->getConnection()->prepare("
-                INSERT INTO projects (name, description, client_name, project_code, start_date, target_end_date, created_by) 
+            $stmt = $connection->prepare("
+                INSERT INTO projects (name, description, client_id, project_code, start_date, end_date, created_by) 
                 VALUES (?, ?, ?, ?, ?, ?, ?)
             ");
-            $stmt->execute([$name, $description, $clientName, $projectCode, $startDate, $targetEndDate, $createdBy]);
-            $projectId = $this->getConnection()->lastInsertId();
             
-            // テンプレートからタスクを生成
-            $this->createTasksFromTemplates($projectId);
+            error_log("Executing project creation SQL with params: name=$name, clientId=$clientId, startDate=$startDate, endDate=$endDate");
+            $result = $stmt->execute([$name, $description, $clientId, $projectCode, $startDate, $endDate, $createdBy]);
+            
+            if (!$result) {
+                error_log("Database createProject error: Failed to execute project creation SQL");
+                $connection->rollBack();
+                return false;
+            }
+            
+            $projectId = $connection->lastInsertId();
+            error_log("Project created successfully with ID: $projectId");
             
             // 履歴記録
             $this->addProjectHistory($projectId, null, $createdBy, 'created', null, $name, 'プロジェクト作成');
             
-            $this->getConnection()->commit();
+            $connection->commit();
+            error_log("Database createProject completed successfully");
             return $projectId;
         } catch (PDOException $e) {
             $this->getConnection()->rollBack();
-            error_log("createProject error: " . $e->getMessage());
+            error_log("createProject PDO error: " . $e->getMessage());
+            error_log("createProject PDO error code: " . $e->getCode());
+            return false;
+        } catch (Exception $e) {
+            $this->getConnection()->rollBack();
+            error_log("createProject general error: " . $e->getMessage());
             return false;
         }
     }
@@ -136,6 +157,8 @@ class Database {
     
     public function getTaskById($taskId) {
         try {
+            error_log("Database getTaskById called with taskId: $taskId");
+            
             $stmt = $this->getConnection()->prepare("
                 SELECT t.*, u.name as assigned_to_name,
                        tt.content as template_content,
@@ -147,6 +170,11 @@ class Database {
             ");
             $stmt->execute([$taskId]);
             $task = $stmt->fetch();
+            
+            error_log("Database getTaskById result: " . json_encode($task));
+            if ($task) {
+                error_log("Database getTaskById planned_date: " . ($task['planned_date'] ?? 'null'));
+            }
             
             if ($task && $task['notes']) {
                 $task['notes'] = explode('|', $task['notes'])[0]; // 最新のノートのみ取得
@@ -161,10 +189,62 @@ class Database {
     
     public function addTaskNote($taskId, $userId, $note) {
         try {
+            error_log("Database addTaskNote called with taskId: $taskId, userId: $userId, note: '$note'");
+            
             $stmt = $this->getConnection()->prepare("INSERT INTO task_notes (task_id, user_id, note, created_at) VALUES (?, ?, ?, NOW())");
-            return $stmt->execute([$taskId, $userId, $note]);
+            $result = $stmt->execute([$taskId, $userId, $note]);
+            
+            error_log("Database addTaskNote execute result: " . ($result ? 'true' : 'false'));
+            if (!$result) {
+                error_log("Database addTaskNote error info: " . print_r($stmt->errorInfo(), true));
+            }
+            
+            return $result;
         } catch (PDOException $e) {
-            error_log("addTaskNote error: " . $e->getMessage());
+            error_log("addTaskNote PDO error: " . $e->getMessage());
+            error_log("addTaskNote PDO error code: " . $e->getCode());
+            return false;
+        }
+    }
+
+    // タスクメモ更新
+    public function updateTaskNote($noteId, $note) {
+        try {
+            error_log("Database updateTaskNote called with noteId: $noteId, note: '$note'");
+            
+            $stmt = $this->getConnection()->prepare("UPDATE task_notes SET note = ? WHERE id = ?");
+            $result = $stmt->execute([$note, $noteId]);
+            
+            error_log("Database updateTaskNote execute result: " . ($result ? 'true' : 'false'));
+            if (!$result) {
+                error_log("Database updateTaskNote error info: " . print_r($stmt->errorInfo(), true));
+            }
+            
+            return $result;
+        } catch (PDOException $e) {
+            error_log("updateTaskNote PDO error: " . $e->getMessage());
+            error_log("updateTaskNote PDO error code: " . $e->getCode());
+            return false;
+        }
+    }
+
+    // タスクメモ削除
+    public function deleteTaskNote($noteId) {
+        try {
+            error_log("Database deleteTaskNote called with noteId: $noteId");
+            
+            $stmt = $this->getConnection()->prepare("DELETE FROM task_notes WHERE id = ?");
+            $result = $stmt->execute([$noteId]);
+            
+            error_log("Database deleteTaskNote execute result: " . ($result ? 'true' : 'false'));
+            if (!$result) {
+                error_log("Database deleteTaskNote error info: " . print_r($stmt->errorInfo(), true));
+            }
+            
+            return $result;
+        } catch (PDOException $e) {
+            error_log("deleteTaskNote PDO error: " . $e->getMessage());
+            error_log("deleteTaskNote PDO error code: " . $e->getCode());
             return false;
         }
     }
@@ -172,6 +252,8 @@ class Database {
     // タスクメモ取得（ユーザー名付き）
     public function getTaskNotes($taskId) {
         try {
+            error_log("Database getTaskNotes called with taskId: $taskId");
+            
             $stmt = $this->getConnection()->prepare("
                 SELECT tn.*, u.name as user_name
                 FROM task_notes tn
@@ -180,7 +262,10 @@ class Database {
                 ORDER BY tn.created_at DESC
             ");
             $stmt->execute([$taskId]);
-            return $stmt->fetchAll();
+            $result = $stmt->fetchAll();
+            
+            error_log("Database getTaskNotes result: " . print_r($result, true));
+            return $result;
         } catch (PDOException $e) {
             error_log("getTaskNotes error: " . $e->getMessage());
             return false;
@@ -199,6 +284,86 @@ class Database {
             return $stmt->fetch();
         } catch (PDOException $e) {
             error_log("getProjectById error: " . $e->getMessage());
+            return false;
+        }
+    }
+    
+    public function updateProject($projectId, $name, $clientId, $startDate, $endDate, $status) {
+        try {
+            error_log("Database updateProject called with projectId: $projectId, name: $name, clientId: $clientId");
+            
+            $connection = $this->getConnection();
+            if (!$connection) {
+                error_log("Database updateProject error: No database connection");
+                return false;
+            }
+            
+            $connection->beginTransaction();
+            
+            // プロジェクトの存在確認
+            $stmt = $connection->prepare("SELECT * FROM projects WHERE id = ?");
+            $stmt->execute([$projectId]);
+            $existingProject = $stmt->fetch();
+            
+            if (!$existingProject) {
+                error_log("Database updateProject error: Project not found with ID: $projectId");
+                $connection->rollBack();
+                return false;
+            }
+            
+            error_log("Database updateProject: Existing project found: " . json_encode($existingProject));
+            
+            // データの変更があるかチェック
+            $hasChanges = false;
+            if ($existingProject['name'] != $name) {
+                error_log("Project name changed: {$existingProject['name']} -> $name");
+                $hasChanges = true;
+            }
+            if ($existingProject['client_id'] != $clientId) {
+                error_log("Project client_id changed: {$existingProject['client_id']} -> $clientId");
+                $hasChanges = true;
+            }
+            if ($existingProject['start_date'] != $startDate) {
+                error_log("Project start_date changed: {$existingProject['start_date']} -> $startDate");
+                $hasChanges = true;
+            }
+            if ($existingProject['end_date'] != $endDate) {
+                error_log("Project end_date changed: {$existingProject['end_date']} -> $endDate");
+                $hasChanges = true;
+            }
+            if ($existingProject['status'] != $status) {
+                error_log("Project status changed: {$existingProject['status']} -> $status");
+                $hasChanges = true;
+            }
+            
+            if (!$hasChanges) {
+                error_log("No changes detected, skipping update");
+                $connection->rollBack();
+                return true;
+            }
+            
+            $sql = "UPDATE projects SET name = ?, client_id = ?, start_date = ?, end_date = ?, status = ?, updated_at = NOW() WHERE id = ?";
+            $params = [$name, $clientId, $startDate, $endDate, $status, $projectId];
+            
+            error_log("Executing SQL: $sql");
+            error_log("SQL parameters: " . json_encode($params));
+            
+            $stmt = $connection->prepare($sql);
+            $result = $stmt->execute($params);
+            
+            error_log("SQL execution result: " . ($result ? 'true' : 'false'));
+            error_log("Affected rows: " . $stmt->rowCount());
+            
+            if ($stmt->rowCount() === 0) {
+                error_log("Database updateProject warning: No rows were updated");
+            }
+            
+            $connection->commit();
+            error_log("Database updateProject: Transaction committed successfully");
+            return true;
+        } catch (PDOException $e) {
+            $this->getConnection()->rollBack();
+            error_log("updateProject error: " . $e->getMessage());
             return false;
         }
     }
@@ -300,32 +465,54 @@ class Database {
     
     public function getProjectTasks($projectId) {
         try {
+            error_log("getProjectTasks called with project ID: $projectId");
+            
             $stmt = $this->getConnection()->prepare("
-                SELECT t.*, t.task_name as name, u.name as assigned_user_name, tt.name as template_name, tt.content as template_content, 
-                       tt.is_technical_work, tt.has_manual, tt.phase_id, tt.task_order, p.name as phase_name
+                SELECT t.*, 
+                       t.task_name as name, 
+                       u.name as assigned_to_name, 
+                       tt.task_name as template_name, 
+                       tt.content as template_content, 
+                       tt.is_technical_work, 
+                       tt.has_manual, 
+                       tt.task_order,
+                       tt.phase_name,
+                       (SELECT GROUP_CONCAT(note SEPARATOR '|') FROM task_notes WHERE task_id = t.id ORDER BY created_at DESC) as notes
                 FROM tasks t 
                 LEFT JOIN users u ON t.assigned_to = u.id
                 LEFT JOIN task_templates tt ON t.template_id = tt.id
-                LEFT JOIN phases p ON tt.phase_id = p.id
                 WHERE t.project_id = ?
-                ORDER BY tt.phase_id, tt.task_order
+                ORDER BY tt.phase_name, tt.task_order
             ");
             $stmt->execute([$projectId]);
-            return $stmt->fetchAll();
+            $result = $stmt->fetchAll();
+            
+            error_log("getProjectTasks result: " . count($result) . " tasks found");
+            error_log("getProjectTasks sample data: " . json_encode($result[0] ?? null));
+            
+            // 各タスクの期限データを確認
+            foreach ($result as $index => $task) {
+                error_log("タスク{$index} (ID: {$task['id']}) planned_date: " . ($task['planned_date'] ?? 'null'));
+            }
+            
+            return $result;
         } catch (PDOException $e) {
             error_log("getProjectTasks error: " . $e->getMessage());
+            error_log("getProjectTasks error trace: " . $e->getTraceAsString());
             return false;
         }
     }
     
     public function updateTaskStatus($taskId, $status, $userId, $notes = null) {
         try {
+            error_log("Database updateTaskStatus called with taskId: $taskId, status: $status, userId: $userId");
             $this->getConnection()->beginTransaction();
             
             // 現在の状態を取得
             $stmt = $this->getConnection()->prepare("SELECT * FROM tasks WHERE id = ?");
             $stmt->execute([$taskId]);
             $currentTask = $stmt->fetch();
+            error_log("Current task data: " . json_encode($currentTask));
             
             // タスク更新
             $updateData = ['status' => $status, 'updated_at' => date('Y-m-d H:i:s')];
@@ -337,8 +524,17 @@ class Database {
             }
             
             $setClause = implode(', ', array_map(function($key) { return "$key = ?"; }, array_keys($updateData)));
-            $stmt = $this->getConnection()->prepare("UPDATE tasks SET $setClause WHERE id = ?");
-            $stmt->execute(array_merge(array_values($updateData), [$taskId]));
+            $sql = "UPDATE tasks SET $setClause WHERE id = ?";
+            $params = array_merge(array_values($updateData), [$taskId]);
+            
+            error_log("Executing SQL: $sql");
+            error_log("SQL parameters: " . json_encode($params));
+            
+            $stmt = $this->getConnection()->prepare($sql);
+            $result = $stmt->execute($params);
+            
+            error_log("SQL execution result: " . ($result ? 'true' : 'false'));
+            error_log("Affected rows: " . $stmt->rowCount());
             
             // ノート追加
             if ($notes) {
@@ -350,6 +546,7 @@ class Database {
             $this->addProjectHistory($currentTask['project_id'], $taskId, $userId, 'status_changed', $currentTask['status'], $status, "タスク状態変更: {$currentTask['task_name']}");
             
             $this->getConnection()->commit();
+            error_log("Database updateTaskStatus: Transaction committed successfully");
             return true;
         } catch (PDOException $e) {
             $this->getConnection()->rollBack();
@@ -360,14 +557,62 @@ class Database {
     
     public function assignTask($taskId, $assignedTo, $userId, $plannedDate = null) {
         try {
-            $this->getConnection()->beginTransaction();
+            error_log("Database assignTask called with taskId: $taskId, assignedTo: $assignedTo, plannedDate: $plannedDate");
             
-            $stmt = $this->getConnection()->prepare("SELECT * FROM tasks WHERE id = ?");
+            // 接続の確認
+            $connection = $this->getConnection();
+            if (!$connection) {
+                error_log("Database assignTask error: No database connection");
+                return false;
+            }
+            
+            $connection->beginTransaction();
+            
+            // タスクの存在確認
+            $stmt = $connection->prepare("SELECT * FROM tasks WHERE id = ?");
             $stmt->execute([$taskId]);
             $currentTask = $stmt->fetch();
             
-            $stmt = $this->getConnection()->prepare("UPDATE tasks SET assigned_to = ?, planned_date = ? WHERE id = ?");
-            $stmt->execute([$assignedTo, $plannedDate, $taskId]);
+            if (!$currentTask) {
+                error_log("Database assignTask error: Task not found with ID: $taskId");
+                $connection->rollBack();
+                return false;
+            }
+            
+            error_log("Current task data: " . json_encode($currentTask));
+            
+            // データの変更があるかチェック
+            $hasChanges = false;
+            if ($currentTask['assigned_to'] != $assignedTo) {
+                error_log("Assigned to changed: {$currentTask['assigned_to']} -> $assignedTo");
+                $hasChanges = true;
+            }
+            if ($currentTask['planned_date'] != $plannedDate) {
+                error_log("Planned date changed: {$currentTask['planned_date']} -> $plannedDate");
+                $hasChanges = true;
+            }
+            
+            if (!$hasChanges) {
+                error_log("No changes detected, skipping update");
+                $connection->rollBack();
+                return true;
+            }
+            
+            $sql = "UPDATE tasks SET assigned_to = ?, planned_date = ?, updated_at = NOW() WHERE id = ?";
+            $params = [$assignedTo, $plannedDate, $taskId];
+            
+            error_log("Executing SQL: $sql");
+            error_log("SQL parameters: " . json_encode($params));
+            
+            $stmt = $connection->prepare($sql);
+            $result = $stmt->execute($params);
+            
+            error_log("SQL execution result: " . ($result ? 'true' : 'false'));
+            error_log("Affected rows: " . $stmt->rowCount());
+            
+            if ($stmt->rowCount() === 0) {
+                error_log("Database assignTask warning: No rows were updated");
+            }
             
             // 履歴記録
             $oldAssignee = $currentTask['assigned_to'] ? "ID: {$currentTask['assigned_to']}" : "unassigned";
@@ -375,6 +620,7 @@ class Database {
             $this->addProjectHistory($currentTask['project_id'], $taskId, $userId, 'assigned', $oldAssignee, $newAssignee, "タスク担当者変更: {$currentTask['task_name']}");
             
             $this->getConnection()->commit();
+            error_log("Database assignTask: Transaction committed successfully");
             return true;
         } catch (PDOException $e) {
             $this->getConnection()->rollBack();
@@ -611,24 +857,58 @@ class Database {
     // テンプレート管理
     public function getAllTemplates() {
         try {
-            error_log("Database getAllTemplates called");
+            error_log("=== Database getAllTemplates called ===");
             
-            $stmt = $this->getConnection()->prepare("
-                SELECT id, phase_name, task_name, task_order, is_technical_work, has_manual, content
+            $connection = $this->getConnection();
+            if (!$connection) {
+                error_log("getAllTemplates error: No database connection");
+                return false;
+            }
+            
+            error_log("Database connection established successfully");
+            
+            $sql = "
+                SELECT id, phase_name, task_name, task_order, is_technical_work, has_manual, description as content
                 FROM task_templates
                 ORDER BY phase_name, task_order
-            ");
+            ";
             
-            error_log("SQL prepared, executing...");
-            $stmt->execute();
-            $result = $stmt->fetchAll();
+            error_log("Preparing SQL: " . $sql);
+            $stmt = $connection->prepare($sql);
             
-            error_log("getAllTemplates result: " . print_r($result, true));
-            return $result;
+            if (!$stmt) {
+                error_log("getAllTemplates error: Failed to prepare statement");
+                return false;
+            }
+            
+            error_log("SQL prepared successfully, executing...");
+            $result = $stmt->execute();
+            
+            if (!$result) {
+                error_log("getAllTemplates error: Failed to execute statement");
+                return false;
+            }
+            
+            $templates = $stmt->fetchAll();
+            error_log("getAllTemplates executed successfully, found " . count($templates) . " templates");
+            
+            if (count($templates) > 0) {
+                error_log("First template structure: " . print_r($templates[0], true));
+                error_log("First template keys: " . implode(', ', array_keys($templates[0])));
+            }
+            
+            error_log("getAllTemplates result: " . print_r($templates, true));
+            
+            return $templates;
             
         } catch (PDOException $e) {
             error_log("getAllTemplates PDO error: " . $e->getMessage());
             error_log("getAllTemplates PDO error code: " . $e->getCode());
+            error_log("getAllTemplates PDO error trace: " . $e->getTraceAsString());
+            return false;
+        } catch (Exception $e) {
+            error_log("getAllTemplates general error: " . $e->getMessage());
+            error_log("getAllTemplates general error trace: " . $e->getTraceAsString());
             return false;
         }
     }
@@ -959,12 +1239,15 @@ class Database {
     // クライアント関連メソッド
     public function getAllClients() {
         try {
+            error_log("Database getAllClients called");
             $stmt = $this->getConnection()->prepare("
                 SELECT * FROM clients 
                 ORDER BY name
             ");
             $stmt->execute();
-            return $stmt->fetchAll();
+            $result = $stmt->fetchAll();
+            error_log("Database getAllClients result: " . json_encode($result));
+            return $result;
         } catch (PDOException $e) {
             error_log("getAllClients error: " . $e->getMessage());
             return false;

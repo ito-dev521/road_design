@@ -197,20 +197,17 @@ class RoadDesignApp {
         // モーダル外クリックで閉じる機能を完全に無効化
         // ユーザーが意図しない操作でモーダルが閉じることを防ぐ
         document.querySelectorAll('.modal-overlay').forEach(modal => {
-            // 背景クリックを完全に無効化
+            // 背景クリックを無効化（モーダル内の要素は除外）
             modal.addEventListener('click', (e) => {
+                // モーダル内の要素がクリックされた場合は何もしない
+                if (e.target.closest('.modal')) {
+                    return;
+                }
+                // 背景がクリックされた場合のみ無効化
                 e.preventDefault();
                 e.stopPropagation();
                 return false;
             }, true);
-            
-            // モーダル内のクリックは正常に動作させる
-            const modalContent = modal.querySelector('.modal');
-            if (modalContent) {
-                modalContent.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                });
-            }
         });
     }
 

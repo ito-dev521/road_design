@@ -279,6 +279,16 @@ class ApiController {
                             return $this->addTaskNote($taskId, $input);
                         }
                     }
+                    
+                    // メモ編集・削除
+                    if (preg_match('/^notes\/(\d+)$/', $path, $matches)) {
+                        $noteId = $matches[1];
+                        if ($method === 'PUT') {
+                            return $this->updateTaskNote($noteId, $input);
+                        } elseif ($method === 'DELETE') {
+                            return $this->deleteTaskNote($noteId);
+                        }
+                    }
                     if ($path === 'progress_report') {
                         return $this->getProgressReport(isset($_GET['project_id']) ? $_GET['project_id'] : null);
                     }
@@ -372,30 +382,42 @@ class ApiController {
     }
     
     public function createProject($input) {
-        // 一時的に認証を無効化（デバッグ用）
-        // $this->auth->requirePermission('technical'); // 技術者以上の権限が必要
-        
-        // セッション開始を確実にする
-        if (session_status() === PHP_SESSION_NONE) {
-            session_start();
-        }
-        
-        // 入力値検証
-        $required = ['name'];
-        foreach ($required as $field) {
-            if (empty($input[$field])) {
-                throw new Exception("Field '$field' is required", 400);
+        try {
+            // 一時的に認証を無効化（デバッグ用）
+            // $this->auth->requirePermission('technical'); // 技術者以上の権限が必要
+            
+            error_log("=== API createProject 開始 ===");
+            error_log("入力データ: " . json_encode($input));
+            
+            // セッション開始を確実にする
+            if (session_status() === PHP_SESSION_NONE) {
+                session_start();
             }
-        }
+            
+            // 入力値検証
+            $required = ['name'];
+            foreach ($required as $field) {
+                if (empty($input[$field])) {
+                    error_log("createProject error: Required field '$field' is empty");
+                    throw new Exception("Field '$field' is required", 400);
+                }
+            }
         
         // データ整理
         $name = trim($input['name']);
         $description = trim(isset($input['description']) ? $input['description'] : '');
-        $clientName = trim(isset($input['client_name']) ? $input['client_name'] : '');
+        $clientId = isset($input['client_id']) ? $input['client_id'] : null;
         $projectCode = trim(isset($input['project_code']) ? $input['project_code'] : '');
         $startDate = isset($input['start_date']) ? $input['start_date'] : null;
-        $targetEndDate = isset($input['target_end_date']) ? $input['target_end_date'] : null;
-        $selectedTemplates = isset($input['selected_templates']) ? $input['selected_templates'] : [];
+        $endDate = isset($input['end_date']) ? $input['end_date'] : null;
+        $templates = isset($input['templates']) ? $input['templates'] : [];
+        
+        error_log("=== createProject 入力データ ===");
+        error_log("プロジェクト名: $name");
+        error_log("発注者ID: $clientId");
+        error_log("開始日: $startDate");
+        error_log("終了日: $endDate");
+        error_log("テンプレート: " . print_r($templates, true));
         
         // ユーザーIDの取得（デフォルトは1）
         $currentUser = $this->auth->getCurrentUser();
@@ -404,18 +426,18 @@ class ApiController {
         error_log("=== createProject 開始 ===");
         error_log("プロジェクト名: $name");
         error_log("作成者ID: $createdBy");
-        error_log("選択されたテンプレート: " . implode(', ', $selectedTemplates));
+        error_log("選択されたテンプレート: " . implode(', ', $templates));
         
         // 日付フォーマット検証
         if ($startDate && !$this->isValidDate($startDate)) {
             throw new Exception('Invalid start date format', 400);
         }
-        if ($targetEndDate && !$this->isValidDate($targetEndDate)) {
+        if ($endDate && !$this->isValidDate($endDate)) {
             throw new Exception('Invalid end date format', 400);
         }
         
         // プロジェクト作成
-        $projectId = $this->db->createProject($name, $description, $clientName, $projectCode, $startDate, $targetEndDate, $createdBy);
+        $projectId = $this->db->createProject($name, $description, $clientId, $projectCode, $startDate, $endDate, $createdBy);
         
         if (!$projectId) {
             error_log("プロジェクト作成失敗");
@@ -425,8 +447,8 @@ class ApiController {
         error_log("プロジェクト作成成功: ID $projectId");
         
         // 選択されたテンプレートからタスクを作成
-        if (!empty($selectedTemplates) && is_array($selectedTemplates)) {
-            $taskCreationResult = $this->db->createTasksFromSelectedTemplates($projectId, $selectedTemplates);
+        if (!empty($templates) && is_array($templates)) {
+            $taskCreationResult = $this->db->createTasksFromSelectedTemplates($projectId, $templates);
             if (!$taskCreationResult) {
                 error_log("Warning: Failed to create tasks from selected templates for project ID: $projectId");
             } else {
@@ -434,13 +456,76 @@ class ApiController {
             }
         }
         
-        error_log("=== createProject 完了 ===");
+            error_log("=== createProject 完了 ===");
+            
+            return [
+                'success' => true,
+                'message' => 'プロジェクトが作成されました',
+                'project_id' => $projectId
+            ];
+        } catch (Exception $e) {
+            error_log("createProject error: " . $e->getMessage());
+            error_log("createProject error trace: " . $e->getTraceAsString());
+            return [
+                'success' => false,
+                'message' => 'プロジェクトの作成に失敗しました',
+                'error' => $e->getMessage(),
+                'error_code' => $e->getCode()
+            ];
+        }
+    }
+    
+    public function updateProject($projectId, $input) {
+        // 一時的に認証を無効化（デバッグ用）
+        // $this->auth->requirePermission('technical'); // 技術者以上の権限が必要
         
-        return [
-            'success' => true,
-            'message' => 'プロジェクトが作成されました',
-            'project_id' => $projectId
-        ];
+        error_log("updateProject called with projectId: $projectId, input: " . json_encode($input));
+        
+        if (!is_numeric($projectId)) {
+            error_log("updateProject error: Invalid project ID: $projectId");
+            throw new Exception('Invalid project ID', 400);
+        }
+        
+        $name = trim(isset($input['name']) ? $input['name'] : '');
+        $clientId = isset($input['client_id']) ? $input['client_id'] : null;
+        $startDate = isset($input['start_date']) ? $input['start_date'] : null;
+        $endDate = isset($input['end_date']) ? $input['end_date'] : null;
+        $status = isset($input['status']) ? $input['status'] : 'active';
+        
+        error_log("updateProject parsed values - name: $name, clientId: $clientId, startDate: $startDate, endDate: $endDate, status: $status");
+        
+        if (empty($name)) {
+            error_log("updateProject error: Project name is required");
+            throw new Exception('Project name is required', 400);
+        }
+        
+        try {
+            // プロジェクトの存在確認
+            $existingProject = $this->db->getProjectById($projectId);
+            if (!$existingProject) {
+                error_log("updateProject error: Project not found with ID: $projectId");
+                throw new Exception('Project not found', 404);
+            }
+            
+            error_log("updateProject: Existing project found: " . json_encode($existingProject));
+            
+            // プロジェクト更新
+            $result = $this->db->updateProject($projectId, $name, $clientId, $startDate, $endDate, $status);
+            if (!$result) {
+                error_log("updateProject error: Database update failed");
+                throw new Exception('Failed to update project', 500);
+            }
+            
+            error_log("updateProject: Project updated successfully");
+            
+            return [
+                'success' => true,
+                'message' => 'プロジェクトが更新されました'
+            ];
+        } catch (Exception $e) {
+            error_log("updateProject error: " . $e->getMessage());
+            throw $e;
+        }
     }
     
     public function getProject($projectId) {
@@ -487,10 +572,11 @@ class ApiController {
             }
 
             error_log("Successfully retrieved " . count($tasks) . " tasks for project: $projectId");
+            error_log("Tasks data: " . json_encode($tasks, JSON_UNESCAPED_UNICODE));
             
             return [
                 'success' => true,
-                'tasks' => $tasks
+                'tasks' => $tasks ?: []
             ];
         } catch (Exception $e) {
             error_log("Error in getProjectTasks: " . $e->getMessage());
@@ -534,18 +620,25 @@ class ApiController {
         // 一時的に認証を無効化（デバッグ用）
         // $this->auth->requireLogin();
         
+        error_log("getTask called with taskId: $taskId");
+        
         if (!is_numeric($taskId)) {
+            error_log("getTask error: Invalid task ID: $taskId");
             throw new Exception('Invalid task ID', 400);
         }
         
         try {
             $task = $this->db->getTaskById($taskId);
+            error_log("getTask database result: " . json_encode($task));
+            
             if ($task) {
+                error_log("getTask planned_date: " . ($task['planned_date'] ?? 'null'));
                 return [
                     'success' => true,
                     'task' => $task
                 ];
             } else {
+                error_log("getTask: Task not found");
                 return [
                     'success' => false,
                     'message' => 'タスクが見つかりません'
@@ -564,37 +657,58 @@ class ApiController {
         // 一時的に認証を無効化（デバッグ用）
         // $this->auth->requireLogin();
         
+        error_log("updateTask called with input: " . json_encode($input));
+        
         $taskId = isset($input['task_id']) ? $input['task_id'] : null;
         $status = isset($input['status']) ? $input['status'] : null;
         $assignedTo = isset($input['assigned_to']) ? $input['assigned_to'] : null;
         $plannedDate = isset($input['planned_date']) ? $input['planned_date'] : null;
         $notes = trim(isset($input['notes']) ? $input['notes'] : '');
         
+        error_log("updateTask parsed values - taskId: $taskId, status: $status, assignedTo: $assignedTo, plannedDate: $plannedDate");
+        
         if (!$taskId) {
+            error_log("updateTask error: Task ID is required");
             throw new Exception('Task ID is required', 400);
         }
+        
+        // タスクの存在確認
+        $existingTask = $this->db->getTaskById($taskId);
+        if (!$existingTask) {
+            error_log("updateTask error: Task not found with ID: $taskId");
+            throw new Exception('Task not found', 404);
+        }
+        
+        error_log("updateTask: Existing task found: " . json_encode($existingTask));
         
         // デフォルトユーザーIDを設定（認証無効化時）
         $userId = 1; // デフォルト管理者ユーザー
         
         // ステータス更新
         if ($status) {
-            $validStatuses = ['not_started', 'in_progress', 'completed', 'not_applicable'];
+            error_log("updateTask: Updating status to '$status' for task $taskId");
+            $validStatuses = ['not_started', 'in_progress', 'completed', 'needs_confirmation', 'not_applicable'];
             if (!in_array($status, $validStatuses)) {
+                error_log("updateTask error: Invalid status '$status'. Valid statuses: " . implode(', ', $validStatuses));
                 throw new Exception('Invalid status', 400);
             }
             
-            $this->db->updateTaskStatus($taskId, $status, $userId, $notes ?: null);
+            $result = $this->db->updateTaskStatus($taskId, $status, $userId, $notes ?: null);
+            error_log("updateTask: updateTaskStatus result: " . ($result ? 'true' : 'false'));
         }
         
         // 担当者・日付更新
         if ($assignedTo !== null || $plannedDate !== null) {
+            error_log("updateTask: Updating assignee/date - assignedTo: $assignedTo, plannedDate: $plannedDate");
+            
             // 日付形式検証
             if ($plannedDate && !$this->isValidDate($plannedDate)) {
+                error_log("updateTask error: Invalid planned date format: $plannedDate");
                 throw new Exception('Invalid planned date format', 400);
             }
             
-            $this->db->assignTask($taskId, $assignedTo ?: null, $userId, $plannedDate ?: null);
+            $result = $this->db->assignTask($taskId, $assignedTo ?: null, $userId, $plannedDate ?: null);
+            error_log("updateTask: assignTask result: " . ($result ? 'true' : 'false'));
         }
         
         return [
@@ -608,18 +722,24 @@ class ApiController {
         // 一時的に認証を無効化（デバッグ用）
         // $this->auth->requireLogin();
         
+        error_log("getTaskNotes called with taskId: $taskId");
+        
         if (!is_numeric($taskId)) {
+            error_log("Invalid task ID: $taskId");
             throw new Exception('Invalid task ID', 400);
         }
         
         try {
             $notes = $this->db->getTaskNotes($taskId);
+            error_log("getTaskNotes database result: " . print_r($notes, true));
+            
             if ($notes !== false) {
                 return [
                     'success' => true,
                     'notes' => $notes
                 ];
             } else {
+                error_log("getTaskNotes returned false");
                 throw new Exception('Failed to retrieve task notes');
             }
         } catch (Exception $e) {
@@ -636,33 +756,127 @@ class ApiController {
         // 一時的に認証を無効化（デバッグ用）
         // $this->auth->requireLogin();
         
+        error_log("addTaskNote called with taskId: $taskId, input: " . json_encode($input));
+        
         if (!is_numeric($taskId)) {
+            error_log("Invalid task ID: $taskId");
             throw new Exception('Invalid task ID', 400);
         }
         
         $note = trim(isset($input['note']) ? $input['note'] : '');
+        error_log("Note content: '$note'");
+        
         if (empty($note)) {
+            error_log("Note content is empty");
             throw new Exception('Note content is required', 400);
         }
         
         // デフォルトユーザーIDを設定（認証無効化時）
         $userId = 1; // デフォルト管理者ユーザー
+        error_log("Using user ID: $userId");
         
         try {
             $result = $this->db->addTaskNote($taskId, $userId, $note);
-            if ($result) {
-                return [
-                    'success' => true,
-                    'message' => 'メモが追加されました'
-                ];
-            } else {
-                throw new Exception('Failed to add task note');
-            }
+            error_log("Database addTaskNote result: " . ($result ? 'true' : 'false'));
+            
+        if ($result) {
+            error_log("Task note added successfully");
+            // 追加されたメモのIDを取得
+            $noteId = $this->db->getConnection()->lastInsertId();
+            error_log("Added note ID: $noteId");
+            return [
+                'success' => true,
+                'message' => 'メモが追加されました',
+                'note_id' => $noteId
+            ];
+        } else {
+            error_log("Database addTaskNote returned false");
+            throw new Exception('Failed to add task note');
+        }
         } catch (Exception $e) {
             error_log("addTaskNote error: " . $e->getMessage());
+            error_log("addTaskNote error trace: " . $e->getTraceAsString());
             return [
                 'success' => false,
-                'message' => 'メモの追加に失敗しました'
+                'message' => 'メモの追加に失敗しました: ' . $e->getMessage()
+            ];
+        }
+    }
+
+    // タスクメモ更新
+    public function updateTaskNote($noteId, $input) {
+        // 一時的に認証を無効化（デバッグ用）
+        // $this->auth->requireLogin();
+        
+        error_log("updateTaskNote called with noteId: $noteId, input: " . json_encode($input));
+        
+        if (!is_numeric($noteId)) {
+            error_log("Invalid note ID: $noteId");
+            throw new Exception('Invalid note ID', 400);
+        }
+        
+        $note = trim(isset($input['note']) ? $input['note'] : '');
+        error_log("Note content: '$note'");
+        
+        if (empty($note)) {
+            error_log("Note content is empty");
+            throw new Exception('Note content is required', 400);
+        }
+        
+        try {
+            $result = $this->db->updateTaskNote($noteId, $note);
+            error_log("Database updateTaskNote result: " . ($result ? 'true' : 'false'));
+            
+            if ($result) {
+                error_log("Task note updated successfully");
+                return [
+                    'success' => true,
+                    'message' => 'メモを更新しました'
+                ];
+            } else {
+                error_log("Database updateTaskNote returned false");
+                throw new Exception('Failed to update task note');
+            }
+        } catch (Exception $e) {
+            error_log("updateTaskNote error: " . $e->getMessage());
+            return [
+                'success' => false,
+                'message' => 'メモの更新に失敗しました: ' . $e->getMessage()
+            ];
+        }
+    }
+
+    // タスクメモ削除
+    public function deleteTaskNote($noteId) {
+        // 一時的に認証を無効化（デバッグ用）
+        // $this->auth->requireLogin();
+        
+        error_log("deleteTaskNote called with noteId: $noteId");
+        
+        if (!is_numeric($noteId)) {
+            error_log("Invalid note ID: $noteId");
+            throw new Exception('Invalid note ID', 400);
+        }
+        
+        try {
+            $result = $this->db->deleteTaskNote($noteId);
+            error_log("Database deleteTaskNote result: " . ($result ? 'true' : 'false'));
+            
+            if ($result) {
+                error_log("Task note deleted successfully");
+                return [
+                    'success' => true,
+                    'message' => 'メモを削除しました'
+                ];
+            } else {
+                error_log("Database deleteTaskNote returned false");
+                throw new Exception('Failed to delete task note');
+            }
+        } catch (Exception $e) {
+            error_log("deleteTaskNote error: " . $e->getMessage());
+            return [
+                'success' => false,
+                'message' => 'メモの削除に失敗しました: ' . $e->getMessage()
             ];
         }
     }
@@ -958,15 +1172,29 @@ class ApiController {
     public function getTemplates() {
         // 一時的に認証を無効化（デバッグ用）
         // $this->auth->requireLogin();
-        error_log("getTemplates called");
+        error_log("=== API getTemplates called ===");
 
         try {
+            error_log("Calling database getAllTemplates...");
             $templates = $this->db->getAllTemplates();
-            error_log("getAllTemplates result: " . print_r($templates, true));
+            error_log("Database getAllTemplates returned: " . gettype($templates));
             
             if ($templates === false) {
-                error_log("getAllTemplates returned false");
-                throw new Exception('Failed to retrieve templates');
+                error_log("getAllTemplates returned false - database error");
+                return [
+                    'success' => false,
+                    'error' => 'Failed to retrieve templates from database',
+                    'templates' => []
+                ];
+            }
+
+            if (!is_array($templates)) {
+                error_log("getAllTemplates returned non-array: " . gettype($templates));
+                return [
+                    'success' => false,
+                    'error' => 'Invalid template data format',
+                    'templates' => []
+                ];
             }
 
             error_log("getTemplates returning success with " . count($templates) . " templates");
@@ -976,7 +1204,12 @@ class ApiController {
             ];
         } catch (Exception $e) {
             error_log("getTemplates error: " . $e->getMessage());
-            throw $e;
+            error_log("getTemplates error trace: " . $e->getTraceAsString());
+            return [
+                'success' => false,
+                'error' => $e->getMessage(),
+                'templates' => []
+            ];
         }
     }
 
@@ -1095,7 +1328,9 @@ class ApiController {
         // $this->auth->requireLogin();
 
         try {
+            error_log("getClients called");
             $clients = $this->db->getAllClients();
+            error_log("getClients database result: " . json_encode($clients));
             return ['success' => true, 'clients' => $clients];
         } catch (Exception $e) {
             error_log("getClients error: " . $e->getMessage());
