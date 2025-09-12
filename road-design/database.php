@@ -77,9 +77,9 @@ class Database {
     }
     
     // プロジェクト関連メソッド
-    public function createProject($name, $description, $clientId, $projectCode, $startDate, $endDate, $createdBy) {
+    public function createProject($name, $description, $clientId, $projectCode, $startDate, $EndDate, $createdBy) {
         try {
-            error_log("Database createProject called with: name=$name, clientId=$clientId, startDate=$startDate, endDate=$endDate");
+            error_log("Database createProject called with: name=$name, clientId=$clientId, startDate=$startDate, endDate=$EndDate");
             
             $connection = $this->getConnection();
             if (!$connection) {
@@ -89,17 +89,49 @@ class Database {
             
             $connection->beginTransaction();
             
-            // プロジェクト作成
-            $stmt = $connection->prepare("
-                INSERT INTO projects (name, description, client_id, project_code, start_date, end_date, created_by) 
-                VALUES (?, ?, ?, ?, ?, ?, ?)
-            ");
-            
-            error_log("Executing project creation SQL with params: name=$name, clientId=$clientId, startDate=$startDate, endDate=$endDate");
-            $result = $stmt->execute([$name, $description, $clientId, $projectCode, $startDate, $endDate, $createdBy]);
+            // 互換性対応: 環境ごとの列名差異に対処（client_id/client_name、end_date/target_end_date）
+            $hasClientId = $connection->query("SHOW COLUMNS FROM projects LIKE 'client_id'")->rowCount() > 0;
+            $hasClientName = $connection->query("SHOW COLUMNS FROM projects LIKE 'client_name'")->rowCount() > 0;
+            $hasEndDate = $connection->query("SHOW COLUMNS FROM projects LIKE 'end_date'")->rowCount() > 0;
+            $hasTargetEndDate = $connection->query("SHOW COLUMNS FROM projects LIKE 'target_end_date'")->rowCount() > 0;
+
+            $columns = ['name', 'description', 'project_code', 'start_date', 'created_by'];
+            $params = [$name, $description, $projectCode, $startDate, $createdBy];
+
+            if ($hasClientId) {
+                array_splice($columns, 2, 0, 'client_id');
+                array_splice($params, 2, 0, $clientId);
+            } elseif ($hasClientName) {
+                $clientName = null;
+                if ($clientId) {
+                    $stmtClient = $connection->prepare("SELECT name FROM clients WHERE id = ?");
+                    $stmtClient->execute([$clientId]);
+                    $row = $stmtClient->fetch();
+                    $clientName = $row ? $row['name'] : null;
+                }
+                array_splice($columns, 2, 0, 'client_name');
+                array_splice($params, 2, 0, $clientName);
+            }
+
+            if ($hasEndDate) {
+                array_splice($columns, 4, 0, 'end_date');
+                array_splice($params, 4, 0, $EndDate);
+            } elseif ($hasTargetEndDate) {
+                array_splice($columns, 4, 0, 'target_end_date');
+                array_splice($params, 4, 0, $EndDate);
+            }
+
+            $columnsSql = implode(', ', $columns);
+            $placeholders = rtrim(str_repeat('?, ', count($columns)), ', ');
+            $sql = "INSERT INTO projects ($columnsSql) VALUES ($placeholders)";
+
+            error_log("Executing project creation SQL: $sql");
+            error_log("SQL params: " . json_encode($params));
+            $stmt = $connection->prepare($sql);
+            $result = $stmt->execute($params);
             
             if (!$result) {
-                error_log("Database createProject error: Failed to execute project creation SQL");
+                error_log("Database createProject error: Failed to execute dynamic project creation SQL");
                 $connection->rollBack();
                 return false;
             }
@@ -281,7 +313,48 @@ class Database {
                 WHERE p.id = ?
             ");
             $stmt->execute([$id]);
-            return $stmt->fetch();
+            $project = $stmt->fetch();
+
+            if (!$project) {
+                return false;
+            }
+
+            // 列・テーブル存在を確認
+            $connection = $this->getConnection();
+            $hasClientId = false; $hasClientName = false; $hasEndDate = false; $hasTargetEndDate = false; $hasClientsTable = false;
+            try { $hasClientId = $connection->query("SHOW COLUMNS FROM projects LIKE 'client_id'")->rowCount() > 0; } catch (Exception $e) {}
+            try { $hasClientName = $connection->query("SHOW COLUMNS FROM projects LIKE 'client_name'")->rowCount() > 0; } catch (Exception $e) {}
+            try { $hasEndDate = $connection->query("SHOW COLUMNS FROM projects LIKE 'end_date'")->rowCount() > 0; } catch (Exception $e) {}
+            try { $hasTargetEndDate = $connection->query("SHOW COLUMNS FROM projects LIKE 'target_end_date'")->rowCount() > 0; } catch (Exception $e) {}
+            try { $hasClientsTable = $connection->query("SHOW TABLES LIKE 'clients'")->rowCount() > 0; } catch (Exception $e) {}
+
+            // 発注者名の補完（client_id優先 → 既存client_name）
+            if ($hasClientId && isset($project['client_id']) && $project['client_id'] && $hasClientsTable) {
+                try {
+                    $cstmt = $connection->prepare("SELECT name FROM clients WHERE id = ?");
+                    $cstmt->execute([$project['client_id']]);
+                    $client = $cstmt->fetch();
+                    if ($client && isset($client['name'])) {
+                        $project['client_name'] = $client['name'];
+                    }
+                } catch (Exception $e) {
+                    // noop
+                }
+            } elseif ($hasClientName && isset($project['client_name'])) {
+                // そのまま
+            } else {
+                // どちらもなければ '不明'
+                $project['client_name'] = '不明';
+            }
+
+            // 終了日の補完（end_dateが無ければtarget_end_dateを採用）
+            if ($hasTargetEndDate && (!isset($project['end_date']) || !$project['end_date'])) {
+                if (isset($project['target_end_date']) && $project['target_end_date']) {
+                    $project['end_date'] = $project['target_end_date'];
+                }
+            }
+
+            return $project;
         } catch (PDOException $e) {
             error_log("getProjectById error: " . $e->getMessage());
             return false;
@@ -300,67 +373,42 @@ class Database {
             
             $connection->beginTransaction();
             
-            // プロジェクトの存在確認
+            // 既存取得
             $stmt = $connection->prepare("SELECT * FROM projects WHERE id = ?");
             $stmt->execute([$projectId]);
             $existingProject = $stmt->fetch();
-            
             if (!$existingProject) {
-                error_log("Database updateProject error: Project not found with ID: $projectId");
                 $connection->rollBack();
                 return false;
             }
             
-            error_log("Database updateProject: Existing project found: " . json_encode($existingProject));
+            // 列存在チェック
+            $hasClientId = $connection->query("SHOW COLUMNS FROM projects LIKE 'client_id'")->rowCount() > 0;
+            $hasClientName = $connection->query("SHOW COLUMNS FROM projects LIKE 'client_name'")->rowCount() > 0;
+            $hasEndDate = $connection->query("SHOW COLUMNS FROM projects LIKE 'end_date'")->rowCount() > 0;
+            $hasTargetEndDate = $connection->query("SHOW COLUMNS FROM projects LIKE 'target_end_date'")->rowCount() > 0;
+            $hasStatus = $connection->query("SHOW COLUMNS FROM projects LIKE 'status'")->rowCount() > 0;
             
-            // データの変更があるかチェック
-            $hasChanges = false;
-            if ($existingProject['name'] != $name) {
-                error_log("Project name changed: {$existingProject['name']} -> $name");
-                $hasChanges = true;
-            }
-            if ($existingProject['client_id'] != $clientId) {
-                error_log("Project client_id changed: {$existingProject['client_id']} -> $clientId");
-                $hasChanges = true;
-            }
-            if ($existingProject['start_date'] != $startDate) {
-                error_log("Project start_date changed: {$existingProject['start_date']} -> $startDate");
-                $hasChanges = true;
-            }
-            if ($existingProject['end_date'] != $endDate) {
-                error_log("Project end_date changed: {$existingProject['end_date']} -> $endDate");
-                $hasChanges = true;
-            }
-            if ($existingProject['status'] != $status) {
-                error_log("Project status changed: {$existingProject['status']} -> $status");
-                $hasChanges = true;
-            }
+            $columns = ["name = ?"]; $params = [$name];
+            if ($hasClientId) { $columns[] = "client_id = ?"; $params[] = $clientId; }
+            elseif ($hasClientName) { $columns[] = "client_name = ?"; $params[] = $clientId; }
             
-            if (!$hasChanges) {
-                error_log("No changes detected, skipping update");
-                $connection->rollBack();
-                return true;
-            }
+            if ($hasEndDate) { $columns[] = "end_date = ?"; $params[] = $endDate; }
+            elseif ($hasTargetEndDate) { $columns[] = "target_end_date = ?"; $params[] = $endDate; }
             
-            $sql = "UPDATE projects SET name = ?, client_id = ?, start_date = ?, end_date = ?, status = ?, updated_at = NOW() WHERE id = ?";
-            $params = [$name, $clientId, $startDate, $endDate, $status, $projectId];
+            if ($hasStatus && $status) { $columns[] = "status = ?"; $params[] = $status; }
             
-            error_log("Executing SQL: $sql");
-            error_log("SQL parameters: " . json_encode($params));
+            $sql = "UPDATE projects SET " . implode(', ', $columns) . ", updated_at = NOW() WHERE id = ?";
+            $params[] = $projectId;
+            
+            error_log("updateProject dynamic SQL: $sql");
+            error_log("updateProject params: " . json_encode($params));
             
             $stmt = $connection->prepare($sql);
             $result = $stmt->execute($params);
             
-            error_log("SQL execution result: " . ($result ? 'true' : 'false'));
-            error_log("Affected rows: " . $stmt->rowCount());
-            
-            if ($stmt->rowCount() === 0) {
-                error_log("Database updateProject warning: No rows were updated");
-            }
-            
             $connection->commit();
-            error_log("Database updateProject: Transaction committed successfully");
-            return true;
+            return $result ? true : false;
         } catch (PDOException $e) {
             $this->getConnection()->rollBack();
             error_log("updateProject error: " . $e->getMessage());
@@ -731,12 +779,23 @@ class Database {
                 // パスワードも更新する場合
                 error_log("Password update requested for user ID: $userId");
                 $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
-                $stmt = $this->getConnection()->prepare("
+                $connection = $this->getConnection();
+                $hasPasswordHash = false;
+                try {
+                    $hasPasswordHash = $connection->query("SHOW COLUMNS FROM users LIKE 'password_hash'")->rowCount() > 0;
+                } catch (Exception $e) {
+                    error_log("SHOW COLUMNS failed: " . $e->getMessage());
+                }
+                $passwordColumn = $hasPasswordHash ? 'password_hash' : 'password';
+                $stmt = $connection->prepare("
                     UPDATE users
-                    SET email = ?, name = ?, role = ?, password = ?, is_active = ?
+                    SET email = ?, name = ?, role = ?, {$passwordColumn} = ?, is_active = ?
                     WHERE id = ?
                 ");
                 $result = $stmt->execute([$email, $name, $role, $hashedPassword, $isActive, $userId]);
+                if (!$result) {
+                    error_log('updateUser execute error info (with password): ' . print_r($stmt->errorInfo(), true));
+                }
             } else {
                 // パスワードは更新しない場合
                 error_log("Password update skipped for user ID: $userId (password is empty or null)");

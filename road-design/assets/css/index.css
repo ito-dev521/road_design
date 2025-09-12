@@ -465,7 +465,11 @@ body {
 /* 要確認ステータスのタスクカード */
 .task-item.status-needs-confirmation,
 div.task-item.status-needs-confirmation,
-.task-list .task-item.status-needs-confirmation {
+.task-list .task-item.status-needs-confirmation,
+/* underscore バリアント */
+.task-item.status-needs_confirmation,
+div.task-item.status-needs_confirmation,
+.task-list .task-item.status-needs_confirmation {
     background: linear-gradient(135deg, #fff5f5, #ffe6e6) !important;
     border: 3px solid #ff0000 !important;
     border-left: 6px solid #ff0000 !important;
@@ -477,7 +481,11 @@ div.task-item.status-needs-confirmation,
 
 .task-item.status-needs-confirmation::before,
 div.task-item.status-needs-confirmation::before,
-.task-list .task-item.status-needs-confirmation::before {
+.task-list .task-item.status-needs-confirmation::before,
+/* underscore バリアント */
+.task-item.status-needs_confirmation::before,
+div.task-item.status-needs_confirmation::before,
+.task-list .task-item.status-needs_confirmation::before {
     content: "⚠️ 要確認" !important;
     position: absolute !important;
     top: -12px !important;
@@ -498,6 +506,34 @@ div.task-item.status-needs-confirmation::before,
     box-shadow: 0 8px 25px rgba(255, 107, 107, 0.3);
     transform: translateY(-3px);
     border-left-color: #ff4757;
+}
+/* underscore バリアント */
+.task-item.status-needs_confirmation:hover {
+    box-shadow: 0 8px 25px rgba(255, 107, 107, 0.3);
+    transform: translateY(-3px);
+    border-left-color: #ff4757;
+}
+
+/* そのほかステータスのカード色（underscore対応） */
+.task-item.status-not_started {
+    background: #f8f9fa;
+    border-left-color: #6c757d;
+}
+
+.task-item.status-in_progress {
+    background: #fff8e1;
+    border-left-color: #ffc107;
+}
+
+.task-item.status-completed {
+    background: #eaf7ee;
+    border-left-color: #28a745;
+}
+
+.task-item.status-not_applicable {
+    background: #f1f3f5;
+    border-left-color: #adb5bd;
+    opacity: 0.9;
 }
 
 /* 確認対象者表示 */
@@ -591,8 +627,18 @@ div.task-item.status-needs-confirmation::before,
     background: rgba(108, 117, 125, 0.1);
     color: #6c757d;
 }
+/* underscore バリアント */
+.status-not_started {
+    background: rgba(108, 117, 125, 0.1);
+    color: #6c757d;
+}
 
 .status-in-progress {
+    background: rgba(255, 193, 7, 0.1);
+    color: #ffc107;
+}
+/* underscore バリアント */
+.status-in_progress {
     background: rgba(255, 193, 7, 0.1);
     color: #ffc107;
 }
@@ -607,8 +653,19 @@ div.task-item.status-needs-confirmation::before,
     color: #dc3545;
     font-weight: 600;
 }
+/* underscore バリアント */
+.status-needs_confirmation {
+    background: rgba(220, 53, 69, 0.1);
+    color: #dc3545;
+    font-weight: 600;
+}
 
 .status-not-applicable {
+    background: rgba(108, 117, 125, 0.1);
+    color: #6c757d;
+}
+/* underscore バリアント */
+.status-not_applicable {
     background: rgba(108, 117, 125, 0.1);
     color: #6c757d;
 }

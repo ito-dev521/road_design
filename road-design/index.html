@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>道路詳細設計管理システム</title>
+    <title>道路設計管理システム</title>
     <link rel="stylesheet" href="assets/css/style.css">
     <link rel="stylesheet" href="assets/css/index.css">
 </head>
@@ -14,7 +14,7 @@
             <div class="logo">
                 <div class="logo-icon">🚧</div>
                 <div class="logo-text">
-                    <h1>道路詳細設計管理システム</h1>
+                    <h1>道路設計管理システム</h1>
                     <p>Road Design Management System</p>
             </div>
             </div>
@@ -25,7 +25,7 @@
                         <span class="user-role" id="userRole">読み込み中...</span>
                 </div>
                 </div>
-                <a href="settings.html" class="btn btn-secondary">⚙️ 設定</a>
+                <a href="settings.html" id="settingsBtn" class="btn btn-secondary" style="display:none;">⚙️ 設定</a>
                 <a href="logout.php" class="btn btn-secondary">🚪 ログアウト</a>
             </div>
         </header>
@@ -185,6 +185,7 @@
                                 <div class="template-summary">
                                     <span>選択済み: <span id="selectedCount">0</span>件</span>
                                     <button type="button" class="btn btn-secondary" onclick="selectAllTemplates()">すべて選択</button>
+                                    <button type="button" class="btn btn-secondary" onclick="deselectAllTemplates()">すべて解除</button>
                                 </div>
                             </div>
                         </div>
@@ -234,9 +235,10 @@
                             <div class="form-group">
                                 <label for="editProjectStatus">ステータス</label>
                                 <select id="editProjectStatus" name="status" required>
-                                    <option value="active">進行中</option>
+                                    <option value="planning">計画中</option>
+                                    <option value="in_progress">進行中</option>
                                     <option value="completed">完了</option>
-                                    <option value="on_hold">保留</option>
+                                    <option value="cancelled">中止</option>
                                 </select>
                             </div>
                 </div>
@@ -333,6 +335,9 @@
                         <div class="task-meta-item">
                             <span class="meta-label">マニュアル:</span>
                                 <span id="taskManualInfo"></span>
+                                <div id="taskManualLinks" class="task-manual" style="margin-top:8px; display:none;">
+                                    <div id="taskManualList"></div>
+                                </div>
                     </div>
                 </div>
                 
@@ -375,9 +380,109 @@
         let allTemplates = [];
         let selectedTemplateIds = new Set(); // 選択されたテンプレートIDを保持
 
+        // 選択テンプレートの永続化
+        function loadSelectedTemplatesFromStorage() {
+            try {
+                const raw = localStorage.getItem('selectedTemplateIds');
+                if (raw) {
+                    const arr = JSON.parse(raw);
+                    if (Array.isArray(arr)) {
+                        selectedTemplateIds = new Set(arr.map(String));
+                    }
+                }
+            } catch (e) {
+                console.warn('テンプレート選択の復元に失敗:', e);
+            }
+        }
+
+        function saveSelectedTemplatesToStorage() {
+            try {
+                localStorage.setItem('selectedTemplateIds', JSON.stringify(Array.from(selectedTemplateIds)));
+            } catch (e) {
+                console.warn('テンプレート選択の保存に失敗:', e);
+            }
+        }
+
+        // 新規プロジェクトモーダルの開閉状態・下書きの永続化
+        function markNewProjectModalOpen(isOpen) {
+            try { localStorage.setItem('newProjectModalOpen', isOpen ? 'true' : 'false'); } catch(e) {}
+        }
+
+        function saveNewProjectDraft() {
+            try {
+                const draft = {
+                    name: document.getElementById('projectName')?.value || '',
+                    client_id: document.getElementById('newProjectClient')?.value || '',
+                    start_date: document.getElementById('projectStartDate')?.value || '',
+                    end_date: document.getElementById('projectEndDate')?.value || ''
+                };
+                localStorage.setItem('newProjectDraft', JSON.stringify(draft));
+            } catch (e) {
+                console.warn('新規プロジェクト下書き保存に失敗:', e);
+            }
+        }
+
+        function loadNewProjectDraft() {
+            try {
+                const raw = localStorage.getItem('newProjectDraft');
+                if (!raw) return;
+                const draft = JSON.parse(raw);
+                if (!draft) return;
+                if (draft.name) document.getElementById('projectName').value = draft.name;
+                // クライアントはロード後に設定
+                if (draft.start_date) document.getElementById('projectStartDate').value = draft.start_date;
+                if (draft.end_date) document.getElementById('projectEndDate').value = draft.end_date;
+                // クライアントは loadClients 完了後に適用
+                setTimeout(() => {
+                    if (draft.client_id) document.getElementById('newProjectClient').value = draft.client_id;
+                }, 0);
+            } catch (e) {
+                console.warn('新規プロジェクト下書き復元に失敗:', e);
+            }
+        }
+
+        // モーダル強制クローズ防止（保存/キャンセル以外では閉じない）
+        let newProjectModalObserver = null;
+        function startNewProjectModalGuard() {
+            try {
+                const modal = document.getElementById('newProjectModal');
+                if (!modal) return;
+                if (newProjectModalObserver) newProjectModalObserver.disconnect();
+                newProjectModalObserver = new MutationObserver(() => {
+                    const shouldBeOpen = localStorage.getItem('newProjectModalOpen') === 'true';
+                    if (!shouldBeOpen) return;
+                    // display/hidden が変更されていたら復元
+                    if (modal.style.display === 'none' || modal.hidden) {
+                        modal.style.display = 'block';
+                        modal.hidden = false;
+                    }
+                });
+                newProjectModalObserver.observe(modal, { attributes: true, attributeFilter: ['style', 'hidden'] });
+            } catch (e) {
+                console.warn('モーダルガード設定に失敗:', e);
+            }
+        }
+
+        function stopNewProjectModalGuard() {
+            try {
+                if (newProjectModalObserver) newProjectModalObserver.disconnect();
+                newProjectModalObserver = null;
+            } catch (e) {}
+        }
+
         // 初期化
         document.addEventListener('DOMContentLoaded', function() {
             console.log('DOM読み込み完了');
+            loadSelectedTemplatesFromStorage();
+            // 一度開いていた場合は再表示
+            if (localStorage.getItem('newProjectModalOpen') === 'true') {
+                // 必要データ読み込み後に復元
+                Promise.allSettled([loadClients(), loadPhases(), loadTemplates()]).then(() => {
+                    loadNewProjectDraft();
+                    document.getElementById('newProjectModal').style.display = 'block';
+                    startNewProjectModalGuard();
+                });
+            }
             loadProjects();
             loadUserInfo();
             setupEventListeners();
@@ -416,13 +521,31 @@
                     e.stopPropagation();
                 }, true);
             });
+
+            // 入力変更の自動保存（新規プロジェクトフォーム）
+            ['projectName','newProjectClient','projectStartDate','projectEndDate'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) {
+                    el.addEventListener('input', saveNewProjectDraft);
+                    el.addEventListener('change', saveNewProjectDraft);
+                }
+            });
+
+            // タブ復帰時に新規プロジェクトモーダルを再表示
+            document.addEventListener('visibilitychange', () => {
+                if (!document.hidden && localStorage.getItem('newProjectModalOpen') === 'true') {
+                    document.getElementById('newProjectModal').style.display = 'block';
+                    loadNewProjectDraft();
+                }
+            });
         }
 
         // デフォルトユーザー情報設定
         function setDefaultUserInfo() {
-            document.getElementById('userName').textContent = '管理者';
-            document.getElementById('userRole').textContent = '管理者';
-            console.log('デフォルトユーザー情報を設定しました');
+            document.getElementById('userName').textContent = 'ゲスト';
+            document.getElementById('userRole').textContent = 'ゲスト';
+            console.log('デフォルトユーザー情報をゲストに設定しました');
+            updateRoleBasedVisibility('guest');
         }
 
         // ユーザー情報読み込み
@@ -431,14 +554,18 @@
                 console.log('ユーザー情報を読み込み中...');
                 
                 // まず専用のプロフィールエンドポイントを試す
-                const response = await fetch('api.php?path=user/profile');
+                const response = await fetch('api.php?path=user/profile&t=' + Date.now(), { cache: 'no-store' });
                 const data = await response.json();
                 
                 console.log('プロフィールAPI応答:', data);
                 
                 if (data.success && data.name) {
                     document.getElementById('userName').textContent = data.name;
-                    document.getElementById('userRole').textContent = getRoleText(data.role || 'manager');
+                    document.getElementById('userRole').textContent = getRoleText(data.role || 'guest');
+                    // 設定ボタン表示制御
+                    const settingsBtn = document.getElementById('settingsBtn');
+                    if (settingsBtn) settingsBtn.style.display = (data.role === 'manager' || data.role === 'technical') ? 'inline-block' : 'none';
+                    updateRoleBasedVisibility(data.role);
                     console.log('ユーザー情報設定完了:', data.name, data.role);
                 } else {
                     console.log('ユーザー情報が取得できませんでした、デフォルト値を設定');
@@ -458,7 +585,7 @@
         // 代替ユーザー情報読み込み
         async function loadUserInfoAlternative() {
             try {
-                const response = await fetch('api.php?path=users');
+                const response = await fetch(`api.php?path=users&t=${Date.now()}`, { cache: 'no-store' });
                 const data = await response.json();
                 
                 console.log('代替ユーザーAPI応答:', data);
@@ -468,6 +595,9 @@
                     const user = data.users[0];
                     document.getElementById('userName').textContent = user.name;
                     document.getElementById('userRole').textContent = getRoleText(user.role);
+                    const settingsBtn = document.getElementById('settingsBtn');
+                    if (settingsBtn) settingsBtn.style.display = (user.role === 'manager' || user.role === 'technical') ? 'inline-block' : 'none';
+                    updateRoleBasedVisibility(user.role);
                     console.log('代替手段でユーザー情報設定完了:', user.name, user.role);
                     return true;
                 }
@@ -483,18 +613,29 @@
         // 役職名変換
         function getRoleText(role) {
             switch(role) {
-                case 'admin': return '管理者';
                 case 'manager': return '管理者';
-                case 'user': return 'ユーザー';
-                default: return '管理者';
+                case 'technical': return '技術者';
+                case 'general': return '一般';
+                default: return 'ゲスト';
             }
+        }
+
+        // 役割に応じてプロジェクト操作ボタンを制御
+        function updateRoleBasedVisibility(role) {
+            const isGeneralOrGuest = !role || role === 'general' || role === 'guest';
+            const createBtn = document.getElementById('newProjectBtn');
+            const editBtn = document.getElementById('editProjectBtn');
+            const deleteBtn = document.getElementById('deleteProjectBtn');
+            if (createBtn) createBtn.style.display = isGeneralOrGuest ? 'none' : 'inline-block';
+            if (editBtn) editBtn.style.display = isGeneralOrGuest ? 'none' : 'inline-block';
+            if (deleteBtn) deleteBtn.style.display = isGeneralOrGuest ? 'none' : 'inline-block';
         }
 
         // プロジェクト一覧読み込み
         async function loadProjects() {
             try {
                 console.log('プロジェクト一覧を読み込み中...');
-                const response = await fetch('api.php?path=projects');
+                const response = await fetch(`api.php?path=projects&t=${Date.now()}`, { cache: 'no-store' });
                 const data = await response.json();
                 
                 console.log('プロジェクトAPI応答:', data);
@@ -551,9 +692,9 @@
                 
                 // プロジェクト詳細、タスク、フェーズを並行取得
                 const [projectResponse, tasksResponse, phasesResponse] = await Promise.all([
-                    fetch(`api.php?path=projects/${projectId}`),
-                    fetch(`api.php?path=projects/${projectId}/tasks`),
-                    fetch('api.php?path=phases')
+                    fetch(`api.php?path=projects/${projectId}&t=${Date.now()}`, { cache: 'no-store' }),
+                    fetch(`api.php?path=projects/${projectId}/tasks&t=${Date.now()}`, { cache: 'no-store' }),
+                    fetch(`api.php?path=phases&t=${Date.now()}`, { cache: 'no-store' })
                 ]);
 
                 const [projectData, tasksData, phasesData] = await Promise.all([
@@ -623,7 +764,8 @@
         function displayProject(project) {
             document.getElementById('projectName').textContent = project.name || '不明なプロジェクト';
             document.getElementById('projectClientInfo').textContent = `発注者: ${project.client_name || '不明'}`;
-            document.getElementById('projectPeriod').textContent = `期間: ${formatDate(project.start_date)} - ${formatDate(project.end_date)}`;
+            const end = project.end_date || project.target_end_date || '';
+            document.getElementById('projectPeriod').textContent = `期間: ${formatDate(project.start_date)} - ${formatDate(end)}`;
             document.getElementById('projectStatus').textContent = getStatusText(project.status);
             
             console.log('プロジェクト情報を表示しました:', project.name);
@@ -643,20 +785,25 @@
             filteredTasks = [];
         }
 
-        // フェーズフィルター設定
+        // フェーズフィルター設定（現在の選択を維持）
         function setupPhaseFilters(phases) {
             const filtersContainer = document.getElementById('taskFilters');
             filtersContainer.innerHTML = '';
 
-            // 全体フィルターは非表示（最初のフェーズをデフォルト選択）
             if (phases.length > 0) {
-                // 最初のフェーズをデフォルト選択
-                currentPhaseFilter = phases[0].id;
-                
+                // 直近の選択を優先（ローカル保存があればそれも考慮）
+                const savedPhaseId = localStorage.getItem('currentPhaseFilter');
+                let desiredPhaseId = currentPhaseFilter || savedPhaseId;
+                const exists = phases.some(p => String(p.id) === String(desiredPhaseId));
+                if (!exists) {
+                    desiredPhaseId = phases[0].id;
+                }
+                currentPhaseFilter = desiredPhaseId;
+
                 // 各フェーズフィルター
-                phases.forEach((phase, index) => {
+                phases.forEach((phase) => {
                     const btn = document.createElement('button');
-                    btn.className = index === 0 ? 'filter-btn active' : 'filter-btn';
+                    btn.className = String(phase.id) === String(currentPhaseFilter) ? 'filter-btn active' : 'filter-btn';
                     btn.textContent = phase.name;
                     btn.onclick = () => filterByPhase(phase.id);
                     filtersContainer.appendChild(btn);
@@ -667,12 +814,18 @@
         // フェーズによるフィルタリング
         function filterByPhase(phaseId) {
             currentPhaseFilter = phaseId;
+            try { localStorage.setItem('currentPhaseFilter', String(phaseId)); } catch (e) {}
             
             // フィルターボタンのアクティブ状態更新
             document.querySelectorAll('.filter-btn').forEach(btn => {
                 btn.classList.remove('active');
             });
-            event.target.classList.add('active');
+            // 現在のボタンにactiveを付与
+            const buttons = Array.from(document.querySelectorAll('.filter-btn'));
+            const idx = buttons.findIndex(b => b.textContent === (allPhases.find(p => String(p.id) === String(phaseId))?.name));
+            if (idx >= 0) {
+                buttons[idx].classList.add('active');
+            }
 
             displayTasks(filteredTasks);
         }
@@ -773,6 +926,29 @@
                 item.style.zIndex = '10';
                 console.log('要確認タスクに直接スタイルを適用しました');
             }
+
+            // そのほかのステータスのカード色を明示（CSS未適用環境対策）
+            if (!isNeedsConfirmation) {
+                switch (task.status) {
+                    case 'not_started':
+                        item.style.background = '#f8f9fa';
+                        item.style.borderLeft = '4px solid #6c757d';
+                        break;
+                    case 'in_progress':
+                        item.style.background = '#fff8e1';
+                        item.style.borderLeft = '4px solid #ffc107';
+                        break;
+                    case 'completed':
+                        item.style.background = '#eaf7ee';
+                        item.style.borderLeft = '4px solid #28a745';
+                        break;
+                    case 'not_applicable':
+                        item.style.background = '#f1f3f5';
+                        item.style.borderLeft = '4px solid #adb5bd';
+                        item.style.opacity = '0.95';
+                        break;
+                }
+            }
             
             item.innerHTML = `
                 ${isNeedsConfirmation ? '<div style="position: absolute; top: -12px; right: 8px; background: #ff0000; color: white; padding: 6px 16px; border-radius: 16px; font-size: 0.8rem; font-weight: 700; box-shadow: 0 4px 8px rgba(255, 0, 0, 0.5); z-index: 1000; border: 2px solid white;">⚠️ 要確認</div>' : ''}
@@ -868,6 +1044,7 @@
                     document.getElementById('taskOrder').textContent = task.task_order || '0';
                     document.getElementById('taskTechnical').textContent = task.is_technical_work == '1' ? 'はい' : 'いいえ';
                     document.getElementById('taskManualInfo').textContent = task.has_manual == '1' ? 'あり' : 'なし';
+                    await loadTaskManuals(taskData.task_name || taskData.name);
                     
                     // 担当者設定（ユーザー読み込み後に設定）
                     console.log('API取得タスク assigned_to:', taskData.assigned_to);
@@ -946,7 +1123,7 @@
         async function loadTaskNotes(taskId) {
             try {
                 console.log('loadTaskNotes called with taskId:', taskId);
-                const response = await fetch(`api.php?path=tasks/${taskId}/notes`);
+                const response = await fetch(`api.php?path=tasks/${taskId}/notes&t=${Date.now()}`, { cache: 'no-store' });
                 const data = await response.json();
                 
                 console.log('loadTaskNotes response:', data);
@@ -991,6 +1168,56 @@
             } catch (error) {
                 console.error('メモ読み込みエラー:', error);
                 document.getElementById('notesHistory').innerHTML = '<div class="note-item">メモの読み込みに失敗しました</div>';
+            }
+        }
+
+        // タスク名に紐づくマニュアル一覧を読み込み、表示/ダウンロードリンクを生成
+        async function loadTaskManuals(taskName) {
+            try {
+                const linksWrap = document.getElementById('taskManualLinks');
+                const list = document.getElementById('taskManualList');
+                if (!linksWrap || !list) return;
+
+                // タスク名でフィルタして取得（DBから確実に該当データのみ）
+                const q = encodeURIComponent(taskName || '');
+                const res = await fetch(`api.php?path=manuals&task_name=${q}&t=${Date.now()}`, { cache: 'no-store' });
+                const data = await res.json();
+                if (!data.success || !Array.isArray(data.manuals)) {
+                    linksWrap.style.display = 'none';
+                    list.innerHTML = '';
+                    return;
+                }
+
+                const manuals = data.manuals;
+                if (manuals.length === 0) {
+                    linksWrap.style.display = 'none';
+                    list.innerHTML = '';
+                    return;
+                }
+
+                list.innerHTML = manuals.map(m => {
+                    const id = m.id;
+                    const name = m.original_name || m.file_name;
+                    const sizeKb = m.file_size ? Math.round(m.file_size / 1024) + 'KB' : '';
+                    const viewUrl = `api.php?path=admin/manuals/${id}`;
+                    const dlUrl = `api.php?path=admin/manuals/${id}&download=1`;
+                    return `
+                        <div class="manual-link" style="margin:4px 0;">
+                            <a href="${viewUrl}" target="_blank" rel="noopener">📄 表示</a>
+                            <span style="margin: 0 6px; color:#adb5bd;">|</span>
+                            <a href="${dlUrl}">⬇︎ ダウンロード</a>
+                            <span style="margin-left:8px; color:#6c757d;">${name}${sizeKb ? ' ('+sizeKb+')' : ''}</span>
+                        </div>`;
+                }).join('');
+                linksWrap.style.display = 'block';
+            } catch (e) {
+                console.warn('マニュアル読み込みエラー:', e);
+                const linksWrap = document.getElementById('taskManualLinks');
+                const list = document.getElementById('taskManualList');
+                if (linksWrap && list) {
+                    linksWrap.style.display = 'none';
+                    list.innerHTML = '';
+                }
             }
         }
 
@@ -1264,7 +1491,7 @@
                 console.log('Sending edit request to:', `api.php?path=notes/${noteId}`);
                 console.log('Request data:', requestData);
                 
-                const response = await fetch(`api.php?path=notes/${noteId}`, {
+                const response = await fetch(`api.php?path=notes/${noteId}&t=${Date.now()}`, {
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json',
@@ -1310,7 +1537,7 @@
             try {
                 console.log('Sending delete request to:', `api.php?path=notes/${noteId}`);
                 
-                const response = await fetch(`api.php?path=notes/${noteId}`, {
+                const response = await fetch(`api.php?path=notes/${noteId}&t=${Date.now()}`, {
                     method: 'DELETE',
                     headers: {
                         'Content-Type': 'application/json',
@@ -1590,6 +1817,10 @@
                 }
                 
                 document.getElementById('newProjectModal').style.display = 'block';
+                markNewProjectModalOpen(true);
+                // 途中の下書きがあれば復元
+                loadNewProjectDraft();
+                startNewProjectModalGuard();
                 console.log('新規プロジェクトモーダル表示完了');
             } catch (error) {
                 console.error('新規プロジェクトモーダル表示エラー:', error);
@@ -1600,13 +1831,15 @@
         function closeNewProjectModal() {
             document.getElementById('newProjectModal').style.display = 'none';
             document.getElementById('newProjectForm').reset();
+            markNewProjectModalOpen(false);
+            stopNewProjectModalGuard();
         }
 
         // クライアント読み込み
         async function loadClients() {
             try {
                 console.log('クライアント読み込み開始...');
-                const response = await fetch('api.php?path=clients');
+                const response = await fetch(`api.php?path=clients&t=${Date.now()}`, { cache: 'no-store' });
                 console.log('クライアントAPI応答:', response.status);
                 
                 const data = await response.json();
@@ -1649,7 +1882,7 @@
         // フェーズ読み込み
         async function loadPhases() {
             try {
-                const response = await fetch('api.php?path=phases');
+                const response = await fetch(`api.php?path=phases&t=${Date.now()}`, { cache: 'no-store' });
                 const data = await response.json();
                 
                 if (data.success && data.phases) {
@@ -1691,7 +1924,7 @@
         async function loadTemplates() {
             try {
                 console.log('テンプレート読み込み開始...');
-                const response = await fetch('api.php?path=templates');
+                const response = await fetch(`api.php?path=templates&t=${Date.now()}`, { cache: 'no-store' });
                 console.log('テンプレートAPI応答:', response.status);
                 
                 if (!response.ok) {
@@ -1835,6 +2068,7 @@
                         } else {
                             selectedTemplateIds.delete(template.id.toString());
                         }
+                        saveSelectedTemplatesToStorage();
                         updateSelectedCount();
                         console.log('Selected templates:', Array.from(selectedTemplateIds));
                     });
@@ -1874,8 +2108,33 @@
                 });
             }
             
+            saveSelectedTemplatesToStorage();
             updateSelectedCount();
             console.log('All templates selected for phase:', activePhaseText);
+            console.log('Selected templates:', Array.from(selectedTemplateIds));
+        }
+
+        // すべて解除
+        function deselectAllTemplates() {
+            const activePhaseBtn = document.querySelector('#templateFilters .filter-btn.active');
+            const activePhaseText = activePhaseBtn ? activePhaseBtn.textContent : null;
+            
+            // アクティブなフェーズのテンプレートのみ解除
+            const phaseGroup = Array.from(document.querySelectorAll('.template-group')).find(group => {
+                const title = group.querySelector('.phase-title');
+                return title && (!activePhaseText || title.textContent === activePhaseText);
+            });
+            
+            if (phaseGroup) {
+                phaseGroup.querySelectorAll('input[name="templates"]').forEach(checkbox => {
+                    checkbox.checked = false;
+                    selectedTemplateIds.delete(checkbox.value);
+                });
+            }
+            
+            saveSelectedTemplatesToStorage();
+            updateSelectedCount();
+            console.log('All templates deselected for phase:', activePhaseText);
             console.log('Selected templates:', Array.from(selectedTemplateIds));
         }
 
@@ -1918,9 +2177,8 @@
                     return;
                 }
                 
-                // 選択されたテンプレート
-                const selectedTemplates = Array.from(document.querySelectorAll('input[name="templates"]:checked'))
-                    .map(cb => cb.value);
+                // 選択されたテンプレート（全フェーズ横断で保持しているSetから取得）
+                const selectedTemplates = Array.from(selectedTemplateIds);
 
                 if (selectedTemplates.length === 0) {
                     showMessage('少なくとも1つのテンプレートを選択してください', 'error');
@@ -1953,7 +2211,7 @@
                 if (data.success) {
                     console.log('プロジェクト作成成功');
                     showMessage('プロジェクトを作成しました', 'success');
-                    closeNewProjectModal();
+                    closeNewProjectModal(); // 保存時のみクローズ
                     await loadProjects();
                     
                     // 新しく作成されたプロジェクトを選択
@@ -1988,7 +2246,7 @@
                 document.getElementById('editProjectName').value = currentProject.name;
                 document.getElementById('editProjectClient').value = currentProject.client_id;
                 document.getElementById('editProjectStartDate').value = currentProject.start_date;
-                document.getElementById('editProjectEndDate').value = currentProject.end_date;
+                document.getElementById('editProjectEndDate').value = currentProject.end_date || currentProject.target_end_date || '';
                 document.getElementById('editProjectStatus').value = currentProject.status;
                 
                 document.getElementById('editProjectModal').style.display = 'block';

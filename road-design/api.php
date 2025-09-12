@@ -5,6 +5,10 @@ require_once 'database.php';
 
 header('Content-Type: application/json');
 header('X-Content-Type-Options: nosniff');
+// API応答がキャッシュされないように明示的に無効化
+header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+header('Pragma: no-cache');
+header('Expires: 0');
 
 // CORS設定（必要に応じて調整）
 if (isset($_SERVER['HTTP_ORIGIN'])) {
@@ -97,6 +101,10 @@ class ApiController {
                     
                 case 'manuals':
                     if ($method === 'GET') {
+                        $taskName = isset($_GET['task_name']) ? trim($_GET['task_name']) : '';
+                        if ($taskName !== '') {
+                            return $this->getManualsByTaskName($taskName);
+                        }
                         return $this->getManuals();
                     }
                     break;
@@ -490,7 +498,10 @@ class ApiController {
         $clientId = isset($input['client_id']) ? $input['client_id'] : null;
         $startDate = isset($input['start_date']) ? $input['start_date'] : null;
         $endDate = isset($input['end_date']) ? $input['end_date'] : null;
-        $status = isset($input['status']) ? $input['status'] : 'active';
+        $status = isset($input['status']) ? $input['status'] : 'planning';
+        // フロントの互換（active→in_progress、on_hold→planning/cancelledのいずれか）
+        if ($status === 'active') { $status = 'in_progress'; }
+        if ($status === 'on_hold') { $status = 'planning'; }
         
         error_log("updateProject parsed values - name: $name, clientId: $clientId, startDate: $startDate, endDate: $endDate, status: $status");
         
@@ -508,6 +519,9 @@ class ApiController {
             }
             
             error_log("updateProject: Existing project found: " . json_encode($existingProject));
+            if (empty($status) && isset($existingProject['status'])) {
+                $status = $existingProject['status'];
+            }
             
             // プロジェクト更新
             $result = $this->db->updateProject($projectId, $name, $clientId, $startDate, $endDate, $status);
@@ -1156,15 +1170,13 @@ class ApiController {
 
     // ユーザープロフィール
     public function getUserProfile() {
-        // 一時的に認証を無効化（デバッグ用）
-        // $this->auth->requireLogin();
-
-        // テスト用のユーザー情報を返す
+        $this->auth->requireLogin();
+        $user = $this->auth->getCurrentUser();
         return [
             'success' => true,
-            'name' => '管理者',
-            'email' => 'admin@ii-stylelab.com',
-            'role' => 'manager'
+            'name' => $user['name'],
+            'email' => $user['email'],
+            'role' => $user['role']
         ];
     }
 
@@ -1222,6 +1234,18 @@ class ApiController {
             throw new Exception('Failed to retrieve manuals');
         }
 
+        return [
+            'success' => true,
+            'manuals' => $manuals
+        ];
+    }
+
+    public function getManualsByTaskName($taskName) {
+        // $this->auth->requireLogin(); // 一時的に無効化
+        $manuals = $this->db->getManualsByTaskName($taskName);
+        if ($manuals === false) {
+            throw new Exception('Failed to retrieve manuals for task');
+        }
         return [
             'success' => true,
             'manuals' => $manuals
@@ -1706,11 +1730,12 @@ class ApiController {
         try {
             error_log("downloadAdminManual called with id: $id");
             
-            // アップロードディレクトリの確認
+            // 旧実装ではディレクトリ未存在時に即エラーにしていたが、
+            // DBの file_path が絶対/相対で保存されているケースがあるため、
+            // ディレクトリ存在は致命ではない。ログのみに留める。
             $uploadDir = __DIR__ . '/uploads/manuals/';
             if (!is_dir($uploadDir)) {
-                error_log("Upload directory does not exist: $uploadDir");
-                throw new Exception('アップロードディレクトリが存在しません', 500);
+                error_log("[downloadAdminManual] Upload directory not found (will continue): $uploadDir");
             }
             
             // マニュアル情報を取得
@@ -1722,31 +1747,38 @@ class ApiController {
 
             error_log("Found manual: " . print_r($manual, true));
 
-            $filePath = $manual['file_path'];
-            $originalName = $manual['original_name'];
+            $filePath = isset($manual['file_path']) ? $manual['file_path'] : '';
+            $originalName = isset($manual['original_name']) && $manual['original_name'] ? $manual['original_name'] : (isset($manual['file_name']) ? $manual['file_name'] : 'manual');
 
-            error_log("File path: $filePath");
-            error_log("Original name: $originalName");
-
-            // ファイルの存在確認
-            if (!file_exists($filePath)) {
-                error_log("File does not exist: $filePath");
-                
-                // 相対パスの場合、絶対パスに変換を試行
-                if (strpos($filePath, '/') !== 0 && strpos($filePath, ':\\') !== 1) {
-                    $absolutePath = __DIR__ . '/' . $filePath;
-                    error_log("Trying absolute path: $absolutePath");
-                    if (file_exists($absolutePath)) {
-                        $filePath = $absolutePath;
-                        error_log("File found at absolute path: $filePath");
-                    } else {
-                        error_log("File not found at absolute path either: $absolutePath");
-                        throw new Exception('ファイルが見つかりません', 404);
-                    }
-                } else {
-                    throw new Exception('ファイルが見つかりません', 404);
-                }
+            // URLが保存されている場合はリダイレクト（外部ストレージ対応）
+            if (preg_match('/^https?:\/\//i', $filePath)) {
+                header('Location: ' . $filePath);
+                exit;
             }
+
+            // パス正規化（Windowsのバックスラッシュをスラッシュへ）
+            $filePath = str_replace('\\\\', '/', $filePath);
+            $filePath = str_replace('\\', '/', $filePath);
+
+            error_log("DB file_path(norm): $filePath, original_name: $originalName");
+
+            // 候補パスを順に検証
+            $candidates = [];
+            if ($filePath) { $candidates[] = $filePath; }
+            if ($filePath && strpos($filePath, __DIR__) !== 0) { $candidates[] = __DIR__ . '/' . ltrim($filePath, '/\\'); }
+            if (!empty($manual['file_name'])) { $candidates[] = rtrim($uploadDir, '/\\') . '/' . $manual['file_name']; }
+
+            $resolved = '';
+            foreach ($candidates as $p) {
+                if (is_string($p) && $p !== '' && file_exists($p)) { $resolved = $p; break; }
+            }
+
+            if ($resolved === '') {
+                error_log('[downloadAdminManual] None of candidate paths exist: ' . implode(' | ', $candidates));
+                throw new Exception('ファイルが見つかりません', 404);
+            }
+
+            $filePath = $resolved;
 
             // ファイルサイズ確認
             $fileSize = filesize($filePath);
@@ -1772,9 +1804,10 @@ class ApiController {
 
             error_log("Content type: $contentType");
 
-            // ヘッダー設定
+            // ヘッダー設定（inline 表示を許可。?download=1 で強制ダウンロード）
+            $disposition = (isset($_GET['download']) && $_GET['download'] == '1') ? 'attachment' : 'inline';
             header('Content-Type: ' . $contentType);
-            header('Content-Disposition: attachment; filename="' . $originalName . '"');
+            header('Content-Disposition: ' . $disposition . '; filename="' . $originalName . '"');
             header('Content-Length: ' . $fileSize);
             header('Cache-Control: no-cache, must-revalidate');
             header('Pragma: no-cache');
@@ -1820,7 +1853,7 @@ class ApiController {
 
     // 管理用ユーザー作成
     public function createAdminUser($input) {
-        // $this->auth->requirePermission('manager'); // 一時的に無効化
+        $this->auth->requirePermission('manager');
 
         $email = trim(isset($input['email']) ? $input['email'] : '');
         $name = trim(isset($input['name']) ? $input['name'] : '');
@@ -1849,7 +1882,7 @@ class ApiController {
 
     // 管理用ユーザー更新
     public function updateAdminUser($id, $input) {
-        // $this->auth->requirePermission('manager'); // 一時的に無効化
+        $this->auth->requirePermission('manager');
         
         error_log("updateAdminUser called with id: $id, input: " . json_encode($input));
 
@@ -1889,7 +1922,7 @@ class ApiController {
 
     // 管理用ユーザー削除
     public function deleteAdminUser($id) {
-        // $this->auth->requirePermission('manager'); // 一時的に無効化
+        $this->auth->requirePermission('manager');
 
         $result = $this->db->deleteUser($id);
         if (!$result) {

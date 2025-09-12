@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>道路詳細設計管理システム - 設定</title>
+    <title>道路設計管理システム - 設定</title>
     <style>
         * {
             margin: 0;
@@ -639,7 +639,7 @@
         <div class="logo">
             <div class="logo-icon"></div>
             <div class="logo-text">
-                <h1>道路詳細設計管理システム</h1>
+                <h1>道路設計管理システム</h1>
                 <p>設定</p>
             </div>
         </div>
@@ -944,6 +944,46 @@
     </div>
 
     <script>
+        // 設定ページのアクセス制御（フロント側ガード）
+        document.addEventListener('DOMContentLoaded', async function() {
+            try {
+                // まず check_auth を試す（Cookieを確実に送る）
+                let ok = false;
+                try {
+                    const res = await fetch('api.php?path=check_auth&t=' + Date.now(), {
+                        cache: 'no-store',
+                        credentials: 'same-origin',
+                        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                    });
+                    if (res.ok) {
+                        const data = await res.json();
+                        if (data && data.success && data.user && (data.user.role === 'manager' || data.user.role === 'technical')) ok = true;
+                    }
+                } catch (_) {}
+
+                // フォールバック: user/profile でも判定
+                if (!ok) {
+                    try {
+                        const res2 = await fetch('api.php?path=user/profile&t=' + Date.now(), {
+                            cache: 'no-store',
+                            credentials: 'same-origin'
+                        });
+                        if (res2.ok) {
+                            const data2 = await res2.json();
+                            if (data2 && data2.success && (data2.role === 'manager' || data2.role === 'technical')) ok = true;
+                        }
+                    } catch (_) {}
+                }
+
+                if (!ok) {
+                    location.href = 'index.html';
+                    return;
+                }
+            } catch (e) {
+                location.href = 'index.html';
+                return;
+            }
+        });
         // タブ切り替え
         document.querySelectorAll('.nav-link').forEach(link => {
             link.addEventListener('click', function(e) {
