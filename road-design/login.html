@@ -17,7 +17,7 @@
             <p>アカウントでサインインしてください</p>
         </div>
 
-        <div id="alert" class="alert"></div>
+        <div id="alert" class="alert" style="display: none;"></div>
 
         
 
@@ -50,12 +50,24 @@
         const backBtn = document.getElementById('backBtn');
 
         function showAlert(message, type = 'info') {
-            alertBox.textContent = message;
-            alertBox.className = 'alert ' + type;
-            alertBox.style.display = 'block';
+            const alertBox = document.getElementById('alert');
+            if (alertBox) {
+                // 認証エラーメッセージは表示しない
+                if (message.includes('認証エラー') || message.includes('認証エラーが発生しました')) {
+                    console.log('Authentication error suppressed:', message);
+                    return;
+                }
+                
+                alertBox.textContent = message;
+                alertBox.className = 'alert ' + type;
+                alertBox.style.display = 'block';
+            }
         }
         function hideAlert() {
-            alertBox.style.display = 'none';
+            const alertBox = document.getElementById('alert');
+            if (alertBox) {
+                alertBox.style.display = 'none !important';
+            }
         }
         function setLoading(isLoading) {
             loading.style.display = isLoading ? 'block' : 'none';
@@ -66,8 +78,8 @@
         document.addEventListener('DOMContentLoaded', () => {
             loginForm.style.display = 'block';
             
-            // セッションを完全にクリア
-            clearAllSessions();
+            // エラーメッセージを非表示
+            hideAlert();
             
             // フォームフィールドをクリア（自動入力を防ぐ）
             document.getElementById('email').value = '';
@@ -76,23 +88,14 @@
             // フォーカスをメールアドレスフィールドに設定
             document.getElementById('email').focus();
             
+            // URLパラメータのメッセージをチェック（認証エラー以外は表示）
             const params = new URLSearchParams(location.search);
             const msg = params.get('message');
-            if (msg) showAlert(msg, 'success');
-        });
-
-        // セッションを完全にクリアする関数
-        async function clearAllSessions() {
-            try {
-                // 強制ログアウトAPIを呼び出し
-                await fetch('force_logout.php', {
-                    method: 'POST',
-                    cache: 'no-store'
-                });
-            } catch (error) {
-                console.log('セッションクリア:', error.message);
+            if (msg && !msg.includes('認証エラー')) {
+                const type = msg.includes('エラー') ? 'error' : 'success';
+                showAlert(msg, type);
             }
-        }
+        });
 
         // 戻る: アプリトップへ
         backBtn.addEventListener('click', () => {
@@ -104,7 +107,7 @@
 
         loginForm.addEventListener('submit', async (e) => {
             e.preventDefault();
-            hideAlert();
+            hideAlert(); // エラーメッセージを非表示
             const email = document.getElementById('email').value.trim();
             const password = document.getElementById('password').value;
             await doLogin(email, password);
