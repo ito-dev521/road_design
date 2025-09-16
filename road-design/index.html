@@ -652,47 +652,21 @@
                     updateRoleBasedVisibility(data.role);
                     console.log('ユーザー情報設定完了:', data.name, data.role);
                 } else {
-                    console.log('ユーザー情報が取得できませんでした、デフォルト値を設定');
-                    setDefaultUserInfo();
+                    console.log('認証されていません。ログインページにリダイレクトします');
+                    // 未認証の場合はログインページにリダイレクト
+                    window.location.href = 'login.html?message=' + encodeURIComponent('ログインが必要です');
+                    return;
                 }
             } catch (error) {
                 console.error('ユーザー情報読み込みエラー:', error);
-                console.log('代替手段を試行中...');
-                
-                // 代替手段を試行
-                if (!await loadUserInfoAlternative()) {
-                    setDefaultUserInfo();
-                }
+                console.log('認証エラーのためログインページにリダイレクトします');
+                // エラーの場合もログインページにリダイレクト
+                window.location.href = 'login.html?message=' + encodeURIComponent('認証エラーが発生しました');
+                return;
             }
         }
 
-        // 代替ユーザー情報読み込み
-        async function loadUserInfoAlternative() {
-            try {
-                const response = await fetch(`api.php?path=users&t=${Date.now()}`, { cache: 'no-store' });
-                const data = await response.json();
-                
-                console.log('代替ユーザーAPI応答:', data);
-                
-                if (data.success && data.users && data.users.length > 0) {
-                    // 最初のユーザー（通常は管理者）を使用
-                    const user = data.users[0];
-                    document.getElementById('userName').textContent = user.name;
-                    document.getElementById('userRole').textContent = getRoleText(user.role);
-                    const settingsBtn = document.getElementById('settingsBtn');
-                    if (settingsBtn) settingsBtn.style.display = (user.role === 'manager' || user.role === 'technical') ? 'inline-block' : 'none';
-                    updateRoleBasedVisibility(user.role);
-                    console.log('代替手段でユーザー情報設定完了:', user.name, user.role);
-                    return true;
-                }
-                
-                console.log('代替手段でもユーザー情報を取得できませんでした');
-                return false;
-            } catch (error) {
-                console.error('代替ユーザー情報読み込みエラー:', error);
-                return false;
-            }
-        }
+        // 代替ユーザー情報読み込み（削除 - セキュリティのため）
 
         // 役職名変換
         function getRoleText(role) {

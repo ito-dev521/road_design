@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>データベース接続テスト</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .success {
+            background-color: #d4edda;
+            border-color: #c3e6cb;
+            color: #155724;
+        }
+        .error {
+            background-color: #f8d7da;
+            border-color: #f5c6cb;
+            color: #721c24;
+        }
+        .info {
+            background-color: #d1ecf1;
+            border-color: #bee5eb;
+            color: #0c5460;
+        }
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            opacity: 0.9;
+        }
+        pre {
+            background-color: #f8f9fa;
+            padding: 10px;
+            border-radius: 3px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>データベース接続テスト</h1>
+        
+        <div class="test-section info">
+            <h3>現在の設定</h3>
+            <p><strong>ホスト:</strong> localhost</p>
+            <p><strong>データベース:</strong> roadplan_road</p>
+            <p><strong>ユーザー:</strong> roadplan_road</p>
+            <p><strong>ポート:</strong> 3306</p>
+        </div>
+
+        <div class="test-section">
+            <h3>接続テスト</h3>
+            <button onclick="testConnection()">データベース接続をテスト</button>
+            <div id="connectionResult"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>テーブル確認</h3>
+            <button onclick="checkTables()">テーブル一覧を確認</button>
+            <div id="tablesResult"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>ユーザーデータ確認</h3>
+            <button onclick="checkUsers()">ユーザーデータを確認</button>
+            <div id="usersResult"></div>
+        </div>
+    </div>
+
+    <script>
+        async function testConnection() {
+            const resultDiv = document.getElementById('connectionResult');
+            resultDiv.innerHTML = '<p>接続テスト中...</p>';
+            
+            try {
+                const response = await fetch('test_connection_api.php');
+                const data = await response.json();
+                
+                if (data.success) {
+                    resultDiv.innerHTML = `
+                        <div class="success">
+                            <h4>✅ 接続成功</h4>
+                            <p>データベースに正常に接続できました。</p>
+                            <pre>${JSON.stringify(data.data, null, 2)}</pre>
+                        </div>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `
+                        <div class="error">
+                            <h4>❌ 接続失敗</h4>
+                            <p>${data.message}</p>
+                            <pre>${JSON.stringify(data, null, 2)}</pre>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="error">
+                        <h4>❌ エラー</h4>
+                        <p>接続テスト中にエラーが発生しました: ${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+
+        async function checkTables() {
+            const resultDiv = document.getElementById('tablesResult');
+            resultDiv.innerHTML = '<p>テーブル確認中...</p>';
+            
+            try {
+                const response = await fetch('test_connection_api.php?action=tables');
+                const data = await response.json();
+                
+                if (data.success) {
+                    resultDiv.innerHTML = `
+                        <div class="success">
+                            <h4>✅ テーブル確認完了</h4>
+                            <p>${data.data.tables.length}個のテーブルが見つかりました。</p>
+                            <pre>${JSON.stringify(data.data, null, 2)}</pre>
+                        </div>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `
+                        <div class="error">
+                            <h4>❌ テーブル確認失敗</h4>
+                            <p>${data.message}</p>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="error">
+                        <h4>❌ エラー</h4>
+                        <p>テーブル確認中にエラーが発生しました: ${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+
+        async function checkUsers() {
+            const resultDiv = document.getElementById('usersResult');
+            resultDiv.innerHTML = '<p>ユーザーデータ確認中...</p>';
+            
+            try {
+                const response = await fetch('test_connection_api.php?action=users');
+                const data = await response.json();
+                
+                if (data.success) {
+                    resultDiv.innerHTML = `
+                        <div class="success">
+                            <h4>✅ ユーザーデータ確認完了</h4>
+                            <p>${data.data.users.length}人のユーザーが見つかりました。</p>
+                            <pre>${JSON.stringify(data.data, null, 2)}</pre>
+                        </div>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `
+                        <div class="error">
+                            <h4>❌ ユーザーデータ確認失敗</h4>
+                            <p>${data.message}</p>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="error">
+                        <h4>❌ エラー</h4>
+                        <p>ユーザーデータ確認中にエラーが発生しました: ${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+    </script>
+</body>
+</html>

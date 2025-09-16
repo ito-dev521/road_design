@@ -4,6 +4,7 @@ require_once 'config.php';
 class Database {
     private $connection;
     private $host;
+    private $port;
     private $dbname;
     private $username;
     private $password;

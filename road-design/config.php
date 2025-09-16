@@ -1,10 +1,10 @@
 <?php
-// Database configuration for X-Server MySQL
-define('DB_HOST', 'localhost'); // X-Server MySQL host
+// Database configuration for new server
+define('DB_HOST', 'localhost'); // New server MySQL host
 define('DB_PORT', '3306'); // MySQL default port
-define('DB_NAME', 'iistylelab_road');
-define('DB_USER', 'iistylelab_road');
-define('DB_PASS', 'K6RVCwzMDxtz5dn');
+define('DB_NAME', 'roadplan_road');
+define('DB_USER', 'roadplan_road');
+define('DB_PASS', '8R23ENvs');
 define('DB_CHARSET', 'utf8mb4');
 
 // Site configuration
