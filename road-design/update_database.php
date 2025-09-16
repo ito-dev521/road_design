@@ -38,9 +38,9 @@ try {
     // ENUMを更新
     echo "\nENUMを更新中...\n";
     $sql = "ALTER TABLE tasks 
-            MODIFY COLUMN status ENUM('not_started', 'in_progress', 'completed', 'not_applicable', 'needs_confirmation') 
+            MODIFY COLUMN status ENUM('not_started', 'in_progress', 'completed', 'not_applicable', 'needs_confirmation', 'pending') 
             DEFAULT 'not_started' 
-            COMMENT 'タスクステータス: not_started=未着手, in_progress=進行中, completed=完了, not_applicable=対象外, needs_confirmation=要確認'";
+            COMMENT 'タスクステータス: not_started=未着手, in_progress=進行中, completed=完了, not_applicable=対象外, needs_confirmation=要確認, pending=保留中'";
     
     $pdo->exec($sql);
     echo "ENUM更新完了\n";

@@ -645,9 +645,9 @@
         </div>
         <div class="user-section">
             <div class="user-info">
-                <h3>管理者</h3>
+                <h3 id="userRoleDisplay">読み込み中...</h3>
                 <div class="action-buttons">
-                                         <a href="index.html" class="btn">メインページに戻る</a>
+                    <a href="index.html" class="btn">メインページに戻る</a>
                     <a href="logout.php" class="btn">ログアウト</a>
                 </div>
             </div>
@@ -948,7 +948,9 @@
         document.addEventListener('DOMContentLoaded', async function() {
             try {
                 // まず check_auth を試す（Cookieを確実に送る）
+                let userInfo = null;
                 let ok = false;
+                
                 try {
                     const res = await fetch('api.php?path=check_auth&t=' + Date.now(), {
                         cache: 'no-store',
@@ -957,7 +959,10 @@
                     });
                     if (res.ok) {
                         const data = await res.json();
-                        if (data && data.success && data.user && (data.user.role === 'manager' || data.user.role === 'technical')) ok = true;
+                        if (data && data.success && data.user && (data.user.role === 'manager' || data.user.role === 'technical')) {
+                            ok = true;
+                            userInfo = data.user;
+                        }
                     }
                 } catch (_) {}
 
@@ -970,7 +975,10 @@
                         });
                         if (res2.ok) {
                             const data2 = await res2.json();
-                            if (data2 && data2.success && (data2.role === 'manager' || data2.role === 'technical')) ok = true;
+                            if (data2 && data2.success && (data2.role === 'manager' || data2.role === 'technical')) {
+                                ok = true;
+                                userInfo = data2;
+                            }
                         }
                     } catch (_) {}
                 }
@@ -979,11 +987,33 @@
                     location.href = 'index.html';
                     return;
                 }
+
+                // ユーザー情報を表示
+                if (userInfo) {
+                    updateUserRoleDisplay(userInfo);
+                }
             } catch (e) {
                 location.href = 'index.html';
                 return;
             }
         });
+
+        // ユーザー権限表示を更新
+        function updateUserRoleDisplay(userInfo) {
+            const roleDisplay = document.getElementById('userRoleDisplay');
+            if (roleDisplay && userInfo) {
+                const roleNames = {
+                    'manager': '管理者',
+                    'technical': '技術者',
+                    'general': '一般スタッフ'
+                };
+                
+                const roleName = roleNames[userInfo.role] || userInfo.role;
+                const userName = userInfo.name || userInfo.email || 'ユーザー';
+                
+                roleDisplay.textContent = `${userName} (${roleName})`;
+            }
+        }
         // タブ切り替え
         document.querySelectorAll('.nav-link').forEach(link => {
             link.addEventListener('click', function(e) {

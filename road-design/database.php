@@ -192,7 +192,7 @@ class Database {
             error_log("Database getTaskById called with taskId: $taskId");
             
             $stmt = $this->getConnection()->prepare("
-                SELECT t.*, u.name as assigned_to_name,
+                SELECT t.*, t.status, u.name as assigned_to_name,
                        tt.content as template_content,
                        (SELECT GROUP_CONCAT(note SEPARATOR '|') FROM task_notes WHERE task_id = t.id ORDER BY created_at DESC) as notes
                 FROM tasks t 
@@ -206,6 +206,7 @@ class Database {
             error_log("Database getTaskById result: " . json_encode($task));
             if ($task) {
                 error_log("Database getTaskById planned_date: " . ($task['planned_date'] ?? 'null'));
+                error_log("Database getTaskById status: " . ($task['status'] ?? 'null'));
             }
             
             if ($task && $task['notes']) {
@@ -475,6 +476,21 @@ class Database {
                 return false;
             }
             
+            // 既存のタスクをチェック（重複防止）
+            $existingTasksStmt = $this->getConnection()->prepare("
+                SELECT template_id, task_name FROM tasks 
+                WHERE project_id = ? AND template_id IS NOT NULL
+            ");
+            $existingTasksStmt->execute([$projectId]);
+            $existingTasks = $existingTasksStmt->fetchAll(PDO::FETCH_ASSOC);
+            
+            // 既存タスクのテンプレートIDとタスク名を配列に変換
+            $existingTemplateIds = array_column($existingTasks, 'template_id');
+            $existingTaskNames = array_column($existingTasks, 'task_name');
+            
+            error_log("既存のタスク数: " . count($existingTasks));
+            error_log("既存のテンプレートID: " . implode(', ', $existingTemplateIds));
+            
             // タスク作成
             $insertStmt = $this->getConnection()->prepare("
                 INSERT INTO tasks (project_id, template_id, phase_name, task_name, task_order, is_technical_work, has_manual, estimated_hours, status, created_at, updated_at) 
@@ -482,7 +498,14 @@ class Database {
             ");
             
             $createdCount = 0;
+            $skippedCount = 0;
             foreach ($templates as $template) {
+                // 重複チェック：同じテンプレートIDまたは同じタスク名が既に存在する場合はスキップ
+                if (in_array($template['id'], $existingTemplateIds) || in_array($template['task_name'], $existingTaskNames)) {
+                    error_log("重複のためスキップ: テンプレートID {$template['id']}, タスク名: {$template['task_name']}");
+                    $skippedCount++;
+                    continue;
+                }
                 try {
                     $insertStmt->execute([
                         $projectId,
@@ -502,9 +525,16 @@ class Database {
             }
             
             error_log("作成されたタスク数: $createdCount");
+            error_log("スキップされたタスク数: $skippedCount");
             error_log("=== createTasksFromSelectedTemplates 完了 ===");
             
-            return $createdCount > 0;
+            // 結果を配列で返す（作成数とスキップ数を含む）
+            return [
+                'success' => true,
+                'created_count' => $createdCount,
+                'skipped_count' => $skippedCount,
+                'total_selected' => count($templates)
+            ];
         } catch (PDOException $e) {
             error_log("createTasksFromSelectedTemplates error: " . $e->getMessage());
             return false;
@@ -518,6 +548,7 @@ class Database {
             $stmt = $this->getConnection()->prepare("
                 SELECT t.*, 
                        t.task_name as name, 
+                       t.status,
                        u.name as assigned_to_name, 
                        tt.task_name as template_name, 
                        tt.content as template_content, 
@@ -538,9 +569,9 @@ class Database {
             error_log("getProjectTasks result: " . count($result) . " tasks found");
             error_log("getProjectTasks sample data: " . json_encode($result[0] ?? null));
             
-            // 各タスクの期限データを確認
+            // 各タスクの期限データとステータスを確認
             foreach ($result as $index => $task) {
-                error_log("タスク{$index} (ID: {$task['id']}) planned_date: " . ($task['planned_date'] ?? 'null'));
+                error_log("タスク{$index} (ID: {$task['id']}) planned_date: " . ($task['planned_date'] ?? 'null') . ", status: " . ($task['status'] ?? 'null'));
             }
             
             return $result;
@@ -1256,6 +1287,140 @@ class Database {
             return $stmt->fetchAll();
         } catch (PDOException $e) {
             error_log("getAllTasks error: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    // プロジェクトにタスクを追加
+    public function addTaskToProject($projectId, $taskName, $phaseName, $taskOrder = 0, $isTechnicalWork = false, $hasManual = false, $estimatedHours = null) {
+        try {
+            error_log("Database addTaskToProject called with projectId: $projectId, taskName: $taskName, phaseName: $phaseName");
+            
+            $this->getConnection()->beginTransaction();
+            
+            $stmt = $this->getConnection()->prepare("
+                INSERT INTO tasks (project_id, template_id, phase_name, task_name, task_order, is_technical_work, has_manual, estimated_hours, status, created_at, updated_at) 
+                VALUES (?, NULL, ?, ?, ?, ?, ?, ?, 'not_started', NOW(), NOW())
+            ");
+            
+            $result = $stmt->execute([
+                $projectId,
+                $phaseName,
+                $taskName,
+                $taskOrder,
+                $isTechnicalWork ? 1 : 0,
+                $hasManual ? 1 : 0,
+                $estimatedHours
+            ]);
+            
+            if ($result) {
+                $taskId = $this->getConnection()->lastInsertId();
+                error_log("Task added successfully with ID: $taskId");
+                
+                // 履歴記録
+                $this->addProjectHistory($projectId, $taskId, 1, 'created', null, $taskName, "タスク追加: $taskName");
+                
+                $this->getConnection()->commit();
+                return $taskId;
+            } else {
+                $this->getConnection()->rollBack();
+                return false;
+            }
+        } catch (PDOException $e) {
+            $this->getConnection()->rollBack();
+            error_log("addTaskToProject error: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    // プロジェクトからタスクを削除
+    public function removeTaskFromProject($taskId) {
+        try {
+            error_log("Database removeTaskFromProject called with taskId: $taskId");
+            
+            // タスク情報を取得（履歴記録用）
+            $stmt = $this->getConnection()->prepare("SELECT * FROM tasks WHERE id = ?");
+            $stmt->execute([$taskId]);
+            $task = $stmt->fetch();
+            
+            if (!$task) {
+                error_log("Task not found with ID: $taskId");
+                return false;
+            }
+            
+            $this->getConnection()->beginTransaction();
+            
+            // タスクを削除
+            $stmt = $this->getConnection()->prepare("DELETE FROM tasks WHERE id = ?");
+            $result = $stmt->execute([$taskId]);
+            
+            if ($result) {
+                error_log("Task removed successfully: $taskId");
+                
+                // 履歴記録
+                $this->addProjectHistory($task['project_id'], $taskId, 1, 'deleted', $task['task_name'], null, "タスク削除: {$task['task_name']}");
+                
+                $this->getConnection()->commit();
+                return true;
+            } else {
+                $this->getConnection()->rollBack();
+                return false;
+            }
+        } catch (PDOException $e) {
+            $this->getConnection()->rollBack();
+            error_log("removeTaskFromProject error: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    // プロジェクトのタスクを更新
+    public function updateProjectTask($taskId, $taskName, $phaseName, $taskOrder, $isTechnicalWork, $hasManual, $estimatedHours) {
+        try {
+            error_log("Database updateProjectTask called with taskId: $taskId");
+            
+            // 現在のタスク情報を取得
+            $stmt = $this->getConnection()->prepare("SELECT * FROM tasks WHERE id = ?");
+            $stmt->execute([$taskId]);
+            $currentTask = $stmt->fetch();
+            
+            if (!$currentTask) {
+                error_log("Task not found with ID: $taskId");
+                return false;
+            }
+            
+            $this->getConnection()->beginTransaction();
+            
+            $stmt = $this->getConnection()->prepare("
+                UPDATE tasks 
+                SET task_name = ?, phase_name = ?, task_order = ?, is_technical_work = ?, has_manual = ?, estimated_hours = ?, updated_at = NOW()
+                WHERE id = ?
+            ");
+            
+            $result = $stmt->execute([
+                $taskName,
+                $phaseName,
+                $taskOrder,
+                $isTechnicalWork ? 1 : 0,
+                $hasManual ? 1 : 0,
+                $estimatedHours,
+                $taskId
+            ]);
+            
+            if ($result) {
+                error_log("Task updated successfully: $taskId");
+                
+                // 履歴記録
+                $this->addProjectHistory($currentTask['project_id'], $taskId, 1, 'updated', $currentTask['task_name'], $taskName, "タスク更新: $taskName");
+                
+                $this->getConnection()->commit();
+                return true;
+            } else {
+                $this->getConnection()->rollBack();
+                return false;
+            }
+        } catch (PDOException $e) {
+            $this->getConnection()->rollBack();
+            error_log("updateProjectTask error: " . $e->getMessage());
             return false;
         }
     }

@@ -70,7 +70,7 @@ CREATE TABLE tasks (
     phase_name VARCHAR(100) NOT NULL,
     task_name VARCHAR(255) NOT NULL,
     task_order INT DEFAULT 0,
-    status ENUM('not_started', 'in_progress', 'completed', 'not_applicable', 'needs_confirmation') DEFAULT 'not_started',
+    status ENUM('not_started', 'in_progress', 'completed', 'not_applicable', 'needs_confirmation', 'pending') DEFAULT 'not_started',
     assigned_to INT NULL,
     planned_date DATE NULL,
     actual_start_date DATE NULL,

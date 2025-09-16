@@ -141,6 +141,12 @@ body {
     margin-bottom: 2rem;
 }
 
+.header-buttons {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
 .project-header h2 {
     font-size: 2rem;
     background: linear-gradient(135deg, #667eea, #764ba2);
@@ -196,6 +202,45 @@ body {
 .btn-secondary:hover {
     transform: translateY(-2px);
     box-shadow: 0 12px 35px rgba(108, 117, 125, 0.4);
+}
+
+.btn-warning {
+    background: linear-gradient(135deg, #ffc107, #e0a800);
+    color: #212529;
+    box-shadow: 0 8px 25px rgba(255, 193, 7, 0.3);
+}
+
+.btn-warning:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 35px rgba(255, 193, 7, 0.4);
+    color: #212529;
+    text-decoration: none;
+}
+
+.btn-info {
+    background: linear-gradient(135deg, #17a2b8, #138496);
+    color: white;
+    box-shadow: 0 8px 25px rgba(23, 162, 184, 0.3);
+}
+
+.btn-info:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 35px rgba(23, 162, 184, 0.4);
+    color: white;
+    text-decoration: none;
+}
+
+.btn-success {
+    background: linear-gradient(135deg, #28a745, #20c997);
+    color: white;
+    box-shadow: 0 8px 25px rgba(40, 167, 69, 0.3);
+}
+
+.btn-success:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 35px rgba(40, 167, 69, 0.4);
+    color: white;
+    text-decoration: none;
 }
 
 .btn-small {
@@ -536,6 +581,22 @@ div.task-item.status-needs_confirmation::before,
     opacity: 0.9;
 }
 
+.task-item.status-pending {
+    background: #fff3e0 !important;
+    border-left: 4px solid #ff9800 !important;
+    border: 2px solid #ff9800 !important;
+    box-shadow: 0 4px 15px rgba(255, 152, 0, 0.3) !important;
+    transform: scale(1.02) !important;
+    position: relative !important;
+    z-index: 5 !important;
+}
+
+.task-item.status-pending:hover {
+    box-shadow: 0 8px 25px rgba(255, 152, 0, 0.5) !important;
+    transform: scale(1.05) translateY(-2px) !important;
+    border-color: #ff6f00 !important;
+}
+
 /* 確認対象者表示 */
 .confirmation-info {
     background: rgba(255, 0, 0, 0.15) !important;
@@ -670,6 +731,19 @@ div.task-item.status-needs_confirmation::before,
     color: #6c757d;
 }
 
+.status-pending {
+    background: rgba(255, 152, 0, 0.3) !important;
+    color: #ff9800 !important;
+    font-weight: 700 !important;
+    border: 2px solid #ff9800 !important;
+    border-radius: 8px !important;
+    box-shadow: 0 4px 15px rgba(255, 152, 0, 0.4) !important;
+    transform: scale(1.02) !important;
+    position: relative !important;
+    z-index: 5 !important;
+    padding: 4px 8px !important;
+}
+
 .task-overdue {
     background: linear-gradient(135deg, #ff6b6b, #ee5a52);
     color: white;
@@ -732,6 +806,412 @@ div.task-item.status-needs_confirmation::before,
 .flag.manual {
     background: rgba(111, 66, 193, 0.1);
     color: #6f42c1;
+}
+
+/* プロジェクト編集のタスク管理スタイル */
+.task-management-controls {
+    margin-bottom: 1rem;
+    padding: 1rem;
+    background: #f8f9fa;
+    border-radius: 8px;
+    border: 1px solid #e9ecef;
+}
+
+.project-tasks-list {
+    max-height: 400px;
+    overflow-y: auto;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    background: white;
+}
+
+.phase-tasks-group {
+    border-bottom: 1px solid #e9ecef;
+}
+
+.phase-tasks-group:last-child {
+    border-bottom: none;
+}
+
+.phase-tasks-group h5 {
+    margin: 0;
+    padding: 0.75rem 1rem;
+    background: #f8f9fa;
+    border-bottom: 1px solid #e9ecef;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #495057;
+}
+
+.phase-tasks-container {
+    padding: 0.5rem;
+}
+
+.project-task-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem;
+    margin-bottom: 0.5rem;
+    background: #f8f9fa;
+    border-radius: 6px;
+    border: 1px solid #e9ecef;
+    transition: all 0.2s ease;
+}
+
+.project-task-item:hover {
+    background: #e9ecef;
+    border-color: #dee2e6;
+}
+
+.project-task-item:last-child {
+    margin-bottom: 0;
+}
+
+.task-info {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex: 1;
+}
+
+.task-info .task-name {
+    font-weight: 500;
+    color: #212529;
+}
+
+.task-info .task-status {
+    font-size: 0.8rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-weight: 500;
+}
+
+.task-info .task-hours {
+    font-size: 0.8rem;
+    color: #6c757d;
+    background: #e9ecef;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+}
+
+.task-info .task-flag {
+    font-size: 0.7rem;
+    padding: 0.2rem 0.4rem;
+    border-radius: 3px;
+    font-weight: 500;
+}
+
+.task-info .task-flag.technical {
+    background: rgba(32, 201, 151, 0.1);
+    color: #20c997;
+}
+
+.task-info .task-flag.manual {
+    background: rgba(255, 193, 7, 0.1);
+    color: #ffc107;
+}
+
+.task-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.task-actions .btn {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.8rem;
+    border-radius: 4px;
+}
+
+.no-tasks {
+    text-align: center;
+    color: #6c757d;
+    font-style: italic;
+    padding: 2rem;
+    margin: 0;
+}
+
+/* タスク編集モーダル */
+.task-modal {
+    max-width: 500px;
+}
+
+.task-modal .form-group {
+    margin-bottom: 1rem;
+}
+
+.task-modal .form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+    color: #495057;
+}
+
+.task-modal .form-group input,
+.task-modal .form-group select {
+    width: 100%;
+    padding: 0.5rem;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    font-size: 0.9rem;
+}
+
+.task-modal .form-group input[type="checkbox"] {
+    width: auto;
+    margin-right: 0.5rem;
+}
+
+.task-modal .form-group label input[type="checkbox"] {
+    display: inline;
+    width: auto;
+    margin-right: 0.5rem;
+}
+
+/* テンプレート選択エリア */
+.template-selection-area {
+    margin-top: 1rem;
+    padding: 1rem;
+    background: #f8f9fa;
+    border-radius: 8px;
+    border: 1px solid #e9ecef;
+}
+
+.template-selection-area h5 {
+    margin: 0 0 1rem 0;
+    color: #495057;
+    font-size: 1rem;
+}
+
+/* フェーズフィルターボタン */
+.phase-filter-btn {
+    background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+    border: 2px solid #dee2e6;
+    border-radius: 25px;
+    padding: 8px 16px;
+    margin: 4px 8px 4px 0;
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: #495057;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.phase-filter-btn:hover {
+    background: linear-gradient(135deg, #e9ecef, #dee2e6);
+    border-color: #adb5bd;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.phase-filter-btn.active {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    border-color: #5a67d8;
+    color: white;
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+    transform: translateY(-2px);
+}
+
+.phase-filter-btn.active:hover {
+    background: linear-gradient(135deg, #5a67d8, #6b46c1);
+    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.5);
+}
+
+/* フェーズフィルターボタンの個別色 */
+.phase-filter-btn:nth-child(1) { /* すべて */
+    background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+}
+
+.phase-filter-btn:nth-child(1).active {
+    background: linear-gradient(135deg, #6c757d, #495057);
+}
+
+.phase-filter-btn:nth-child(2) { /* 平面縦断設計 */
+    background: linear-gradient(135deg, #e3f2fd, #bbdefb);
+    border-color: #90caf9;
+}
+
+.phase-filter-btn:nth-child(2).active {
+    background: linear-gradient(135deg, #2196f3, #1976d2);
+}
+
+.phase-filter-btn:nth-child(3) { /* 数量計算書作成 */
+    background: linear-gradient(135deg, #f3e5f5, #e1bee7);
+    border-color: #ce93d8;
+}
+
+.phase-filter-btn:nth-child(3).active {
+    background: linear-gradient(135deg, #9c27b0, #7b1fa2);
+}
+
+.phase-filter-btn:nth-child(4) { /* 横断設計 */
+    background: linear-gradient(135deg, #e8f5e8, #c8e6c9);
+    border-color: #a5d6a7;
+}
+
+.phase-filter-btn:nth-child(4).active {
+    background: linear-gradient(135deg, #4caf50, #388e3c);
+}
+
+.phase-filter-btn:nth-child(5) { /* 設計図作成 */
+    background: linear-gradient(135deg, #fff3e0, #ffe0b2);
+    border-color: #ffcc02;
+}
+
+.phase-filter-btn:nth-child(5).active {
+    background: linear-gradient(135deg, #ff9800, #f57c00);
+}
+
+.phase-filter-btn:nth-child(6) { /* 設計条件の整理 */
+    background: linear-gradient(135deg, #fce4ec, #f8bbd9);
+    border-color: #f48fb1;
+}
+
+.phase-filter-btn:nth-child(6).active {
+    background: linear-gradient(135deg, #e91e63, #c2185b);
+}
+
+.template-filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+    align-items: center;
+}
+
+.filter-group {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.filter-group label {
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: #495057;
+    margin: 0;
+}
+
+.filter-group select {
+    padding: 0.25rem 0.5rem;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    font-size: 0.9rem;
+}
+
+.template-list {
+    max-height: 300px;
+    overflow-y: auto;
+    border: 1px solid #e9ecef;
+    border-radius: 6px;
+    background: white;
+    margin-bottom: 1rem;
+}
+
+.template-phase-group {
+    border-bottom: 1px solid #e9ecef;
+}
+
+.template-phase-group:last-child {
+    border-bottom: none;
+}
+
+.template-phase-group h6 {
+    margin: 0;
+    padding: 0.5rem 0.75rem;
+    background: #f8f9fa;
+    border-bottom: 1px solid #e9ecef;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #495057;
+}
+
+.template-phase-container {
+    padding: 0.5rem;
+}
+
+.template-item {
+    margin-bottom: 0.5rem;
+}
+
+.template-item:last-child {
+    margin-bottom: 0;
+}
+
+.template-checkbox-label {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    padding: 0.5rem;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.template-checkbox-label:hover {
+    background: #f8f9fa;
+}
+
+.template-checkbox {
+    margin: 0;
+    margin-top: 0.2rem;
+}
+
+.template-info {
+    flex: 1;
+}
+
+.template-name {
+    display: block;
+    font-weight: 500;
+    color: #212529;
+    margin-bottom: 0.25rem;
+}
+
+.template-meta {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.template-flag {
+    font-size: 0.7rem;
+    padding: 0.2rem 0.4rem;
+    border-radius: 3px;
+    font-weight: 500;
+}
+
+.template-flag.technical {
+    background: rgba(32, 201, 151, 0.1);
+    color: #20c997;
+}
+
+.template-flag.manual {
+    background: rgba(255, 193, 7, 0.1);
+    color: #ffc107;
+}
+
+.template-hours {
+    font-size: 0.8rem;
+    color: #6c757d;
+    background: #e9ecef;
+    padding: 0.2rem 0.4rem;
+    border-radius: 3px;
+}
+
+.template-actions {
+    display: flex;
+    gap: 0.5rem;
+    justify-content: flex-end;
+}
+
+.no-templates {
+    text-align: center;
+    color: #6c757d;
+    font-style: italic;
+    padding: 2rem;
+    margin: 0;
 }
 
 .task-actions {

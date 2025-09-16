@@ -37,7 +37,9 @@
                 <div class="card">
                 <div class="project-header">
                     <h2>プロジェクト管理</h2>
+                    <div class="header-buttons">
                         <button class="btn btn-primary" id="newProjectBtn">🚀 新規プロジェクト</button>
+                    </div>
                 </div>
                 
                 <div class="project-selector">
@@ -241,8 +243,31 @@
                                     <option value="cancelled">中止</option>
                                 </select>
                             </div>
-                </div>
-            </form>
+                        </div>
+                        
+                        <!-- タスク管理セクション -->
+                        <div class="form-section">
+                            <h4>タスク管理</h4>
+                            
+                            <!-- テンプレート選択エリア -->
+                            <div class="template-selection-area" id="templateSelectionArea">
+                                <h5>テンプレート選択</h5>
+                                <div class="template-selection">
+                                    <div class="template-filters" id="editTemplateFilters">
+                                        <!-- フェーズフィルターボタンがここに動的に追加される -->
+                                    </div>
+                                    <div class="template-list">
+                                        <div class="template-groups" id="editTemplateGroups">
+                                            <!-- テンプレートがここに動的に追加される -->
+                                        </div>
+                                    </div>
+                                    <div class="template-actions">
+                                        <!-- アクションボタンがここに動的に追加される -->
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" onclick="closeEditProjectModal()">キャンセル</button>
@@ -250,6 +275,64 @@
                 </div>
         </div>
     </div>
+
+        <!-- タスク追加・編集モーダル -->
+        <div class="modal-overlay" id="taskEditModal">
+            <div class="modal task-modal">
+                <div class="modal-header">
+                    <h3 class="modal-title" id="taskEditModalTitle">タスク追加</h3>
+                    <button class="modal-close" onclick="closeTaskEditModal()">&times;</button>
+                </div>
+                <div class="modal-content">
+                    <form id="taskEditForm">
+                        <input type="hidden" id="editTaskId">
+                        <input type="hidden" id="editTaskProjectId">
+                        
+                        <div class="form-group">
+                            <label for="editTaskName">タスク名</label>
+                            <input type="text" id="editTaskName" name="task_name" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="editTaskPhase">フェーズ</label>
+                            <select id="editTaskPhase" name="phase_name" required>
+                                <option value="フェーズ1">フェーズ1</option>
+                                <option value="フェーズ2">フェーズ2</option>
+                                <option value="フェーズ3">フェーズ3</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="editTaskOrder">順序</label>
+                            <input type="number" id="editTaskOrder" name="task_order" min="0" value="0">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="editTaskEstimatedHours">見積時間（時間）</label>
+                            <input type="number" id="editTaskEstimatedHours" name="estimated_hours" min="0" step="0.5">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>
+                                <input type="checkbox" id="editTaskIsTechnical" name="is_technical_work">
+                                技術作業
+                            </label>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>
+                                <input type="checkbox" id="editTaskHasManual" name="has_manual">
+                                マニュアルあり
+                            </label>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeTaskEditModal()">キャンセル</button>
+                    <button type="button" class="btn btn-primary" onclick="saveTaskEdit()">保存</button>
+                </div>
+            </div>
+        </div>
 
         <!-- プロジェクト削除確認モーダル -->
         <div class="modal-overlay" id="deleteProjectModal">
@@ -298,6 +381,7 @@
                             <option value="completed">完了</option>
                             <option value="needs_confirmation">要確認</option>
                             <option value="not_applicable">対象外</option>
+                            <option value="pending">保留中</option>
                         </select>
                     </div>
                     <div class="task-assignment">
@@ -635,8 +719,27 @@
         async function loadProjects() {
             try {
                 console.log('プロジェクト一覧を読み込み中...');
+                console.log('API URL:', `api.php?path=projects&t=${Date.now()}`);
+                
                 const response = await fetch(`api.php?path=projects&t=${Date.now()}`, { cache: 'no-store' });
-                const data = await response.json();
+                console.log('レスポンスステータス:', response.status);
+                console.log('レスポンスヘッダー:', response.headers);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const responseText = await response.text();
+                console.log('生レスポンス:', responseText);
+                
+                let data;
+                try {
+                    data = JSON.parse(responseText);
+                } catch (parseError) {
+                    console.error('JSON解析エラー:', parseError);
+                    console.error('レスポンス内容:', responseText);
+                    throw new Error('APIからの応答がJSON形式ではありません');
+                }
                 
                 console.log('プロジェクトAPI応答:', data);
                 
@@ -644,11 +747,11 @@
                     populateProjectSelect(data.projects);
                 } else {
                     console.error('プロジェクト読み込みエラー:', data.error || 'データが見つかりません');
-                    showMessage('プロジェクトの読み込みに失敗しました', 'error');
+                    showMessage('プロジェクトの読み込みに失敗しました: ' + (data.message || '不明なエラー'), 'error');
                 }
             } catch (error) {
                 console.error('プロジェクト読み込みエラー:', error);
-                showMessage('プロジェクトの読み込み中にエラーが発生しました', 'error');
+                showMessage('プロジェクトの読み込み中にエラーが発生しました: ' + error.message, 'error');
             }
         }
 
@@ -726,10 +829,18 @@
                             console.log(`タスク${index + 1} (ID: ${task.id}):`, {
                                 name: task.task_name || task.name,
                                 status: task.status,
+                                status_type: typeof task.status,
                                 assigned_to: task.assigned_to,
                                 assigned_to_name: task.assigned_to_name,
-                                planned_date: task.planned_date
+                                planned_date: task.planned_date,
+                                full_task_data: task // 完全なタスクデータを表示
                             });
+                            
+                            // ステータスが未定義の場合は警告
+                            if (task.status === undefined || task.status === null || task.status === '') {
+                                console.warn(`⚠️ タスク${index + 1} (${task.task_name || task.name}) のステータスが未定義です:`, task.status);
+                                console.warn('タスクの完全なデータ:', task);
+                            }
                         });
                         
                         allTasks = tasksData.tasks;
@@ -768,7 +879,6 @@
             document.getElementById('projectPeriod').textContent = `期間: ${formatDate(project.start_date)} - ${formatDate(end)}`;
             document.getElementById('projectStatus').textContent = getStatusText(project.status);
             
-            console.log('プロジェクト情報を表示しました:', project.name);
         }
 
         // プロジェクト情報表示/非表示
@@ -884,33 +994,17 @@
                 taskList.appendChild(phaseContainer);
             });
 
-            console.log(`${filteredByPhase.length}個のタスクを表示しました`);
         }
 
         // タスクアイテム作成
         function createTaskItem(task) {
-            console.log('createTaskItem called with task:', task);
-            console.log('Task status:', task.status);
-            
             const item = document.createElement('div');
-            item.className = `task-item status-${task.status}`;
+            item.className = `task-item status-${task.status || 'not_started'}`;
+            item.setAttribute('data-task-id', task.id);
             item.onclick = () => editTask(task.id);
             
             const isOverdue = task.planned_date && new Date(task.planned_date) < new Date() && task.status !== 'completed';
             const isNeedsConfirmation = task.status === 'needs_confirmation';
-            
-            console.log('isNeedsConfirmation:', isNeedsConfirmation);
-            console.log('Applied className:', item.className);
-            console.log('Task status for CSS:', task.status);
-            console.log('Task planned_date:', task.planned_date);
-            console.log('Formatted date:', task.planned_date ? formatDate(task.planned_date) : '期限なし');
-            
-            // 要確認ステータスの場合、追加のデバッグ情報を出力
-            if (isNeedsConfirmation) {
-                console.log('要確認タスクを検出:', task);
-                console.log('要素のクラス名:', item.className);
-                console.log('要素のスタイル:', window.getComputedStyle(item));
-            }
             
             // 要確認の場合の確認対象者を取得
             const confirmationTarget = isNeedsConfirmation ? getConfirmationTarget(task) : '';
@@ -924,7 +1018,6 @@
                 item.style.transform = 'scale(1.02)';
                 item.style.position = 'relative';
                 item.style.zIndex = '10';
-                console.log('要確認タスクに直接スタイルを適用しました');
             }
 
             // そのほかのステータスのカード色を明示（CSS未適用環境対策）
@@ -947,6 +1040,12 @@
                         item.style.borderLeft = '4px solid #adb5bd';
                         item.style.opacity = '0.95';
                         break;
+                    case 'pending':
+                        item.style.background = '#fff3e0';
+                        item.style.borderLeft = '4px solid #ff9800';
+                        item.style.border = '2px solid #ff9800';
+                        item.style.boxShadow = '0 4px 15px rgba(255, 152, 0, 0.3)';
+                        break;
                 }
             }
             
@@ -955,7 +1054,7 @@
                 <div class="task-header">
                     <h4 class="task-title">${task.task_name || task.name}</h4>
                     <div class="task-status-group">
-                        <span class="task-status status-${task.status}">${getStatusText(task.status)}</span>
+                        <span class="task-status status-${task.status || 'not_started'}">${getStatusText(task.status || 'not_started')}</span>
                         ${isOverdue ? '<span class="task-overdue">遅延</span>' : ''}
                     </div>
                 </div>
@@ -1026,8 +1125,10 @@
                     
                     // ステータス設定
                     console.log('API取得タスク status:', taskData.status);
-                    document.getElementById('taskStatus').value = taskData.status;
+                    const statusValue = taskData.status || 'not_started';
+                    document.getElementById('taskStatus').value = statusValue;
                     console.log('ステータスフィールド設定後の値:', document.getElementById('taskStatus').value);
+                    console.log('ステータス選択肢の確認:', document.getElementById('taskStatus').options);
                     
                     // 期限フィールドの設定
                     const plannedDate = taskData.planned_date || '';
@@ -1659,11 +1760,6 @@
                 const assigneeValue = document.getElementById('taskAssignee').value;
                 const dateValue = document.getElementById('taskDueDate').value;
                 
-                console.log('=== タスク保存データ取得 (試行 ' + (retryCount + 1) + ') ===');
-                console.log('タスクID:', taskId);
-                console.log('ステータスフィールドの値:', statusValue);
-                console.log('担当者フィールドの値:', assigneeValue);
-                console.log('期限フィールドの値:', dateValue);
                 
                 const formData = {
                     task_id: taskId,
@@ -1672,7 +1768,6 @@
                     planned_date: dateValue || null
                 };
 
-                console.log('送信するタスク保存データ:', formData);
 
                 // 保存ボタンを無効化
                 const saveButton = document.querySelector('button[onclick="saveTask()"]');
@@ -1685,8 +1780,14 @@
                 const controller = new AbortController();
                 const timeoutId = setTimeout(() => controller.abort(), 10000); // 10秒タイムアウト
 
-                const response = await fetch('api.php?path=tasks/update', {
-                    method: 'PUT',
+                // ステータスのみの更新の場合は専用エンドポイントを使用
+                const isStatusOnlyUpdate = formData.status && !formData.assigned_to && !formData.planned_date;
+                const endpoint = isStatusOnlyUpdate ? 'tasks/status' : 'tasks/update';
+                const method = isStatusOnlyUpdate ? 'POST' : 'PUT';
+                
+                
+                const response = await fetch(`api.php?path=${endpoint}`, {
+                    method: method,
                     headers: {
                         'Content-Type': 'application/json',
                     },
@@ -1696,44 +1797,58 @@
 
                 clearTimeout(timeoutId);
 
-                console.log('タスク保存レスポンス:', response.status);
                 
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
                 
                 const data = await response.json();
-                console.log('タスク保存レスポンスデータ:', data);
 
                 if (data.success) {
-                    console.log('タスク保存成功、プロジェクトを再読み込み中...');
                     showMessage('タスクを更新しました', 'success');
+                    
+                    // APIレスポンスから直接ステータスを取得
+                    const responseStatus = data.task?.status || statusValue;
+                    
+                    // タスクカードの表示を即座に更新（プロジェクト再読み込み前）
+                    const taskCard = document.querySelector(`[data-task-id="${taskId}"]`);
+                    if (taskCard) {
+                        const finalStatus = responseStatus || statusValue || 'not_started';
+                        
+                        // タスクカード全体のクラス名を更新
+                        taskCard.className = `task-item status-${finalStatus}`;
+                        
+                        // 保留中ステータスの場合、直接スタイルを適用
+                        if (finalStatus === 'pending') {
+                            taskCard.style.background = '#fff3e0 !important';
+                            taskCard.style.borderLeft = '4px solid #ff9800 !important';
+                            taskCard.style.border = '2px solid #ff9800 !important';
+                            taskCard.style.boxShadow = '0 4px 15px rgba(255, 152, 0, 0.3) !important';
+                            taskCard.style.transform = 'scale(1.02) !important';
+                            taskCard.style.position = 'relative !important';
+                            taskCard.style.zIndex = '5 !important';
+                            taskCard.setAttribute('style', taskCard.getAttribute('style') + '; background: #fff3e0 !important; border-left: 4px solid #ff9800 !important; border: 2px solid #ff9800 !important; box-shadow: 0 4px 15px rgba(255, 152, 0, 0.3) !important; transform: scale(1.02) !important; position: relative !important; z-index: 5 !important;');
+                        }
+                        
+                        const statusElement = taskCard.querySelector('.task-status');
+                        if (statusElement) {
+                            // ステータス要素を強制的に更新
+                            statusElement.className = `task-status status-${finalStatus}`;
+                            statusElement.textContent = getStatusText(finalStatus);
+                        }
+                    }
+                    
                     closeTaskModal();
                     
                     // プロジェクトデータを再読み込み
                     if (currentProject) {
                         await loadProject(currentProject.id);
-                        console.log('プロジェクト再読み込み完了');
-                        
-                        // 保存後のデータ確認
-                        const updatedTask = allTasks.find(t => t.id == taskId);
-                        if (updatedTask) {
-                            console.log('保存後のタスクデータ確認:', {
-                                id: updatedTask.id,
-                                status: updatedTask.status,
-                                assigned_to: updatedTask.assigned_to,
-                                planned_date: updatedTask.planned_date
-                            });
-                        }
                     }
                 } else {
                     throw new Error(data.error || data.message || 'Unknown error');
                 }
             } catch (error) {
-                console.error('タスク保存エラー (試行 ' + (retryCount + 1) + '):', error);
-                
                 if (retryCount < maxRetries) {
-                    console.log('リトライします... (' + (retryCount + 1) + '/' + maxRetries + ')');
                     await new Promise(resolve => setTimeout(resolve, 1000 * (retryCount + 1))); // 指数バックオフ
                     return saveTask(retryCount + 1);
                 } else {
@@ -1794,13 +1909,23 @@
             try {
                 console.log('=== 新規プロジェクトモーダル表示開始 ===');
                 
-                // クライアント、フェーズ、テンプレートを並行読み込み
+                // クライアント、フェーズを並行読み込み
                 console.log('データ読み込み開始...');
                 await Promise.allSettled([
                     loadClients(),
-                    loadPhases(),
-                    loadTemplates()
+                    loadPhases()
                 ]);
+                
+                // ライブラリ化したテンプレート選択機能を初期化
+                TemplateSelector.init({
+                    containerId: 'newProjectModal',
+                    mode: 'new_project',
+                    onSelectionChange: function(selectedIds) {
+                        selectedTemplateIds.clear();
+                        selectedIds.forEach(id => selectedTemplateIds.add(id));
+                        saveSelectedTemplatesToStorage();
+                    }
+                });
                 
                 console.log('データ読み込み完了');
                 console.log('allClients:', allClients);
@@ -2231,7 +2356,7 @@
         }
 
         // プロジェクト編集
-        async function editProject() {
+        window.editProject = async function() {
             if (!currentProject) {
                 showMessage('編集するプロジェクトが選択されていません', 'error');
                 return;
@@ -2249,19 +2374,22 @@
                 document.getElementById('editProjectEndDate').value = currentProject.end_date || currentProject.target_end_date || '';
                 document.getElementById('editProjectStatus').value = currentProject.status;
                 
+                // テンプレート選択を初期化
+                await initProjectTemplateSelection();
+                
                 document.getElementById('editProjectModal').style.display = 'block';
             } catch (error) {
                 console.error('プロジェクト編集モーダル表示エラー:', error);
                 showMessage('編集画面の表示に失敗しました', 'error');
             }
-        }
+        };
 
-        function closeEditProjectModal() {
+        window.closeEditProjectModal = function() {
             document.getElementById('editProjectModal').style.display = 'none';
-        }
+        };
 
         // プロジェクト更新
-        async function updateProject() {
+        window.updateProject = async function() {
             try {
                 const formData = {
                     id: document.getElementById('editProjectId').value,
@@ -2306,7 +2434,7 @@
                 console.error('プロジェクト更新エラー:', error);
                 showMessage('プロジェクトの更新中にエラーが発生しました: ' + error.message, 'error');
             }
-        }
+        };
 
         // プロジェクト削除
         function deleteProject() {
@@ -2402,8 +2530,8 @@
                 case 'completed': return '完了';
                 case 'needs_confirmation': return '要確認';
                 case 'not_applicable': return '対象外';
-                case 'active': return '進行中';
-                case 'on_hold': return '保留';
+                case 'pending': return '保留中';
+
                 default: return status;
             }
         }
@@ -2528,6 +2656,731 @@
                 updateSelectedCount();
             }
         });
+
+
+        // ==================== タスク管理機能 ====================
+        
+        // プロジェクトのタスク一覧を編集用に読み込み
+        async function loadProjectTasksForEdit() {
+            if (!currentProject) return;
+            
+            try {
+                const response = await fetch(`api.php?path=projects/${currentProject.id}/tasks`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    displayProjectTasksForEdit(data.tasks);
+                } else {
+                    console.error('タスク一覧の取得に失敗:', data.message);
+                }
+            } catch (error) {
+                console.error('タスク一覧の取得エラー:', error);
+            }
+        }
+
+        // プロジェクトのタスク一覧を編集画面に表示
+        function displayProjectTasksForEdit(tasks) {
+            const tasksList = document.getElementById('projectTasksList');
+            tasksList.innerHTML = '';
+            
+            if (!tasks || tasks.length === 0) {
+                tasksList.innerHTML = '<p class="no-tasks">タスクがありません</p>';
+                return;
+            }
+            
+            // フェーズごとにグループ化
+            const tasksByPhase = {};
+            tasks.forEach(task => {
+                if (!tasksByPhase[task.phase_name]) {
+                    tasksByPhase[task.phase_name] = [];
+                }
+                tasksByPhase[task.phase_name].push(task);
+            });
+            
+            // フェーズごとに表示
+            Object.keys(tasksByPhase).sort().forEach(phaseName => {
+                const phaseDiv = document.createElement('div');
+                phaseDiv.className = 'phase-tasks-group';
+                phaseDiv.innerHTML = `<h5>${phaseName}</h5>`;
+                
+                const tasksContainer = document.createElement('div');
+                tasksContainer.className = 'phase-tasks-container';
+                
+                tasksByPhase[phaseName].forEach(task => {
+                    const taskItem = document.createElement('div');
+                    taskItem.className = 'project-task-item';
+                    taskItem.innerHTML = `
+                        <div class="task-info">
+                            <span class="task-name">${task.task_name}</span>
+                            <span class="task-status status-${task.status || 'not_started'}">${getStatusText(task.status || 'not_started')}</span>
+                            ${task.estimated_hours ? `<span class="task-hours">${task.estimated_hours}h</span>` : ''}
+                            ${task.is_technical_work ? '<span class="task-flag technical">技術</span>' : ''}
+                            ${task.has_manual ? '<span class="task-flag manual">マニュアル</span>' : ''}
+                        </div>
+                        <div class="task-actions">
+                            <button type="button" class="btn btn-sm btn-secondary" onclick="editProjectTask(${task.id})" title="編集">✏️</button>
+                            <button type="button" class="btn btn-sm btn-danger" onclick="removeProjectTask(${task.id})" title="削除">🗑️</button>
+                        </div>
+                    `;
+                    tasksContainer.appendChild(taskItem);
+                });
+                
+                phaseDiv.appendChild(tasksContainer);
+                tasksList.appendChild(phaseDiv);
+            });
+        }
+
+        // 新しいタスクを追加
+        window.addNewTaskToProject = function() {
+            if (!currentProject) {
+                showMessage('プロジェクトが選択されていません', 'error');
+                return;
+            }
+            
+            // フォームをリセット
+            document.getElementById('taskEditForm').reset();
+            document.getElementById('editTaskId').value = '';
+            document.getElementById('editTaskProjectId').value = currentProject.id;
+            document.getElementById('taskEditModalTitle').textContent = 'タスク追加';
+            
+            document.getElementById('taskEditModal').style.display = 'block';
+        };
+
+        // プロジェクトのタスクを編集
+        async function editProjectTask(taskId) {
+            try {
+                const response = await fetch(`api.php?path=tasks/${taskId}`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    const task = data.task;
+                    
+                    // フォームにデータを設定
+                    document.getElementById('editTaskId').value = task.id;
+                    document.getElementById('editTaskProjectId').value = task.project_id;
+                    document.getElementById('editTaskName').value = task.task_name;
+                    document.getElementById('editTaskPhase').value = task.phase_name;
+                    document.getElementById('editTaskOrder').value = task.task_order || 0;
+                    document.getElementById('editTaskEstimatedHours').value = task.estimated_hours || '';
+                    document.getElementById('editTaskIsTechnical').checked = task.is_technical_work == 1;
+                    document.getElementById('editTaskHasManual').checked = task.has_manual == 1;
+                    
+                    document.getElementById('taskEditModalTitle').textContent = 'タスク編集';
+                    document.getElementById('taskEditModal').style.display = 'block';
+                } else {
+                    showMessage('タスク情報の取得に失敗しました', 'error');
+                }
+            } catch (error) {
+                console.error('タスク編集エラー:', error);
+                showMessage('タスク情報の取得中にエラーが発生しました', 'error');
+            }
+        }
+
+        // タスク編集モーダルを閉じる
+        window.closeTaskEditModal = function() {
+            document.getElementById('taskEditModal').style.display = 'none';
+        };
+
+        // タスクの保存
+        window.saveTaskEdit = async function() {
+            const taskId = document.getElementById('editTaskId').value;
+            const projectId = document.getElementById('editTaskProjectId').value;
+            const taskName = document.getElementById('editTaskName').value.trim();
+            const phaseName = document.getElementById('editTaskPhase').value;
+            const taskOrder = parseInt(document.getElementById('editTaskOrder').value) || 0;
+            const estimatedHours = parseFloat(document.getElementById('editTaskEstimatedHours').value) || null;
+            const isTechnicalWork = document.getElementById('editTaskIsTechnical').checked;
+            const hasManual = document.getElementById('editTaskHasManual').checked;
+            
+            if (!taskName) {
+                showMessage('タスク名を入力してください', 'error');
+                return;
+            }
+            
+            try {
+                const isEdit = taskId !== '';
+                const endpoint = isEdit ? 'projects/tasks/update' : 'projects/tasks/add';
+                
+                const requestData = {
+                    task_name: taskName,
+                    phase_name: phaseName,
+                    task_order: taskOrder,
+                    estimated_hours: estimatedHours,
+                    is_technical_work: isTechnicalWork,
+                    has_manual: hasManual
+                };
+                
+                if (isEdit) {
+                    requestData.task_id = taskId;
+                } else {
+                    requestData.project_id = projectId;
+                }
+                
+                const response = await fetch(`api.php?path=${endpoint}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(requestData)
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showMessage(data.message, 'success');
+                    closeTaskEditModal();
+                    await loadProjectTasksForEdit();
+                } else {
+                    showMessage(data.message || 'タスクの保存に失敗しました', 'error');
+                }
+            } catch (error) {
+                console.error('タスク保存エラー:', error);
+                showMessage('タスクの保存中にエラーが発生しました', 'error');
+            }
+        };
+
+        // プロジェクトからタスクを削除
+        async function removeProjectTask(taskId) {
+            if (!confirm('このタスクを削除しますか？')) {
+                return;
+            }
+            
+            try {
+                const response = await fetch('api.php?path=projects/tasks/remove', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ task_id: taskId })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showMessage(data.message, 'success');
+                    await loadProjectTasksForEdit();
+                } else {
+                    showMessage(data.message || 'タスクの削除に失敗しました', 'error');
+                }
+            } catch (error) {
+                console.error('タスク削除エラー:', error);
+                showMessage('タスクの削除中にエラーが発生しました', 'error');
+            }
+        }
+
+        // ==================== テンプレート選択ライブラリ ====================
+        
+        // テンプレート選択ライブラリ
+        const TemplateSelector = {
+            // 設定
+            config: {
+                containerId: null,
+                onSelectionChange: null,
+                onAddTemplates: null,
+                mode: 'new_project' // 'new_project' or 'edit_project'
+            },
+            
+            // 状態
+            state: {
+                allTemplates: [],
+                filteredTemplates: [],
+                selectedTemplateIds: new Set(),
+                activePhase: 'all'
+            },
+            
+            // 初期化
+            init: function(config) {
+                this.config = { ...this.config, ...config };
+                this.state.selectedTemplateIds.clear();
+                this.state.activePhase = 'all';
+                this.loadTemplates();
+            },
+            
+            // テンプレート読み込み
+            loadTemplates: async function() {
+                try {
+                    const response = await fetch('api.php?path=templates');
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    const data = await response.json();
+                    if (data.success && data.templates) {
+                        this.state.allTemplates = data.templates;
+                        this.render();
+                    } else {
+                        console.error('テンプレート読み込みエラー:', data.error || data.message);
+                    }
+                } catch (error) {
+                    console.error('テンプレート読み込みエラー:', error);
+                }
+            },
+            
+            // レンダリング
+            render: function() {
+                if (!this.config.containerId) return;
+                
+                const container = document.getElementById(this.config.containerId);
+                if (!container) return;
+                
+                // フェーズフィルターボタンを生成
+                this.renderPhaseFilters(container);
+                
+                // テンプレート一覧を生成
+                this.renderTemplateList(container);
+                
+                // サマリーを生成
+                this.renderSummary(container);
+                
+                // 選択済み件数を更新
+                this.updateSelectedCount();
+            },
+            
+            // フェーズフィルターボタンを生成
+            renderPhaseFilters: function(container) {
+                const filtersContainer = container.querySelector('.template-filters') || 
+                                       container.querySelector('#templateFilters');
+                if (!filtersContainer) return;
+                
+                // フェーズを取得
+                const phases = [...new Set(this.state.allTemplates.map(t => t.phase_name))].sort();
+                
+                filtersContainer.innerHTML = '';
+                phases.forEach(phase => {
+                    const button = document.createElement('button');
+                    button.type = 'button';
+                    button.className = 'phase-filter-btn';
+                    button.textContent = phase;
+                    button.onclick = () => this.setActivePhase(phase);
+                    filtersContainer.appendChild(button);
+                });
+                
+                // すべてボタンを追加
+                const allButton = document.createElement('button');
+                allButton.type = 'button';
+                allButton.className = 'phase-filter-btn active';
+                allButton.textContent = 'すべて';
+                allButton.onclick = () => this.setActivePhase('all');
+                filtersContainer.insertBefore(allButton, filtersContainer.firstChild);
+            },
+            
+            // テンプレート一覧を生成
+            renderTemplateList: function(container) {
+                const listContainer = container.querySelector('.template-groups') || 
+                                    container.querySelector('#templateGroups') ||
+                                    container.querySelector('#templateList');
+                if (!listContainer) return;
+                
+                // フィルタリング
+                this.filterTemplates();
+                
+                // フェーズごとにグループ化
+                const groupedTemplates = {};
+                this.state.filteredTemplates.forEach(template => {
+                    if (!groupedTemplates[template.phase_name]) {
+                        groupedTemplates[template.phase_name] = [];
+                    }
+                    groupedTemplates[template.phase_name].push(template);
+                });
+                
+                listContainer.innerHTML = '';
+                Object.keys(groupedTemplates).sort().forEach(phase => {
+                    const phaseGroup = document.createElement('div');
+                    phaseGroup.className = 'template-phase-group';
+                    phaseGroup.innerHTML = `<h6>${phase}</h6>`;
+                    
+                    const templatesContainer = document.createElement('div');
+                    templatesContainer.className = 'template-items';
+                    
+                    groupedTemplates[phase].forEach(template => {
+                        const templateItem = this.createTemplateItem(template);
+                        templatesContainer.appendChild(templateItem);
+                    });
+                    
+                    phaseGroup.appendChild(templatesContainer);
+                    listContainer.appendChild(phaseGroup);
+                });
+                
+                // 選択済み件数を更新
+                this.updateSelectedCount();
+            },
+            
+            // テンプレートアイテムを作成
+            createTemplateItem: function(template) {
+                const item = document.createElement('div');
+                item.className = 'template-item';
+                
+                const isSelected = this.state.selectedTemplateIds.has(template.id.toString());
+                
+                item.innerHTML = `
+                    <label class="template-checkbox-label">
+                        <input type="checkbox" name="templates" value="${template.id}" 
+                               ${isSelected ? 'checked' : ''}>
+                        <div class="template-info">
+                            <div class="template-name">${template.task_name}</div>
+                            <div class="template-meta">
+                                ${template.is_technical_work ? '<span class="template-flag technical">技術</span>' : ''}
+                                ${template.has_manual ? '<span class="template-flag manual">マニュアル</span>' : ''}
+                                ${template.estimated_hours ? `<span class="template-hours">${template.estimated_hours}h</span>` : ''}
+                            </div>
+                        </div>
+                    </label>
+                `;
+                
+                // チェックボックスのイベントリスナー
+                const checkbox = item.querySelector('input[type="checkbox"]');
+                checkbox.addEventListener('change', (e) => {
+                    console.log('Checkbox changed for template:', template.id, 'checked:', e.target.checked);
+                    
+                    if (e.target.checked) {
+                        this.state.selectedTemplateIds.add(template.id.toString());
+                    } else {
+                        this.state.selectedTemplateIds.delete(template.id.toString());
+                    }
+                    
+                    console.log('Current selectedTemplateIds:', Array.from(this.state.selectedTemplateIds));
+                    
+                    // 複数回試行して確実に更新
+                    this.updateSelectedCount();
+                    setTimeout(() => this.updateSelectedCount(), 50);
+                    setTimeout(() => this.updateSelectedCount(), 150);
+                    
+                    if (this.config.onSelectionChange) {
+                        this.config.onSelectionChange(Array.from(this.state.selectedTemplateIds));
+                    }
+                });
+                
+                return item;
+            },
+            
+            // サマリーを生成
+            renderSummary: function(container) {
+                // プロジェクト編集モードでは template-actions を優先
+                let summaryContainer;
+                if (this.config.mode === 'edit_project') {
+                    summaryContainer = container.querySelector('.template-actions');
+                } else {
+                    summaryContainer = container.querySelector('.template-summary') || 
+                                     container.querySelector('.template-actions');
+                }
+                
+                if (!summaryContainer) {
+                    console.warn('Summary container not found for mode:', this.config.mode);
+                    return;
+                }
+                
+                console.log('Rendering summary for mode:', this.config.mode);
+                console.log('Using container class:', summaryContainer.className);
+                
+                if (this.config.mode === 'new_project') {
+                    summaryContainer.innerHTML = `
+                        <span>選択済み: <span id="selectedCount">0</span>件</span>
+                        <button type="button" class="btn btn-secondary" onclick="TemplateSelector.selectAll()">すべて選択</button>
+                        <button type="button" class="btn btn-secondary" onclick="TemplateSelector.deselectAll()">すべて解除</button>
+                    `;
+                } else {
+                    summaryContainer.innerHTML = `
+                        <span>選択済み: <span id="selectedCount">0</span>件</span>
+                        <span style="color: #666; font-size: 0.9em; margin-left: 10px;">※ チェックを変更すると自動的に更新されます</span>
+                    `;
+                }
+                
+                console.log('Summary rendered, selectedCount element created in:', summaryContainer.className);
+            },
+            
+            // アクティブフェーズを設定
+            setActivePhase: function(phase) {
+                this.state.activePhase = phase;
+                
+                // ボタンのアクティブ状態を更新
+                const buttons = document.querySelectorAll('.phase-filter-btn');
+                buttons.forEach(btn => {
+                    btn.classList.remove('active');
+                    if (btn.textContent === phase || (phase === 'all' && btn.textContent === 'すべて')) {
+                        btn.classList.add('active');
+                    }
+                });
+                
+                this.renderTemplateList(document.getElementById(this.config.containerId));
+            },
+            
+            // テンプレートをフィルタリング
+            filterTemplates: function() {
+                this.state.filteredTemplates = this.state.allTemplates.filter(template => {
+                    if (this.state.activePhase !== 'all' && template.phase_name !== this.state.activePhase) {
+                        return false;
+                    }
+                    return true;
+                });
+            },
+            
+            // 選択済み数を更新
+            updateSelectedCount: function() {
+                const count = this.state.selectedTemplateIds.size;
+                console.log('updateSelectedCount called, count:', count);
+                console.log('selectedTemplateIds:', Array.from(this.state.selectedTemplateIds));
+                
+                // プロジェクト編集モードの場合は、templateSelectionArea内の要素のみを更新
+                if (this.config.mode === 'edit_project') {
+                    const templateArea = document.getElementById('templateSelectionArea');
+                    if (templateArea) {
+                        // template-actions内のselectedCount要素を更新
+                        const actionsContainer = templateArea.querySelector('.template-actions');
+                        if (actionsContainer) {
+                            const countElement = actionsContainer.querySelector('#selectedCount');
+                            if (countElement) {
+                                countElement.textContent = count;
+                                console.log('Updated edit mode selectedCount to:', count);
+                            } else {
+                                // 要素が見つからない場合は再生成
+                                actionsContainer.innerHTML = `
+                                    <span>選択済み: <span id="selectedCount">${count}</span>件</span>
+                                    <span style="color: #666; font-size: 0.9em; margin-left: 10px;">※ チェックを変更すると自動的に更新されます</span>
+                                `;
+                                console.log('Recreated edit mode actions container with count:', count);
+                            }
+                        }
+                    }
+                } else {
+                    // 新規プロジェクトモードの場合は、全てのselectedCount要素を更新
+                    const allCountElements = document.querySelectorAll('#selectedCount');
+                    console.log('Found selectedCount elements:', allCountElements.length);
+                    
+                    allCountElements.forEach((element, index) => {
+                        element.textContent = count;
+                        console.log(`Updated selectedCount element ${index + 1} to:`, count);
+                    });
+                }
+            },
+            
+            // すべて選択
+            selectAll: function() {
+                this.state.filteredTemplates.forEach(template => {
+                    this.state.selectedTemplateIds.add(template.id.toString());
+                });
+                this.renderTemplateList(document.getElementById(this.config.containerId));
+                this.updateSelectedCount();
+                if (this.config.onSelectionChange) {
+                    this.config.onSelectionChange(Array.from(this.state.selectedTemplateIds));
+                }
+            },
+            
+            // すべて解除
+            deselectAll: function() {
+                this.state.filteredTemplates.forEach(template => {
+                    this.state.selectedTemplateIds.delete(template.id.toString());
+                });
+                this.renderTemplateList(document.getElementById(this.config.containerId));
+                this.updateSelectedCount();
+                if (this.config.onSelectionChange) {
+                    this.config.onSelectionChange(Array.from(this.state.selectedTemplateIds));
+                }
+            },
+            
+            // 選択したテンプレートを追加（編集モード用）
+            addSelectedTemplates: async function() {
+                if (this.state.selectedTemplateIds.size === 0) {
+                    showMessage('追加するテンプレートを選択してください', 'warning');
+                    return;
+                }
+                
+                if (this.config.onAddTemplates) {
+                    await this.config.onAddTemplates(Array.from(this.state.selectedTemplateIds));
+                }
+            },
+            
+            // キャンセル（編集モード用）
+            cancel: function() {
+                if (this.config.onCancel) {
+                    this.config.onCancel();
+                }
+            },
+            
+            // 選択されたテンプレートIDを取得
+            getSelectedTemplateIds: function() {
+                return Array.from(this.state.selectedTemplateIds);
+            },
+            
+            // 選択をクリア
+            clearSelection: function() {
+                this.state.selectedTemplateIds.clear();
+                this.updateSelectedCount();
+            }
+        };
+        
+        // ==================== 既存のテンプレート選択機能（後方互換性のため保持） ====================
+        
+        let filteredTemplates = [];
+        
+        // プロジェクト編集でテンプレート選択を初期化
+        async function initProjectTemplateSelection() {
+            if (!currentProject) return;
+            
+            try {
+                // 現在のプロジェクトのタスクとテンプレート一覧を並行取得
+                const [tasksResponse, templatesResponse] = await Promise.all([
+                    fetch(`api.php?path=projects/${currentProject.id}/tasks`),
+                    fetch('api.php?path=templates')
+                ]);
+                
+                const [tasksData, templatesData] = await Promise.all([
+                    tasksResponse.json(),
+                    templatesResponse.json()
+                ]);
+                
+                let usedTemplateIds = new Set();
+                
+                if (tasksData.success && tasksData.tasks && templatesData.success && templatesData.templates) {
+                    // タスク名からテンプレートを特定
+                    tasksData.tasks.forEach(task => {
+                        // まずtemplate_idで確認
+                        if (task.template_id) {
+                            usedTemplateIds.add(task.template_id.toString());
+                        } else {
+                            // template_idがない場合は、タスク名でテンプレートを検索
+                            const matchingTemplate = templatesData.templates.find(template => 
+                                template.task_name === task.task_name || template.task_name === task.name
+                            );
+                            if (matchingTemplate) {
+                                usedTemplateIds.add(matchingTemplate.id.toString());
+                            }
+                        }
+                    });
+                    
+                    console.log('使用中のテンプレートID:', Array.from(usedTemplateIds));
+                }
+                
+                // ライブラリ化したテンプレート選択機能を初期化
+                TemplateSelector.init({
+                    containerId: 'templateSelectionArea',
+                    mode: 'edit_project',
+                    onSelectionChange: async function(selectedIds) {
+                        // チェックボックス変更時に自動的にプロジェクトのタスクを更新
+                        try {
+                            console.log('テンプレート選択が変更されました:', selectedIds);
+                            
+                            // 現在のプロジェクトのタスクを取得
+                            const currentTasks = allTasks.filter(task => task.project_id == currentProject.id);
+                            const currentTemplateIds = currentTasks
+                                .filter(task => task.template_id)
+                                .map(task => task.template_id.toString());
+                            
+                            console.log('現在のテンプレートID:', currentTemplateIds);
+                            console.log('選択されたテンプレートID:', selectedIds);
+                            
+                            // 追加するテンプレート（選択されたが現在存在しないもの）
+                            const toAdd = selectedIds.filter(id => !currentTemplateIds.includes(id));
+                            
+                            // 削除するテンプレート（現在存在するが選択されていないもの）
+                            const toRemove = currentTemplateIds.filter(id => !selectedIds.includes(id));
+                            
+                            console.log('追加するテンプレート:', toAdd);
+                            console.log('削除するテンプレート:', toRemove);
+                            
+                            // 削除処理
+                            if (toRemove.length > 0) {
+                                for (const templateId of toRemove) {
+                                    const tasksToRemove = currentTasks.filter(task => task.template_id == templateId);
+                                    for (const task of tasksToRemove) {
+                                        const response = await fetch('api.php?path=projects/tasks/remove', {
+                                            method: 'DELETE',
+                                            headers: {
+                                                'Content-Type': 'application/json',
+                                            },
+                                            body: JSON.stringify({
+                                                task_id: task.id
+                                            })
+                                        });
+                                        
+                                        const data = await response.json();
+                                        if (data.success) {
+                                            console.log(`タスク ${task.id} を削除しました`);
+                                        }
+                                    }
+                                }
+                            }
+                            
+                            // 追加処理
+                            if (toAdd.length > 0) {
+                                const response = await fetch('api.php?path=projects/tasks/add-from-templates', {
+                                    method: 'POST',
+                                    headers: {
+                                        'Content-Type': 'application/json',
+                                    },
+                                    body: JSON.stringify({
+                                        project_id: currentProject.id,
+                                        template_ids: toAdd
+                                    })
+                                });
+                                
+                                const data = await response.json();
+                                if (data.success) {
+                                    console.log('テンプレートからタスクを追加しました:', data.message);
+                                }
+                            }
+                            
+                            // プロジェクトを再読み込み
+                            if (toAdd.length > 0 || toRemove.length > 0) {
+                                await loadProject(currentProject.id);
+                                showMessage('プロジェクトのタスクを更新しました', 'success');
+                            }
+                            
+                        } catch (error) {
+                            console.error('テンプレート選択変更エラー:', error);
+                            showMessage('テンプレート選択の更新中にエラーが発生しました', 'error');
+                        }
+                    },
+                    onCancel: function() {
+                        // キャンセル時は何もしない（常に表示）
+                    }
+                });
+                
+                // 使用中のテンプレートにチェックを入れる
+                setTimeout(() => {
+                    console.log('Setting up initial template selection for project edit');
+                    console.log('usedTemplateIds:', usedTemplateIds);
+                    
+                    usedTemplateIds.forEach(templateId => {
+                        const checkbox = document.querySelector(`input[name="templates"][value="${templateId}"]`);
+                        if (checkbox) {
+                            checkbox.checked = true;
+                            TemplateSelector.state.selectedTemplateIds.add(templateId);
+                            console.log(`Checked template ${templateId}`);
+                        } else {
+                            console.warn(`Checkbox not found for template ${templateId}`);
+                        }
+                    });
+                    
+                    console.log('Final selectedTemplateIds:', Array.from(TemplateSelector.state.selectedTemplateIds));
+                    
+                    // 複数回試行して確実に更新
+                    TemplateSelector.updateSelectedCount();
+                    setTimeout(() => TemplateSelector.updateSelectedCount(), 100);
+                    setTimeout(() => TemplateSelector.updateSelectedCount(), 300);
+                    setTimeout(() => TemplateSelector.updateSelectedCount(), 500);
+                    
+                    // 強制的にDOMを更新
+                    setTimeout(() => {
+                        const templateArea = document.getElementById('templateSelectionArea');
+                        if (templateArea) {
+                            const summaryContainer = templateArea.querySelector('.template-summary');
+                            if (summaryContainer) {
+                                const currentCount = TemplateSelector.state.selectedTemplateIds.size;
+                                summaryContainer.innerHTML = `
+                                    <span>選択済み: <span id="selectedCount">${currentCount}</span>件</span>
+                                    <span style="color: #666; font-size: 0.9em; margin-left: 10px;">※ チェックを変更すると自動的に更新されます</span>
+                                `;
+                                console.log('Force updated summary container with count:', currentCount);
+                            }
+                        }
+                    }, 600);
+                }, 200);
+                
+            } catch (error) {
+                console.error('テンプレート選択初期化エラー:', error);
+            }
+        }
+        
+        // 古いテンプレート選択機能は削除されました（ライブラリ化により置き換え）
     </script>
 </body>
 </html>

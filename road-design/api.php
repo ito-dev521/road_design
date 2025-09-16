@@ -278,6 +278,18 @@ class ApiController {
                     if ($path === 'tasks/update') {
                         return $this->updateTask($input);
                     }
+                    if ($path === 'projects/tasks/add') {
+                        return $this->addTaskToProject($input);
+                    }
+                    if ($path === 'projects/tasks/remove') {
+                        return $this->removeTaskFromProject($input);
+                    }
+                    if ($path === 'projects/tasks/update') {
+                        return $this->updateProjectTask($input);
+                    }
+                    if ($path === 'projects/tasks/add-from-templates') {
+                        return $this->addTasksFromTemplatesToProject($input);
+                    }
                     // タスクメモ関連
                     if (preg_match('/^tasks\/(\d+)\/notes$/', $path, $matches)) {
                         $taskId = $matches[1];
@@ -611,7 +623,7 @@ class ApiController {
             throw new Exception('Task ID and status are required', 400);
         }
         
-        $validStatuses = ['not_started', 'in_progress', 'completed', 'not_applicable'];
+        $validStatuses = ['not_started', 'in_progress', 'completed', 'not_applicable', 'pending'];
         if (!in_array($status, $validStatuses)) {
             throw new Exception('Invalid status', 400);
         }
@@ -624,9 +636,14 @@ class ApiController {
             throw new Exception('Failed to update task status');
         }
         
+        // 更新されたタスクの詳細を取得
+        $updatedTask = $this->db->getTaskById($taskId);
+        error_log("updateTaskStatus: Updated task data: " . json_encode($updatedTask));
+        
         return [
             'success' => true,
-            'message' => 'タスクの状態が更新されました'
+            'message' => 'タスクの状態が更新されました',
+            'task' => $updatedTask
         ];
     }
     
@@ -701,7 +718,7 @@ class ApiController {
         // ステータス更新
         if ($status) {
             error_log("updateTask: Updating status to '$status' for task $taskId");
-            $validStatuses = ['not_started', 'in_progress', 'completed', 'needs_confirmation', 'not_applicable'];
+            $validStatuses = ['not_started', 'in_progress', 'completed', 'needs_confirmation', 'not_applicable', 'pending'];
             if (!in_array($status, $validStatuses)) {
                 error_log("updateTask error: Invalid status '$status'. Valid statuses: " . implode(', ', $validStatuses));
                 throw new Exception('Invalid status', 400);
@@ -725,9 +742,14 @@ class ApiController {
             error_log("updateTask: assignTask result: " . ($result ? 'true' : 'false'));
         }
         
+        // 更新されたタスクの詳細を取得
+        $updatedTask = $this->db->getTaskById($taskId);
+        error_log("updateTask: Updated task data: " . json_encode($updatedTask));
+        
         return [
             'success' => true,
-            'message' => 'タスクが更新されました'
+            'message' => 'タスクが更新されました',
+            'task' => $updatedTask
         ];
     }
 
@@ -1966,6 +1988,154 @@ class ApiController {
             ];
         } catch (Exception $e) {
             error_log("Error in deleteProject: " . $e->getMessage());
+            throw $e;
+        }
+    }
+
+    // プロジェクトにタスクを追加
+    public function addTaskToProject($input) {
+        // 一時的に認証を無効化（デバッグ用）
+        // $this->auth->requireLogin();
+        
+        error_log("addTaskToProject called with input: " . json_encode($input));
+        
+        $projectId = isset($input['project_id']) ? $input['project_id'] : null;
+        $taskName = trim(isset($input['task_name']) ? $input['task_name'] : '');
+        $phaseName = trim(isset($input['phase_name']) ? $input['phase_name'] : '');
+        $taskOrder = intval(isset($input['task_order']) ? $input['task_order'] : 0);
+        $isTechnicalWork = isset($input['is_technical_work']) ? ($input['is_technical_work'] == '1' || $input['is_technical_work'] === true) : false;
+        $hasManual = isset($input['has_manual']) ? ($input['has_manual'] == '1' || $input['has_manual'] === true) : false;
+        $estimatedHours = isset($input['estimated_hours']) ? floatval($input['estimated_hours']) : null;
+        
+        if (!$projectId || empty($taskName) || empty($phaseName)) {
+            throw new Exception('Project ID, task name, and phase name are required', 400);
+        }
+        
+        try {
+            $taskId = $this->db->addTaskToProject($projectId, $taskName, $phaseName, $taskOrder, $isTechnicalWork, $hasManual, $estimatedHours);
+            
+            if ($taskId) {
+                return [
+                    'success' => true,
+                    'message' => 'タスクが追加されました',
+                    'task_id' => $taskId
+                ];
+            } else {
+                throw new Exception('Failed to add task to project');
+            }
+        } catch (Exception $e) {
+            error_log("addTaskToProject error: " . $e->getMessage());
+            throw $e;
+        }
+    }
+
+    // プロジェクトからタスクを削除
+    public function removeTaskFromProject($input) {
+        // 一時的に認証を無効化（デバッグ用）
+        // $this->auth->requireLogin();
+        
+        error_log("removeTaskFromProject called with input: " . json_encode($input));
+        
+        $taskId = isset($input['task_id']) ? $input['task_id'] : null;
+        
+        if (!$taskId) {
+            throw new Exception('Task ID is required', 400);
+        }
+        
+        try {
+            $result = $this->db->removeTaskFromProject($taskId);
+            
+            if ($result) {
+                return [
+                    'success' => true,
+                    'message' => 'タスクが削除されました'
+                ];
+            } else {
+                throw new Exception('Failed to remove task from project');
+            }
+        } catch (Exception $e) {
+            error_log("removeTaskFromProject error: " . $e->getMessage());
+            throw $e;
+        }
+    }
+
+    // プロジェクトのタスクを更新
+    public function updateProjectTask($input) {
+        // 一時的に認証を無効化（デバッグ用）
+        // $this->auth->requireLogin();
+        
+        error_log("updateProjectTask called with input: " . json_encode($input));
+        
+        $taskId = isset($input['task_id']) ? $input['task_id'] : null;
+        $taskName = trim(isset($input['task_name']) ? $input['task_name'] : '');
+        $phaseName = trim(isset($input['phase_name']) ? $input['phase_name'] : '');
+        $taskOrder = intval(isset($input['task_order']) ? $input['task_order'] : 0);
+        $isTechnicalWork = isset($input['is_technical_work']) ? ($input['is_technical_work'] == '1' || $input['is_technical_work'] === true) : false;
+        $hasManual = isset($input['has_manual']) ? ($input['has_manual'] == '1' || $input['has_manual'] === true) : false;
+        $estimatedHours = isset($input['estimated_hours']) ? floatval($input['estimated_hours']) : null;
+        
+        if (!$taskId || empty($taskName) || empty($phaseName)) {
+            throw new Exception('Task ID, task name, and phase name are required', 400);
+        }
+        
+        try {
+            $result = $this->db->updateProjectTask($taskId, $taskName, $phaseName, $taskOrder, $isTechnicalWork, $hasManual, $estimatedHours);
+            
+            if ($result) {
+                return [
+                    'success' => true,
+                    'message' => 'タスクが更新されました'
+                ];
+            } else {
+                throw new Exception('Failed to update project task');
+            }
+        } catch (Exception $e) {
+            error_log("updateProjectTask error: " . $e->getMessage());
+            throw $e;
+        }
+    }
+
+    // テンプレートからプロジェクトにタスクを追加
+    public function addTasksFromTemplatesToProject($input) {
+        // 一時的に認証を無効化（デバッグ用）
+        // $this->auth->requireLogin();
+        
+        error_log("addTasksFromTemplatesToProject called with input: " . json_encode($input));
+        
+        $projectId = isset($input['project_id']) ? $input['project_id'] : null;
+        $templateIds = isset($input['template_ids']) ? $input['template_ids'] : [];
+        
+        if (!$projectId || empty($templateIds) || !is_array($templateIds)) {
+            throw new Exception('Project ID and template IDs are required', 400);
+        }
+        
+        try {
+            $result = $this->db->createTasksFromSelectedTemplates($projectId, $templateIds);
+            
+            if ($result && is_array($result) && $result['success']) {
+                $message = '';
+                if ($result['created_count'] > 0) {
+                    $message .= $result['created_count'] . '個のタスクが追加されました';
+                }
+                if ($result['skipped_count'] > 0) {
+                    if ($message) $message .= '。';
+                    $message .= $result['skipped_count'] . '個のタスクは既に存在するためスキップされました';
+                }
+                if ($result['created_count'] == 0 && $result['skipped_count'] == 0) {
+                    $message = '追加可能なタスクがありませんでした';
+                }
+                
+                return [
+                    'success' => true,
+                    'message' => $message,
+                    'created_count' => $result['created_count'],
+                    'skipped_count' => $result['skipped_count']
+                ];
+            } else {
+                throw new Exception('Failed to add tasks from templates');
+            }
+        } catch (Exception $e) {
+            error_log("addTasksFromTemplatesToProject error: " . $e->getMessage());
             throw $e;
         }
     }

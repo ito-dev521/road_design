@@ -6,7 +6,7 @@ USE iistylelab_road;
 
 -- tasksテーブルのstatusカラムのENUMを更新
 ALTER TABLE tasks 
-MODIFY COLUMN status ENUM('not_started', 'in_progress', 'completed', 'not_applicable', 'needs_confirmation') 
+MODIFY COLUMN status ENUM('not_started', 'in_progress', 'completed', 'not_applicable', 'needs_confirmation', 'pending') 
 DEFAULT 'not_started';
 
 -- 更新完了の確認
