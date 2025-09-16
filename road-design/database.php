@@ -793,6 +793,7 @@ class Database {
                 return $userId;
             } else {
                 error_log("User creation failed - execute returned false");
+                error_log('createUser execute error info: ' . print_r($stmt->errorInfo(), true));
                 return false;
             }
         } catch (PDOException $e) {
@@ -836,6 +837,9 @@ class Database {
                     WHERE id = ?
                 ");
                 $result = $stmt->execute([$email, $name, $role, $isActive, $userId]);
+                if (!$result) {
+                    error_log('updateUser execute error info (without password): ' . print_r($stmt->errorInfo(), true));
+                }
             }
             
             error_log("updateUser result: " . ($result ? 'success' : 'failed'));

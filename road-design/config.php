@@ -16,8 +16,8 @@ define('SESSION_TIMEOUT', 3600); // 1 hour
 define('PASSWORD_MIN_LENGTH', 6);
 
 // Upload settings
-define('UPLOAD_MAX_SIZE', 10485760); // 10MB
-define('ALLOWED_FILE_TYPES', ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'jpg', 'jpeg', 'png']);
+define('UPLOAD_MAX_SIZE', 52428800); // 50MB (CADファイル対応)
+define('ALLOWED_FILE_TYPES', ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'jpg', 'jpeg', 'png', 'dwg', 'dxf', 'dwf', 'step', 'stp', 'iges', 'igs', 'sat', 'x_t', 'x_b', 'prt', 'asm', 'sldprt', 'sldasm', 'ipt', 'iam', 'bfo', 'p21', 'sfc']);
 
 // Timezone setting
 if (function_exists('date_default_timezone_set')) {

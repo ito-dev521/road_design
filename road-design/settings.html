@@ -928,8 +928,8 @@
                 </div>
                 <div class="form-group">
                     <label for="manualFile">ファイル *</label>
-                    <input type="file" id="manualFile" name="file" accept=".pdf,.xlsx,.xls,.docx,.doc" required>
-                    <small class="form-help">対応形式: PDF, Excel (.xlsx, .xls), Word (.docx, .doc)</small>
+                    <input type="file" id="manualFile" name="file" accept=".pdf,.xlsx,.xls,.docx,.doc,.dwg,.dxf,.dwf,.step,.stp,.iges,.igs,.sat,.x_t,.x_b,.prt,.asm,.sldprt,.sldasm,.ipt,.iam,.bfo,.p21,.sfc" required>
+                    <small class="form-help">対応形式: PDF, Excel (.xlsx, .xls), Word (.docx, .doc), CAD (.dwg, .dxf, .step, .iges等), 道路設計 (.bfo, .p21, .sfc)</small>
                 </div>
                 <div class="form-group">
                     <label for="manualDescription">説明</label>
@@ -991,6 +991,8 @@
                 // ユーザー情報を表示
                 if (userInfo) {
                     updateUserRoleDisplay(userInfo);
+                    // 権限に応じてタブの表示/非表示を制御
+                    controlTabVisibility(userInfo.role);
                 }
             } catch (e) {
                 location.href = 'index.html';
@@ -1013,6 +1015,25 @@
                 
                 roleDisplay.textContent = `${userName} (${roleName})`;
             }
+        }
+
+        // 権限に応じてタブの表示/非表示を制御
+        function controlTabVisibility(userRole) {
+            const navLinks = document.querySelectorAll('.nav-link');
+            
+            navLinks.forEach(link => {
+                const tabName = link.getAttribute('data-tab');
+                
+                // 技術者の場合は、ユーザー管理とマニュアル管理を非表示
+                if (userRole === 'technical') {
+                    if (tabName === 'users' || tabName === 'manuals') {
+                        link.style.display = 'none';
+                    }
+                } else if (userRole === 'manager') {
+                    // 管理者の場合は全て表示
+                    link.style.display = 'flex';
+                }
+            });
         }
         // タブ切り替え
         document.querySelectorAll('.nav-link').forEach(link => {
@@ -2238,10 +2259,10 @@
             
             const formData = new FormData(this);
             
-            // ファイルサイズチェック（10MB制限）
+            // ファイルサイズチェック（50MB制限 - CADファイル対応）
             const file = document.getElementById('manualFile').files[0];
-            if (file && file.size > 10 * 1024 * 1024) {
-                showMessage('ファイルサイズは10MB以下にしてください', 'error');
+            if (file && file.size > 50 * 1024 * 1024) {
+                showMessage('ファイルサイズは50MB以下にしてください', 'error');
                 return;
             }
             
