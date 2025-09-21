@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ログイン | Road Design</title>
+    <link rel="stylesheet" href="assets/css/login.css">
+    <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate, max-age=0" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
+    <meta name="robots" content="noindex, nofollow" />
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-header">
+            <h1>Road Design</h1>
+            <p>アカウントでサインインしてください</p>
+        </div>
+
+        <div id="alert" class="alert" style="display: none;"></div>
+
+        
+
+        <form id="loginForm" class="login-form" autocomplete="off">
+            <!-- ダミーフィールド（ブラウザの自動入力を混乱させる） -->
+            <input type="text" name="fake_username" style="display:none;" tabindex="-1" autocomplete="username">
+            <input type="password" name="fake_password" style="display:none;" tabindex="-1" autocomplete="current-password">
+            
+            <div class="form-group">
+                <label for="email">メールアドレス</label>
+                <input type="email" id="email" name="email" placeholder="you@example.com" autocomplete="off" required>
+            </div>
+            <div class="form-group">
+                <label for="password">パスワード</label>
+                <input type="password" id="password" name="password" placeholder="••••••••" autocomplete="new-password" minlength="6" required>
+            </div>
+            <button type="submit" id="loginBtn" class="login-btn">ログイン</button>
+            <button type="button" id="backBtn" class="back-btn">戻る</button>
+            <div id="loading" class="loading"><span class="loading-spinner"></span>ログイン中...</div>
+        </form>
+
+        
+    </div>
+
+    <script>
+        const alertBox = document.getElementById('alert');
+        const loginForm = document.getElementById('loginForm');
+        const loginBtn = document.getElementById('loginBtn');
+        const loading = document.getElementById('loading');
+        const backBtn = document.getElementById('backBtn');
+
+        function showAlert(message, type = 'info') {
+            const alertBox = document.getElementById('alert');
+            if (alertBox) {
+                // 認証エラーメッセージは表示しない
+                if (message.includes('認証エラー') || message.includes('認証エラーが発生しました')) {
+                    return;
+                }
+                
+                alertBox.textContent = message;
+                alertBox.className = 'alert ' + type;
+                alertBox.style.display = 'block';
+            }
+        }
+        function hideAlert() {
+            const alertBox = document.getElementById('alert');
+            if (alertBox) {
+                alertBox.style.display = 'none !important';
+            }
+        }
+        function setLoading(isLoading) {
+            loading.style.display = isLoading ? 'block' : 'none';
+            loginBtn.disabled = isLoading;
+        }
+
+        // フォーム表示（クイックだけでなく通常ログインも使えるように）
+        document.addEventListener('DOMContentLoaded', () => {
+            loginForm.style.display = 'block';
+            
+            // エラーメッセージを非表示
+            hideAlert();
+            
+            // フォームフィールドをクリア（自動入力を防ぐ）
+            document.getElementById('email').value = '';
+            document.getElementById('password').value = '';
+            
+            // フォーカスをメールアドレスフィールドに設定
+            document.getElementById('email').focus();
+            
+            // URLパラメータのメッセージをチェック（認証エラー以外は表示）
+            const params = new URLSearchParams(location.search);
+            const msg = params.get('message');
+            if (msg && !msg.includes('認証エラー')) {
+                const type = msg.includes('エラー') ? 'error' : 'success';
+                showAlert(msg, type);
+            }
+        });
+
+        // 戻る: アプリトップへ
+        backBtn.addEventListener('click', () => {
+            location.href = 'index.html';
+        });
+
+        
+        
+
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            hideAlert(); // エラーメッセージを非表示
+            const email = document.getElementById('email').value.trim();
+            const password = document.getElementById('password').value;
+            await doLogin(email, password);
+        });
+
+        async function doLogin(email, password) {
+            if (!email || !password) {
+                showAlert('メールアドレスとパスワードを入力してください。', 'error');
+                return;
+            }
+            try {
+                setLoading(true);
+                const res = await fetch('api.php?path=login&t=' + Date.now(), {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    cache: 'no-store',
+                    body: JSON.stringify({ email, password })
+                });
+                const data = await res.json();
+                if (!res.ok || !data.success) {
+                    throw new Error(data.message || 'ログインに失敗しました。');
+                }
+                // 成功: トップへ遷移
+                location.href = 'index.html';
+            } catch (err) {
+                showAlert(err.message, 'error');
+            } finally {
+                setLoading(false);
+            }
+        }
+    </script>
+</body>
+</html>

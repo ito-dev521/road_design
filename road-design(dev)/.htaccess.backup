@@ -1,0 +1,173 @@
+# 道路詳細設計管理システム - Apache設定ファイル
+# エックスサーバー対応
+
+# 基本設定
+Options -Indexes
+DirectoryIndex index.html login.html
+
+# セキュリティヘッダー設定
+<IfModule mod_headers.c>
+    # クリックジャッキング対策
+    Header always set X-Frame-Options DENY
+
+    # MIMEタイプスニッフィング対策
+    Header always set X-Content-Type-Options nosniff
+
+    # XSSフィルタリング有効化
+    Header always set X-XSS-Protection "1; mode=block"
+
+    # コンテンツセキュリティポリシー（基本設定）
+    Header always set Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:;"
+
+    # HSTS設定（HTTPS環境のみ有効化）
+    Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+</IfModule>
+
+# URL書き換え設定
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # wwwなしへのリダイレクト（必要に応じて有効化）
+    # RewriteCond %{HTTP_HOST} ^www\.(.*)$ [NC]
+    # RewriteRule ^(.*)$ https://%1/$1 [R=301,L]
+
+    # HTTPS強制リダイレクト（SSL設定済みの場合のみ有効化）
+    # RewriteCond %{HTTPS} off
+    # RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [R=301,L]
+
+    # APIエンドポイントの保護
+    RewriteCond %{REQUEST_URI} ^/api\.php$
+    RewriteCond %{QUERY_STRING} !path=
+    RewriteRule ^api\.php$ - [F,L]
+
+    # アップロードディレクトリの保護
+    RewriteCond %{REQUEST_URI} ^/assets/uploads/
+    RewriteCond %{REQUEST_FILENAME} -f
+    RewriteRule ^assets/uploads/(.*)$ - [F,L]
+
+    # 設定ファイルの保護
+    RewriteCond %{REQUEST_URI} ^/(config|database|auth)\.php$
+    RewriteRule ^ - [F,L]
+
+    # install.phpのアクセス制御（インストール完了後は削除）
+    RewriteCond %{REQUEST_URI} ^/install\.php$
+    RewriteCond %{REQUEST_FILENAME} -f
+    RewriteRule ^install\.php$ - [F,L]
+
+    # ログファイルの保護
+    RewriteCond %{REQUEST_URI} ^/error_log$
+    RewriteRule ^ - [F,L]
+</IfModule>
+
+# MIMEタイプ設定
+<IfModule mod_mime.c>
+    # テキストファイル
+    AddType text/css .css
+    AddType application/javascript .js
+    AddType application/json .json
+
+    # 画像ファイル
+    AddType image/jpeg .jpg .jpeg
+    AddType image/png .png
+    AddType image/gif .gif
+    AddType image/svg+xml .svg
+
+    # 文書ファイル
+    AddType application/pdf .pdf
+    AddType application/msword .doc
+    AddType application/vnd.openxmlformats-officedocument.wordprocessingml.document .docx
+    AddType application/vnd.ms-excel .xls
+    AddType application/vnd.openxmlformats-officedocument.spreadsheetml.sheet .xlsx
+</IfModule>
+
+# キャッシュ制御
+<IfModule mod_expires.c>
+    ExpiresActive On
+
+    # HTMLファイル（キャッシュなし）
+    ExpiresByType text/html "access plus 0 seconds"
+
+    # CSS/JSファイル（1ヶ月）
+    ExpiresByType text/css "access plus 1 month"
+    ExpiresByType application/javascript "access plus 1 month"
+
+    # 画像ファイル（1ヶ月）
+    ExpiresByType image/jpeg "access plus 1 month"
+    ExpiresByType image/png "access plus 1 month"
+    ExpiresByType image/gif "access plus 1 month"
+    ExpiresByType image/svg+xml "access plus 1 month"
+
+    # 文書ファイル（1ヶ月）
+    ExpiresByType application/pdf "access plus 1 month"
+</IfModule>
+
+# ファイルアクセス制御
+<Files "*.php">
+    <RequireAll>
+        Require all granted
+    </RequireAll>
+</Files>
+
+<Files "config.php">
+    <RequireAll>
+        Require all denied
+    </RequireAll>
+</Files>
+
+<Files "database.php">
+    <RequireAll>
+        Require all denied
+    </RequireAll>
+</Files>
+
+<Files "auth.php">
+    <RequireAll>
+        Require all denied
+    </RequireAll>
+</Files>
+
+<Files "install.php">
+    <RequireAll>
+        Require all denied
+    </RequireAll>
+</Files>
+
+# アップロードディレクトリの設定
+<Directory "assets/uploads">
+    Options -Indexes
+    AllowOverride None
+    Require all granted
+
+    # ファイルタイプ制限
+    <FilesMatch "\.(php|exe|bat|cmd|com|pif|scr|vb|vbs)$">
+        Require all denied
+    </FilesMatch>
+</Directory>
+
+# エラーページ設定
+ErrorDocument 400 "Bad Request"
+ErrorDocument 401 "Unauthorized"
+ErrorDocument 403 "Access Forbidden"
+ErrorDocument 404 "File Not Found"
+ErrorDocument 500 "Internal Server Error"
+
+# PHP設定（エックスサーバー環境に合わせて）
+<IfModule mod_php.c>
+    php_value upload_max_filesize 10M
+    php_value post_max_size 12M
+    php_value max_execution_time 60
+    php_value memory_limit 256M
+    php_value display_errors 0
+    php_value log_errors 1
+</IfModule>
+
+# ログ設定
+<IfModule mod_log_config.c>
+    LogFormat "%h %l %u %t \"%r\" %>s %b \"%{Referer}i\" \"%{User-Agent}i\" %D" combined
+    CustomLog /dev/null combined
+    ErrorLog /error_log
+</IfModule>
+
+# サーバー情報隠蔽
+ServerSignature Off
+ServerTokens Prod
