@@ -158,24 +158,53 @@ class Database {
         }
     }
     
-    public function getAllProjects() {
+    public function getAllProjects($sortBy = 'created_at', $sortOrder = 'DESC', $statusFilter = null) {
         try {
             error_log("=== getAllProjects 開始 ===");
+            error_log("Sort by: $sortBy, Order: $sortOrder, Filter: $statusFilter");
             
-            $stmt = $this->getConnection()->prepare("
+            // ソート条件の設定
+            $validSortFields = [
+                'name' => 'p.name',
+                'start_date' => 'p.start_date',
+                'target_end_date' => 'p.target_end_date',
+                'status' => 'p.status',
+                'created_at' => 'p.created_at',
+                'total_tasks' => 'total_tasks',
+                'completed_tasks' => 'completed_tasks'
+            ];
+            
+            $sortField = isset($validSortFields[$sortBy]) ? $validSortFields[$sortBy] : 'p.created_at';
+            $sortOrder = strtoupper($sortOrder) === 'ASC' ? 'ASC' : 'DESC';
+            
+            // ステータスフィルタの設定
+            $whereClause = '';
+            $params = [];
+            if ($statusFilter && $statusFilter !== 'all') {
+                $whereClause = 'WHERE p.status = ?';
+                $params[] = $statusFilter;
+            }
+            
+            $sql = "
                 SELECT p.*, u.name as created_by_name,
                        COUNT(t.id) as total_tasks,
                        SUM(CASE WHEN t.status = 'completed' THEN 1 ELSE 0 END) as completed_tasks,
-                       SUM(CASE WHEN t.status = 'in_progress' THEN 1 ELSE 0 END) as in_progress_tasks
+                       SUM(CASE WHEN t.status = 'in_progress' THEN 1 ELSE 0 END) as in_progress_tasks,
+                       SUM(CASE WHEN t.status = 'not_started' THEN 1 ELSE 0 END) as not_started_tasks,
+                       SUM(CASE WHEN t.status = 'needs_confirmation' THEN 1 ELSE 0 END) as needs_confirmation_tasks
                 FROM projects p 
                 LEFT JOIN users u ON p.created_by = u.id
                 LEFT JOIN tasks t ON p.id = t.project_id
+                $whereClause
                 GROUP BY p.id
-                ORDER BY p.created_at DESC
-            ");
+                ORDER BY $sortField $sortOrder
+            ";
             
-            error_log("SQL実行開始");
-            $stmt->execute();
+            error_log("SQL: $sql");
+            error_log("Params: " . json_encode($params));
+            
+            $stmt = $this->getConnection()->prepare($sql);
+            $stmt->execute($params);
             $result = $stmt->fetchAll();
             error_log("SQL実行完了: " . count($result) . "件取得");
             
@@ -1585,6 +1614,101 @@ class Database {
             error_log("deleteProject PDO error: " . $e->getMessage());
             error_log("deleteProject PDO error code: " . $e->getCode());
             error_log("deleteProject PDO error trace: " . $e->getTraceAsString());
+            return false;
+        }
+    }
+
+    // 要確認タスク一覧取得（オプション: プロジェクト絞り込み）
+    public function getNeedsConfirmationTasks($projectId = null) {
+        try {
+            error_log("=== getNeedsConfirmationTasks 開始 ===");
+            $sql = "
+                SELECT t.*, p.name as project_name, p.status as project_status,
+                       u.name as assigned_to_name, u.email as assigned_to_email
+                FROM tasks t
+                LEFT JOIN projects p ON t.project_id = p.id
+                LEFT JOIN users u ON t.assigned_to = u.id
+                WHERE t.status = 'needs_confirmation'";
+            $params = [];
+            if ($projectId !== null) {
+                $sql .= " AND t.project_id = ?";
+                $params[] = $projectId;
+            }
+            $sql .= " ORDER BY t.updated_at DESC, t.planned_date ASC";
+            $stmt = $this->getConnection()->prepare($sql);
+            $stmt->execute($params);
+            $result = $stmt->fetchAll();
+            error_log("要確認タスク取得完了: " . count($result) . "件");
+            return $result;
+        } catch (PDOException $e) {
+            error_log("getNeedsConfirmationTasks error: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    // 期限切れタスク一覧取得（オプション: プロジェクト絞り込み）
+    public function getOverdueTasks($projectId = null) {
+        try {
+            error_log("=== getOverdueTasks 開始 ===");
+            
+            $today = date('Y-m-d');
+            $sql = "
+                SELECT t.*, p.name as project_name, p.status as project_status,
+                       u.name as assigned_to_name, u.email as assigned_to_email,
+                       DATEDIFF(?, t.planned_date) as days_overdue
+                FROM tasks t
+                LEFT JOIN projects p ON t.project_id = p.id
+                LEFT JOIN users u ON t.assigned_to = u.id
+                WHERE t.planned_date < ? 
+                AND t.status NOT IN ('completed', 'not_applicable')";
+            $params = [$today, $today];
+            if ($projectId !== null) {
+                $sql .= " AND t.project_id = ?";
+                $params[] = $projectId;
+            }
+            $sql .= " ORDER BY t.planned_date ASC, t.updated_at DESC";
+            $stmt = $this->getConnection()->prepare($sql);
+            $stmt->execute($params);
+            $result = $stmt->fetchAll();
+            
+            error_log("期限切れタスク取得完了: " . count($result) . "件");
+            return $result;
+        } catch (PDOException $e) {
+            error_log("getOverdueTasks error: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    // 期限間近タスク一覧取得（3日前まで、オプション: プロジェクト絞り込み）
+    public function getUpcomingDeadlineTasks($daysAhead = 3, $projectId = null) {
+        try {
+            error_log("=== getUpcomingDeadlineTasks 開始 ===");
+            
+            $today = date('Y-m-d');
+            $futureDate = date('Y-m-d', strtotime("+{$daysAhead} days"));
+            $sql = "
+                SELECT t.*, p.name as project_name, p.status as project_status,
+                       u.name as assigned_to_name, u.email as assigned_to_email,
+                       DATEDIFF(t.planned_date, ?) as days_until_deadline
+                FROM tasks t
+                LEFT JOIN projects p ON t.project_id = p.id
+                LEFT JOIN users u ON t.assigned_to = u.id
+                WHERE t.planned_date BETWEEN ? AND ?
+                AND t.status NOT IN ('completed', 'not_applicable')";
+            $params = [$today, $today, $futureDate];
+            if ($projectId !== null) {
+                $sql .= " AND t.project_id = ?";
+                $params[] = $projectId;
+            }
+            $sql .= " ORDER BY t.planned_date ASC, t.updated_at DESC";
+            $stmt = $this->getConnection()->prepare($sql);
+            $stmt->execute($params);
+            $result = $stmt->fetchAll();
+            
+            error_log("期限間近タスク取得完了: " . count($result) . "件");
+            return $result;
+        } catch (PDOException $e) {
+            error_log("getUpcomingDeadlineTasks error: " . $e->getMessage());
             return false;
         }
     }

@@ -2,7 +2,6 @@
 
 class RoadDesignApp {
     constructor() {
-        console.log('RoadDesignApp constructor called');
         this.currentUser = null;
         this.currentProject = null;
         this.tasks = [];
@@ -13,8 +12,6 @@ class RoadDesignApp {
 
     async init() {
         try {
-            console.log('Initializing RoadDesignApp...');
-
             // 認証チェック
             await this.checkAuth();
 
@@ -26,57 +23,40 @@ class RoadDesignApp {
 
             // 念のため、もう一度ユーザー情報を更新
             setTimeout(() => {
-                console.log('Re-checking user info after initialization');
                 if (this.currentUser) {
                     this.updateUserInfo();
                 }
             }, 100);
 
-            console.log('RoadDesignApp initialization completed');
-
         } catch (error) {
-            console.error('Initialization error:', error);
             this.redirectToLogin();
         }
     }
 
     async checkAuth() {
         try {
-            console.log('Checking authentication...');
             const response = await this.apiCall('GET', 'check_auth');
-            console.log('Auth response:', response);
 
             if (!response.success) {
-                console.error('Authentication failed:', response);
                 throw new Error('Not authenticated');
             }
 
             this.currentUser = response.user;
-            console.log('Current user set:', this.currentUser);
-            console.log('User role:', this.currentUser?.role);
-
-            if (response.debug_info) {
-                console.log('Debug info:', response.debug_info);
-            }
 
             this.updateUserInfo();
         } catch (error) {
-            console.error('Auth check failed:', error);
             this.redirectToLogin();
             throw error;
         }
     }
 
     updateUserInfo() {
-        console.log('Updating user info:', this.currentUser);
-
         // DOM要素の存在チェック
         const userNameElement = document.getElementById('userName');
         const roleElement = document.getElementById('userRole');
         const adminBtn = document.getElementById('adminBtn');
 
         if (!userNameElement || !roleElement || !adminBtn) {
-            console.error('Required DOM elements not found');
             return;
         }
 
@@ -90,37 +70,26 @@ class RoadDesignApp {
         roleElement.textContent = roleNames[this.currentUser.role] || this.currentUser.role;
 
         // 管理者権限がある場合、管理画面ボタンを表示
-        console.log('User role check:', this.currentUser.role);
-        console.log('Admin button element:', adminBtn);
-
         if (this.currentUser && this.currentUser.role === 'manager') {
-            console.log('Manager role detected - showing admin buttons');
 
             // 管理画面ボタンを表示
             adminBtn.style.display = 'inline-block';
             adminBtn.style.visibility = 'visible';
-            console.log('Admin button display set to inline-block');
 
             // 直接アクセスボタンも表示
             const directAdminBtn = document.getElementById('directAdminBtn');
             if (directAdminBtn) {
                 directAdminBtn.style.display = 'inline-block';
                 directAdminBtn.style.visibility = 'visible';
-                console.log('Direct admin button also shown');
             }
 
             // イベントリスナーが既に設定されていないことを確認
             if (!adminBtn.hasAttribute('data-listener-added')) {
                 adminBtn.addEventListener('click', (e) => {
-                    console.log('Admin button clicked via addEventListener!');
                     e.preventDefault();
-                    console.log('Navigating to admin.html...');
                     window.location.href = 'admin.html';
                 });
                 adminBtn.setAttribute('data-listener-added', 'true');
-                console.log('Admin button event listener added successfully');
-            } else {
-                console.log('Admin button event listener already exists');
             }
 
             // ボタンの視覚的なフィードバックを追加
@@ -128,9 +97,6 @@ class RoadDesignApp {
             adminBtn.title = '管理画面を開く';
 
         } else {
-            console.log('Non-manager role or no user - hiding admin buttons');
-            console.log('Current user:', this.currentUser);
-
             adminBtn.style.display = 'none';
             adminBtn.style.visibility = 'hidden';
 
@@ -140,8 +106,6 @@ class RoadDesignApp {
                 directAdminBtn.style.visibility = 'hidden';
             }
         }
-
-        console.log('Admin button final state:', adminBtn.style.display, adminBtn.style.visibility);
     }
 
     setupEventListeners() {
@@ -153,23 +117,17 @@ class RoadDesignApp {
 
         // 管理画面ボタン（右上）
         const debugBtn = document.getElementById('debugBtn');
-        console.log('Setting up debug button listener:', debugBtn);
         if (debugBtn) {
             debugBtn.addEventListener('click', (e) => {
-                console.log('Admin (header) button clicked!');
                 e.preventDefault();
                 window.location.href = 'admin.html';
             });
-            console.log('Debug button listener set up successfully');
-        } else {
-            console.error('Debug button not found!');
         }
 
         // 直接アクセスボタン
         const directAdminBtn = document.getElementById('directAdminBtn');
         if (directAdminBtn) {
             directAdminBtn.addEventListener('click', (e) => {
-                console.log('Direct admin button clicked!');
                 e.preventDefault();
                 window.location.href = 'admin.html';
             });
@@ -236,7 +194,6 @@ class RoadDesignApp {
                 this.populateUserSelects();
             }
         } catch (error) {
-            console.error('Failed to load initial data:', error);
             this.showAlert('初期データの読み込みに失敗しました。', 'error');
         } finally {
             this.showLoading(false);
@@ -349,7 +306,6 @@ class RoadDesignApp {
                 throw new Error(response.message);
             }
         } catch (error) {
-            console.error('Failed to load project:', error);
             this.showAlert('プロジェクトの読み込みに失敗しました。', 'error');
         } finally {
             this.showLoading(false);
@@ -515,7 +471,6 @@ class RoadDesignApp {
                 throw new Error(response.message);
             }
         } catch (error) {
-            console.error('Failed to update task status:', error);
             this.showAlert('タスクの状態更新に失敗しました。', 'error');
         }
     }
@@ -579,7 +534,6 @@ class RoadDesignApp {
                 throw new Error(response.message);
             }
         } catch (error) {
-            console.error('Failed to update task:', error);
             this.showAlert('タスクの更新に失敗しました。', 'error');
         }
     }
@@ -647,7 +601,6 @@ class RoadDesignApp {
                 throw new Error(response.message);
             }
         } catch (error) {
-            console.error('Failed to create project:', error);
             this.showAlert('プロジェクトの作成に失敗しました。', 'error');
         } finally {
             this.showLoading(false);
@@ -658,7 +611,7 @@ class RoadDesignApp {
         try {
             await this.apiCall('POST', 'logout');
         } catch (error) {
-            console.error('Logout error:', error);
+            // ログアウトエラーは無視
         } finally {
             this.redirectToLogin();
         }
@@ -765,41 +718,18 @@ class RoadDesignApp {
 
     showDebugInfo() {
         try {
-            console.log('=== デバッグ情報開始 ===');
-            console.log('showDebugInfo method called');
-            console.log('this.currentUser:', this.currentUser);
-            console.log('this.currentUser?.role:', this.currentUser?.role);
-
             const adminBtn = document.getElementById('adminBtn');
-            console.log('adminBtn element:', adminBtn);
-            console.log('adminBtn display style:', adminBtn?.style?.display);
-            console.log('adminBtn has listener:', adminBtn?.hasAttribute('data-listener-added'));
-
             const debugBtn = document.getElementById('debugBtn');
-            console.log('debugBtn element:', debugBtn);
-
-            // すべてのボタンを確認
-            const allButtons = document.querySelectorAll('button');
-            console.log('All buttons on page:', allButtons.length);
-            allButtons.forEach((btn, index) => {
-                console.log(`Button ${index}:`, btn.id, btn.textContent);
-            });
 
             const message = `デバッグ情報:
 ユーザー: ${this.currentUser?.name || '未設定'}
 権限: ${this.currentUser?.role || '未設定'}
 管理ボタン表示: ${adminBtn?.style?.display || '不明'}
-管理ボタン存在: ${adminBtn ? 'あり' : 'なし'}
+管理ボタン存在: ${adminBtn ? 'あり' : 'なし'}`;
 
-ブラウザのコンソールで詳細なログを確認してください。`;
-
-            console.log('About to show alert');
             alert(message);
-            console.log('Alert shown successfully');
-            console.log('=== デバッグ情報終了 ===');
 
         } catch (error) {
-            console.error('Error in showDebugInfo:', error);
             alert('デバッグ情報取得中にエラーが発生しました: ' + error.message);
         }
     }
@@ -807,113 +737,76 @@ class RoadDesignApp {
 
 // アプリケーション初期化
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('DOM Content Loaded - Initializing RoadDesignApp');
     try {
         window.roadDesignApp = new RoadDesignApp();
-        console.log('RoadDesignApp initialized successfully');
     } catch (error) {
-        console.error('Failed to initialize RoadDesignApp:', error);
         alert('アプリケーションの初期化に失敗しました: ' + error.message);
     }
 });
 
 // フォールバック: loadイベントでも初期化を試す
 window.addEventListener('load', function() {
-    console.log('Window Load event - Checking RoadDesignApp');
     if (!window.roadDesignApp) {
-        console.log('RoadDesignApp not found, initializing...');
         try {
             window.roadDesignApp = new RoadDesignApp();
-            console.log('RoadDesignApp initialized on window load');
         } catch (error) {
-            console.error('Failed to initialize RoadDesignApp on load:', error);
+            // 初期化エラーは無視
         }
-    } else {
-        console.log('RoadDesignApp already exists');
     }
 });
 
 // グローバルデバッグ関数（ブラウザコンソールから呼び出し可能）
 window.debugRoadDesign = function() {
-    console.log('=== グローバルデバッグ関数実行 ===');
-    console.log('window.roadDesignApp:', window.roadDesignApp);
-
     if (window.roadDesignApp) {
-        console.log('currentUser:', window.roadDesignApp.currentUser);
         window.roadDesignApp.showDebugInfo();
     } else {
-        console.error('RoadDesignApp instance not found');
-
-        // 手動で要素を確認
-        const debugBtn = document.getElementById('debugBtn');
-        const adminBtn = document.getElementById('adminBtn');
-        console.log('Debug button found:', !!debugBtn);
-        console.log('Admin button found:', !!adminBtn);
-
         alert('RoadDesignAppが初期化されていません。ページをリロードしてください。');
     }
 };
 
 // 管理画面に直接遷移する関数
 window.goToAdmin = function() {
-    console.log('Direct navigation to admin.html');
     window.location.href = 'admin.html';
 };
 
 // 管理画面ボタンのテスト関数
 window.testAdminButton = function() {
-    console.log('=== 管理画面ボタンテスト ===');
     const adminBtn = document.getElementById('adminBtn');
 
     if (!adminBtn) {
-        console.error('Admin button not found in DOM');
         return;
     }
 
-    console.log('Admin button element:', adminBtn);
-    console.log('Admin button display:', adminBtn.style.display);
-    console.log('Admin button has onclick:', !!adminBtn.onclick);
-    console.log('Admin button has data-listener-added:', adminBtn.hasAttribute('data-listener-added'));
-
-    // クリックイベントをシミュレート
-    console.log('Simulating click...');
     adminBtn.click();
 };
 
 // コンソールで利用可能な簡単なテスト関数
 window.testButtons = function() {
-    console.log('=== ボタンテスト ===');
     const buttons = ['debugBtn', 'adminBtn', 'logoutBtn', 'newProjectBtn'];
     buttons.forEach(id => {
         const btn = document.getElementById(id);
-        console.log(`${id}:`, btn ? 'Found' : 'Not found', btn?.style?.display);
+        // ボタンの存在確認のみ
     });
 };
 
 // 即時実行関数でグローバル関数が確実に定義されることを保証
 (function() {
-    console.log('Global functions initialization...');
-
     // グローバル関数が定義されていることを確認
     if (typeof window.debugRoadDesign !== 'function') {
         window.debugRoadDesign = function() {
-            console.log('Fallback debugRoadDesign function called');
             alert('デバッグ機能が利用できません。ページをリロードしてください。');
         };
     }
 
     if (typeof window.goToAdmin !== 'function') {
         window.goToAdmin = function() {
-            console.log('Fallback goToAdmin function called');
             window.location.href = 'admin.html';
         };
     }
 
     if (typeof window.testAdminButton !== 'function') {
         window.testAdminButton = function() {
-            console.log('Fallback testAdminButton function called');
             const adminBtn = document.getElementById('adminBtn');
-            console.log('Admin button:', adminBtn);
             if (adminBtn) {
                 adminBtn.click();
             } else {
@@ -921,6 +814,4 @@ window.testButtons = function() {
             }
         };
     }
-
-    console.log('Global functions initialized successfully');
 })();

@@ -54,7 +54,6 @@
             if (alertBox) {
                 // 認証エラーメッセージは表示しない
                 if (message.includes('認証エラー') || message.includes('認証エラーが発生しました')) {
-                    console.log('Authentication error suppressed:', message);
                     return;
                 }
                 

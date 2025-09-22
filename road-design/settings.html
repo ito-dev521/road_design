@@ -1064,7 +1064,6 @@
         // フェーズデータ読み込み
         async function loadPhases() {
             try {
-                console.log('=== フェーズ読み込み開始 ===');
                 const response = await fetch('api.php?path=phases', {
                     method: 'GET',
                     headers: {
@@ -1073,21 +1072,11 @@
                     }
                 });
 
-                console.log('APIレスポンス:', response);
-                console.log('ステータス:', response.status);
-
                 if (!response.ok) {
                     throw new Error('フェーズ一覧の読み込みに失敗しました');
                 }
 
                 const data = await response.json();
-                console.log('取得したデータ:', data);
-                console.log('データの型:', typeof data);
-                console.log('data.success:', data.success);
-                console.log('data.phases:', data.phases);
-                console.log('phasesの型:', typeof data.phases);
-                console.log('phasesが配列か:', Array.isArray(data.phases));
-                console.log('phasesの長さ:', data.phases ? data.phases.length : 'undefined');
 
                 if (!data.success) {
                     throw new Error(data.message || 'フェーズ一覧の取得に失敗しました');
@@ -1103,7 +1092,6 @@
                     throw new Error('フェーズデータの形式が正しくありません');
                 }
 
-                console.log('=== displayPhases関数を呼び出し ===');
                 displayPhases(data.phases);
                 
             } catch (error) {
@@ -1115,11 +1103,6 @@
 
         // フェーズ表示
         function displayPhases(phases) {
-            console.log('=== displayPhases関数開始 ===');
-            console.log('受け取ったphases:', phases);
-            console.log('phasesの型:', typeof phases);
-            console.log('phasesが配列か:', Array.isArray(phases));
-            console.log('phasesの長さ:', phases ? phases.length : 'undefined');
             
             const container = document.getElementById('phases-content');
             
@@ -1141,7 +1124,6 @@
                 return;
             }
 
-            console.log('フェーズ数:', phases.length);
             
             let html = `
                 <table class="data-table">
@@ -1158,7 +1140,6 @@
             `;
 
             phases.forEach((phase, index) => {
-                console.log(`フェーズ${index + 1}:`, phase);
                 html += `
                     <tr>
                         <td>${escapeHtml(phase.name)}</td>
@@ -1181,7 +1162,6 @@
 
             html += '</tbody></table>';
             container.innerHTML = html;
-            console.log('フェーズ表示完了');
         }
 
         // タブデータ読み込み
@@ -1208,30 +1188,20 @@
         // ユーザー読み込み
         async function loadUsers() {
             try {
-                console.log('=== ユーザー読み込み開始 ===');
-                const response = await fetch('api.php?path=users', {
+                const response = await fetch('api.php?path=admin/users', {
                     method: 'GET',
                     headers: {
                         'Content-Type': 'application/json',
                         'X-Requested-With': 'XMLHttpRequest'
-                    }
+                    },
+                    credentials: 'same-origin'
                 });
-
-                console.log('APIレスポンス:', response);
-                console.log('ステータス:', response.status);
 
                 if (!response.ok) {
                     throw new Error('ユーザー一覧の読み込みに失敗しました');
                 }
 
                 const data = await response.json();
-                console.log('取得したデータ:', data);
-                console.log('データの型:', typeof data);
-                console.log('data.success:', data.success);
-                console.log('data.users:', data.users);
-                console.log('usersの型:', typeof data.users);
-                console.log('usersが配列か:', Array.isArray(data.users));
-                console.log('usersの長さ:', data.users ? data.users.length : 'undefined');
 
                 if (!data.success) {
                     throw new Error(data.message || 'ユーザー一覧の取得に失敗しました');
@@ -1247,7 +1217,6 @@
                     throw new Error('ユーザーデータの形式が正しくありません');
                 }
 
-                console.log('=== displayUsers関数を呼び出し ===');
                 displayUsers(data.users);
                 
             } catch (error) {
@@ -1259,11 +1228,6 @@
 
         // ユーザー表示
         function displayUsers(users) {
-            console.log('=== displayUsers関数開始 ===');
-            console.log('受け取ったusers:', users);
-            console.log('usersの型:', typeof users);
-            console.log('usersが配列か:', Array.isArray(users));
-            console.log('usersの長さ:', users ? users.length : 'undefined');
             
             const container = document.getElementById('users-content');
             
@@ -1285,7 +1249,6 @@
                 return;
             }
 
-            console.log('ユーザー数:', users.length);
             
             let html = `
                 <table class="data-table">
@@ -1303,7 +1266,6 @@
             `;
 
             users.forEach((user, index) => {
-                console.log(`ユーザー${index + 1}:`, user);
                 html += `
                     <tr>
                         <td>${user.id}</td>
@@ -1327,7 +1289,6 @@
 
             html += '</tbody></table>';
             container.innerHTML = html;
-            console.log('ユーザー表示完了');
         }
 
         // 役割名取得
@@ -1343,24 +1304,20 @@
         // クライアント読み込み
         async function loadClients() {
             try {
-                console.log('=== クライアント読み込み開始 ===');
-                const response = await fetch('api.php?path=clients', {
+                const response = await fetch('api.php?path=admin/clients', {
                     method: 'GET',
                     headers: {
                         'Content-Type': 'application/json',
                         'X-Requested-With': 'XMLHttpRequest'
-                    }
+                    },
+                    credentials: 'same-origin'
                 });
-
-                console.log('APIレスポンス:', response);
-                console.log('ステータス:', response.status);
 
                 if (!response.ok) {
                     throw new Error('クライアント一覧の読み込みに失敗しました');
                 }
 
                 const data = await response.json();
-                console.log('取得したデータ:', data);
 
                 if (!data.success) {
                     throw new Error(data.message || 'クライアント一覧の取得に失敗しました');
@@ -1376,7 +1333,6 @@
                     throw new Error('クライアントデータの形式が正しくありません');
                 }
 
-                console.log('=== displayClients関数を呼び出し ===');
                 displayClients(data.clients);
                 
             } catch (error) {
@@ -1388,8 +1344,6 @@
 
         // クライアント表示
         function displayClients(clients) {
-            console.log('=== displayClients関数開始 ===');
-            console.log('受け取ったclients:', clients);
             
             const container = document.getElementById('clients-content');
             
@@ -1411,7 +1365,6 @@
                 return;
             }
 
-            console.log('クライアント数:', clients.length);
             
             let html = `
                 <table class="data-table">
@@ -1427,7 +1380,6 @@
             `;
 
             clients.forEach((client, index) => {
-                console.log(`クライアント${index + 1}:`, client);
                 html += `
                     <tr>
                         <td>${escapeHtml(client.name)}</td>
@@ -1451,24 +1403,20 @@
 
             html += '</tbody></table>';
             container.innerHTML = html;
-            console.log('クライアント表示完了');
         }
 
         // テンプレート読み込み
         async function loadTemplates() {
             try {
-                console.log('=== テンプレート読み込み開始 ===');
-                const response = await fetch('api.php?path=templates', {
+                const response = await fetch('api.php?path=admin/templates', {
                     method: 'GET',
                     headers: {
                         'Content-Type': 'application/json',
                         'X-Requested-With': 'XMLHttpRequest'
-                    }
+                    },
+                    credentials: 'same-origin'
                 });
 
-                console.log('APIレスポンス:', response);
-                console.log('ステータス:', response.status);
-                console.log('ステータステキスト:', response.statusText);
 
                 if (!response.ok) {
                     const errorText = await response.text();
@@ -1477,24 +1425,22 @@
                 }
 
                 const responseText = await response.text();
-                console.log('生のレスポンス:', responseText);
 
                 let data;
                 try {
                     data = JSON.parse(responseText);
-                    console.log('JSONパース成功');
                 } catch (parseError) {
                     console.error('JSONパースエラー:', parseError);
                     throw new Error('APIレスポンスの解析に失敗しました');
                 }
 
-                console.log('取得したデータ:', data);
-                console.log('データの型:', typeof data);
-                console.log('data.success:', data.success);
-                console.log('data.templates:', data.templates);
-                console.log('templatesの型:', typeof data.templates);
-                console.log('templatesが配列か:', Array.isArray(data.templates));
-                console.log('templatesの長さ:', data.templates ? data.templates.length : 'undefined');
+                // console.log('取得したデータ:', data);
+                // console.log('データの型:', typeof data);
+                // console.log('data.success:', data.success);
+                // console.log('data.templates:', data.templates);
+                // console.log('templatesの型:', typeof data.templates);
+                // console.log('templatesが配列か:', Array.isArray(data.templates));
+                // console.log('templatesの長さ:', data.templates ? data.templates.length : 'undefined');
 
                 if (!data.success) {
                     throw new Error(data.message || 'テンプレート一覧の取得に失敗しました');
@@ -1510,7 +1456,7 @@
                     throw new Error('テンプレートデータの形式が正しくありません');
                 }
 
-                console.log('=== displayTemplates関数を呼び出し ===');
+                // console.log('=== displayTemplates関数を呼び出し ===');
                 displayTemplates(data.templates);
                 
             } catch (error) {
@@ -1522,11 +1468,11 @@
 
         // テンプレート表示
         function displayTemplates(templates) {
-            console.log('=== displayTemplates関数開始 ===');
-            console.log('受け取ったtemplates:', templates);
-            console.log('templatesの型:', typeof templates);
-            console.log('templatesが配列か:', Array.isArray(templates));
-            console.log('templatesの長さ:', templates ? templates.length : 'undefined');
+            // console.log('=== displayTemplates関数開始 ===');
+            // console.log('受け取ったtemplates:', templates);
+            // console.log('templatesの型:', typeof templates);
+            // console.log('templatesが配列か:', Array.isArray(templates));
+            // console.log('templatesの長さ:', templates ? templates.length : 'undefined');
             
             const container = document.getElementById('templates-content');
             
@@ -1548,7 +1494,7 @@
                 return;
             }
 
-            console.log('テンプレート数:', templates.length);
+            // console.log('テンプレート数:', templates.length);
             
             // フェーズ別にグループ化
             const groupedTemplates = {};
@@ -1580,7 +1526,7 @@
                 phaseTemplates.sort((a, b) => a.task_order - b.task_order);
                 
                 phaseTemplates.forEach((template, index) => {
-                    console.log(`テンプレート${index + 1}:`, template);
+                    // console.log(`テンプレート${index + 1}:`, template);
                     html += `
                         <div class="template-card" data-task="${escapeHtml(template.task_name)}">
                             <div class="card-header">
@@ -1624,36 +1570,37 @@
             // フェーズフィルターの選択肢を更新
             updatePhaseFilter(sortedPhases);
             
-            console.log('テンプレート表示完了');
+            // console.log('テンプレート表示完了');
         }
 
         // マニュアル読み込み
         async function loadManuals() {
             try {
-                console.log('=== マニュアル読み込み開始 ===');
-                const response = await fetch('api.php?path=manuals', {
+                // console.log('=== マニュアル読み込み開始 ===');
+                const response = await fetch('api.php?path=admin/manuals', {
                     method: 'GET',
                     headers: {
                         'Content-Type': 'application/json',
                         'X-Requested-With': 'XMLHttpRequest'
-                    }
+                    },
+                    credentials: 'same-origin'
                 });
 
-                console.log('APIレスポンス:', response);
-                console.log('ステータス:', response.status);
+                // console.log('APIレスポンス:', response);
+                // console.log('ステータス:', response.status);
 
                 if (!response.ok) {
                     throw new Error('マニュアル一覧の読み込みに失敗しました');
                 }
 
                 const data = await response.json();
-                console.log('取得したデータ:', data);
-                console.log('データの型:', typeof data);
-                console.log('data.success:', data.success);
-                console.log('data.manuals:', data.manuals);
-                console.log('manualsの型:', typeof data.manuals);
-                console.log('manualsが配列か:', Array.isArray(data.manuals));
-                console.log('manualsの長さ:', data.manuals ? data.manuals.length : 'undefined');
+                // console.log('取得したデータ:', data);
+                // console.log('データの型:', typeof data);
+                // console.log('data.success:', data.success);
+                // console.log('data.manuals:', data.manuals);
+                // console.log('manualsの型:', typeof data.manuals);
+                // console.log('manualsが配列か:', Array.isArray(data.manuals));
+                // console.log('manualsの長さ:', data.manuals ? data.manuals.length : 'undefined');
 
                 if (!data.success) {
                     throw new Error(data.message || 'マニュアル一覧の取得に失敗しました');
@@ -1669,7 +1616,7 @@
                     throw new Error('マニュアルデータの形式が正しくありません');
                 }
 
-                console.log('=== displayManuals関数を呼び出し ===');
+                // console.log('=== displayManuals関数を呼び出し ===');
                 displayManuals(data.manuals);
                 
             } catch (error) {
@@ -1681,11 +1628,11 @@
 
         // マニュアル表示
         function displayManuals(manuals) {
-            console.log('=== displayManuals関数開始 ===');
-            console.log('受け取ったmanuals:', manuals);
-            console.log('manualsの型:', typeof manuals);
-            console.log('manualsが配列か:', Array.isArray(manuals));
-            console.log('manualsの長さ:', manuals ? manuals.length : 'undefined');
+            // console.log('=== displayManuals関数開始 ===');
+            // console.log('受け取ったmanuals:', manuals);
+            // console.log('manualsの型:', typeof manuals);
+            // console.log('manualsが配列か:', Array.isArray(manuals));
+            // console.log('manualsの長さ:', manuals ? manuals.length : 'undefined');
             
             const container = document.getElementById('manuals-content');
             
@@ -1704,11 +1651,11 @@
             
             if (manuals.length === 0) {
                 container.innerHTML = '<p>マニュアルが登録されていません。</p>';
-                console.log('マニュアルデータが0件です');
+                // console.log('マニュアルデータが0件です');
                 return;
             }
 
-            console.log('マニュアル数:', manuals.length);
+            // console.log('マニュアル数:', manuals.length);
 
             let html = `
                 <table class="data-table">
@@ -1726,7 +1673,7 @@
             `;
 
             manuals.forEach((manual, index) => {
-                console.log(`マニュアル${index + 1}:`, manual);
+                // console.log(`マニュアル${index + 1}:`, manual);
                 html += `
                     <tr>
                         <td>${escapeHtml(manual.task_name || '')}</td>
@@ -1746,7 +1693,7 @@
 
             html += '</tbody></table>';
             container.innerHTML = html;
-            console.log('マニュアル表示完了');
+            // console.log('マニュアル表示完了');
         }
 
         // モーダル表示
@@ -1815,7 +1762,7 @@
         // フェーズ選択肢を読み込み
         async function loadPhaseOptions() {
             try {
-                console.log('フェーズ選択肢読み込み開始');
+                // console.log('フェーズ選択肢読み込み開始');
                 const response = await fetch('api.php?path=phases', {
                     method: 'GET',
                     headers: {
@@ -1826,7 +1773,7 @@
 
                 if (response.ok) {
                     const data = await response.json();
-                    console.log('フェーズデータ取得:', data);
+                    // console.log('フェーズデータ取得:', data);
                     if (data.success && data.phases) {
                         const select = document.getElementById('templatePhaseName');
                         select.innerHTML = '<option value="">選択してください</option>';
@@ -1837,7 +1784,7 @@
                             option.textContent = phase.name;
                             select.appendChild(option);
                         });
-                        console.log('フェーズ選択肢設定完了:', data.phases.length, '件');
+                        // console.log('フェーズ選択肢設定完了:', data.phases.length, '件');
                     }
                 }
             } catch (error) {
@@ -1848,7 +1795,7 @@
         // タスク名選択肢を読み込み
         async function loadTaskOptions() {
             try {
-                console.log('タスク選択肢読み込み開始');
+                // console.log('タスク選択肢読み込み開始');
                 const response = await fetch('api.php?path=templates', {
                     method: 'GET',
                     headers: {
@@ -1859,7 +1806,7 @@
 
                 if (response.ok) {
                     const data = await response.json();
-                    console.log('タスクテンプレートデータ取得:', data);
+                    // console.log('タスクテンプレートデータ取得:', data);
                     if (data.success && data.templates) {
                         const select = document.getElementById('manualTaskName');
                         select.innerHTML = '<option value="">選択してください</option>';
@@ -1887,7 +1834,7 @@
                             
                             select.appendChild(phaseGroup);
                         });
-                        console.log('タスク選択肢設定完了:', data.templates.length, '件');
+                        // console.log('タスク選択肢設定完了:', data.templates.length, '件');
                     }
                 }
             } catch (error) {
@@ -1980,25 +1927,25 @@
         // フェーズ追加・編集
         document.getElementById('phaseForm').addEventListener('submit', async function(e) {
             e.preventDefault();
-            console.log('=== フェーズフォーム送信開始 ===');
+            // console.log('=== フェーズフォーム送信開始 ===');
             
             const formData = new FormData(this);
             const data = Object.fromEntries(formData.entries());
-            console.log('フォームデータ（raw）:', data);
+            // console.log('フォームデータ（raw）:', data);
             
             // チェックボックスの値を適切に設定
             data.is_active = document.getElementById('phaseIsActive').checked ? '1' : '0';
-            console.log('フォームデータ（処理後）:', data);
+            // console.log('フォームデータ（処理後）:', data);
             
             const isEdit = data.id && data.id !== '';
             const method = isEdit ? 'PUT' : 'POST';
             const url = isEdit ? `api.php?path=phases/${data.id}` : 'api.php?path=phases';
             
-            console.log('リクエスト情報:');
-            console.log('- 編集モード:', isEdit);
-            console.log('- メソッド:', method);
-            console.log('- URL:', url);
-            console.log('- 送信データ:', JSON.stringify(data));
+            // console.log('リクエスト情報:');
+            // console.log('- 編集モード:', isEdit);
+            // console.log('- メソッド:', method);
+            // console.log('- URL:', url);
+            // console.log('- 送信データ:', JSON.stringify(data));
             
             try {
                 const response = await fetch(url, {
@@ -2010,10 +1957,10 @@
                     body: JSON.stringify(data)
                 });
 
-                console.log('レスポンス情報:');
-                console.log('- ステータス:', response.status);
-                console.log('- ステータステキスト:', response.statusText);
-                console.log('- OK:', response.ok);
+                // console.log('レスポンス情報:');
+                // console.log('- ステータス:', response.status);
+                // console.log('- ステータステキスト:', response.statusText);
+                // console.log('- OK:', response.ok);
 
                 if (!response.ok) {
                     const errorText = await response.text();
@@ -2022,12 +1969,12 @@
                 }
 
                 const responseText = await response.text();
-                console.log('生のレスポンス:', responseText);
+                // console.log('生のレスポンス:', responseText);
 
                 let result;
                 try {
                     result = JSON.parse(responseText);
-                    console.log('JSONパース成功:', result);
+                    // console.log('JSONパース成功:', result);
                 } catch (parseError) {
                     console.error('JSONパースエラー:', parseError);
                     console.error('レスポンステキスト:', responseText);
@@ -2035,7 +1982,7 @@
                 }
 
                 if (result.success) {
-                    console.log('フェーズ処理成功');
+                    // console.log('フェーズ処理成功');
                     closeModal('phaseModal');
                     this.reset();
                     loadPhases();
@@ -2066,32 +2013,27 @@
             const method = isEdit ? 'PUT' : 'POST';
             const url = isEdit ? `api.php?path=admin/users/${data.id}` : 'api.php?path=admin/users';
             
-            // デバッグログ
-            console.log('ユーザーフォーム送信:', {
-                isEdit: isEdit,
-                data: data,
-                method: method,
-                url: url
-            });
+            // デバッグログ（必要時のみ有効化）
+            // console.log('ユーザーフォーム送信:', { isEdit, data, method, url });
             
             // パスワード処理の詳細ログ
             if (isEdit) {
-                console.log('編集モード - パスワード処理開始');
-                console.log('元のパスワード値:', data.password);
-                console.log('パスワードの型:', typeof data.password);
-                console.log('パスワードが空か:', !data.password);
-                console.log('パスワードが空文字列か:', data.password === '');
-                console.log('パスワードが空白のみか:', data.password && data.password.trim() === '');
+                // console.log('編集モード - パスワード処理開始');
+                // console.log('元のパスワード値:', data.password);
+                // console.log('パスワードの型:', typeof data.password);
+                // console.log('パスワードが空か:', !data.password);
+                // console.log('パスワードが空文字列か:', data.password === '');
+                // console.log('パスワードが空白のみか:', data.password && data.password.trim() === '');
             }
             
             // 編集時でパスワードが空の場合は削除
             if (isEdit && (!data.password || data.password.trim() === '')) {
                 delete data.password;
-                console.log('パスワードが空のため、パスワード更新をスキップ');
+                // console.log('パスワードが空のため、パスワード更新をスキップ');
             } else if (isEdit && data.password && data.password.trim() !== '') {
-                console.log('パスワードが設定されているため、パスワード更新を実行');
-                console.log('パスワード長:', data.password.length);
-                console.log('パスワードの最初の文字:', data.password.charAt(0));
+                // console.log('パスワードが設定されているため、パスワード更新を実行');
+                // console.log('パスワード長:', data.password.length);
+                // console.log('パスワードの最初の文字:', data.password.charAt(0));
             }
             
             try {
@@ -2109,10 +2051,10 @@
                 }
 
                 const result = await response.json();
-                console.log('APIレスポンス:', result);
-                console.log('APIレスポンスの型:', typeof result);
-                console.log('APIレスポンスのsuccess:', result.success);
-                console.log('APIレスポンスのmessage:', result.message);
+                // console.log('APIレスポンス:', result);
+                // console.log('APIレスポンスの型:', typeof result);
+                // console.log('APIレスポンスのsuccess:', result.success);
+                // console.log('APIレスポンスのmessage:', result.message);
                 
                 if (result.success) {
                     closeModal('userModal');
@@ -2186,7 +2128,7 @@
         document.getElementById('clientForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             
-            console.log('クライアントフォーム送信開始');
+            // console.log('クライアントフォーム送信開始');
             
             const formData = new FormData(this);
             const data = Object.fromEntries(formData.entries());
@@ -2194,14 +2136,14 @@
             // チェックボックスの値を適切に設定
             data.is_active = document.getElementById('clientIsActive').checked ? '1' : '0';
             
-            console.log('送信データ:', data);
+            // console.log('送信データ:', data);
             
             const isEdit = data.id && data.id !== '';
             const method = isEdit ? 'PUT' : 'POST';
             const url = isEdit ? `api.php?path=admin/clients/${data.id}` : 'api.php?path=admin/clients';
             
-            console.log('リクエストURL:', url);
-            console.log('リクエストメソッド:', method);
+            // console.log('リクエストURL:', url);
+            // console.log('リクエストメソッド:', method);
             
             try {
                 const response = await fetch(url, {
@@ -2213,9 +2155,9 @@
                     body: JSON.stringify(data)
                 });
 
-                console.log('レスポンス:', response);
-                console.log('レスポンスステータス:', response.status);
-                console.log('レスポンスステータステキスト:', response.statusText);
+                // console.log('レスポンス:', response);
+                // console.log('レスポンスステータス:', response.status);
+                // console.log('レスポンスステータステキスト:', response.statusText);
 
                 if (!response.ok) {
                     const errorText = await response.text();
@@ -2224,19 +2166,19 @@
                 }
 
                 const responseText = await response.text();
-                console.log('生のレスポンス:', responseText);
+                // console.log('生のレスポンス:', responseText);
                 
                 let result;
                 try {
                     result = JSON.parse(responseText);
-                    console.log('パースされた結果:', result);
+                    // console.log('パースされた結果:', result);
                 } catch (parseError) {
                     console.error('JSONパースエラー:', parseError);
                     throw new Error('APIレスポンスの解析に失敗しました');
                 }
                 
                 if (result.success) {
-                    console.log('クライアント処理成功');
+                    // console.log('クライアント処理成功');
                     closeModal('clientModal');
                     this.reset();
                     loadClients();
@@ -2324,7 +2266,7 @@
 
         // フェーズ編集・削除
         function editPhase(id) {
-            console.log('フェーズ編集開始:', id);
+            // console.log('フェーズ編集開始:', id);
             
             // フェーズデータを取得
             fetch(`api.php?path=phases/${id}`, {
@@ -2389,7 +2331,7 @@
 
         // ユーザー編集・削除
         function editUser(id) {
-            console.log('ユーザー編集開始:', id);
+            // console.log('ユーザー編集開始:', id);
             
             // ユーザーデータを取得
             fetch(`api.php?path=admin/users/${id}`, {
@@ -2401,11 +2343,11 @@
                 })
                 .then(response => response.json())
                 .then(data => {
-                    console.log('ユーザーデータ取得結果:', data);
+                    // console.log('ユーザーデータ取得結果:', data);
                     
                     if (data.success && data.user) {
                         const user = data.user;
-                        console.log('編集対象ユーザー:', user);
+                        // console.log('編集対象ユーザー:', user);
                         
                         // モーダルを編集モードに設定
                         document.getElementById('userModalTitle').textContent = 'ユーザー編集';
@@ -2421,18 +2363,18 @@
                         document.getElementById('userPassword').placeholder = '変更時のみ入力してください';
                         document.getElementById('userIsActive').checked = user.is_active == '1';
                         
-                        console.log('パスワードフィールド初期化完了:', {
-                            value: document.getElementById('userPassword').value,
-                            placeholder: document.getElementById('userPassword').placeholder
-                        });
+                        // console.log('パスワードフィールド初期化完了:', {
+                        //     value: document.getElementById('userPassword').value,
+                        //     placeholder: document.getElementById('userPassword').placeholder
+                        // });
                         
-                        console.log('フォーム設定完了:', {
-                            id: document.getElementById('userId').value,
-                            email: document.getElementById('userEmail').value,
-                            name: document.getElementById('userName').value,
-                            role: document.getElementById('userRole').value,
-                            isActive: document.getElementById('userIsActive').checked
-                        });
+                        // console.log('フォーム設定完了:', {
+                        //     id: document.getElementById('userId').value,
+                        //     email: document.getElementById('userEmail').value,
+                        //     name: document.getElementById('userName').value,
+                        //     role: document.getElementById('userRole').value,
+                        //     isActive: document.getElementById('userIsActive').checked
+                        // });
                         
                         // モーダル表示
                         document.getElementById('userModal').style.display = 'block';
@@ -2473,11 +2415,11 @@
 
         // テンプレート編集・削除
         function editTemplate(id) {
-            console.log('テンプレート編集開始:', id);
+            // console.log('テンプレート編集開始:', id);
             
             // まずフェーズ選択肢を読み込んでから、テンプレートデータを取得
             loadPhaseOptions().then(() => {
-                console.log('フェーズ選択肢読み込み完了');
+                // console.log('フェーズ選択肢読み込み完了');
                 
                 // テンプレートデータを取得
                 fetch(`api.php?path=admin/templates/${id}`, {
@@ -2491,7 +2433,7 @@
                 .then(data => {
                     if (data.success && data.template) {
                         const template = data.template;
-                        console.log('テンプレートデータ取得:', template);
+                        // console.log('テンプレートデータ取得:', template);
                         
                         // モーダルを編集モードに設定
                         document.getElementById('templateModalTitle').textContent = 'テンプレート編集';
@@ -2503,8 +2445,8 @@
                         // フェーズ名を設定（少し遅延を入れて確実に選択肢が読み込まれた後に設定）
                         setTimeout(() => {
                             const phaseSelect = document.getElementById('templatePhaseName');
-                            console.log('フェーズ選択肢設定:', template.phase_name);
-                            console.log('利用可能な選択肢:', Array.from(phaseSelect.options).map(opt => opt.value));
+                            // console.log('フェーズ選択肢設定:', template.phase_name);
+                            // console.log('利用可能な選択肢:', Array.from(phaseSelect.options).map(opt => opt.value));
                             phaseSelect.value = template.phase_name;
                         }, 100);
                         
@@ -2567,7 +2509,7 @@
 
         // クライアント編集・削除
         function editClient(id) {
-            console.log('クライアント編集開始:', id);
+            // console.log('クライアント編集開始:', id);
             
             // クライアントデータを取得
             fetch(`api.php?path=admin/clients/${id}`, {

@@ -6,9 +6,16 @@
     <title>道路設計管理システム</title>
     <link rel="stylesheet" href="assets/css/style.css">
     <link rel="stylesheet" href="assets/css/index.css">
+    <script>
+        // キャッシュバスター
+        const timestamp = new Date().getTime();
+        const styleLink = document.createElement('link');
+        styleLink.rel = 'stylesheet';
+        styleLink.href = 'assets/css/index.css?v=' + timestamp;
+        document.head.appendChild(styleLink);
+    </script>
 </head>
 <body>
-    <div class="container">
         <!-- ヘッダー -->
         <header class="header">
             <div class="logo">
@@ -19,6 +26,20 @@
             </div>
             </div>
             <div class="header-actions">
+                <div class="notification-area">
+                    <button class="notification-btn" id="notificationBtn">
+                        🔔 <span class="notification-badge" id="notificationBadge" style="display: none;">0</span>
+                    </button>
+                    <div class="notification-dropdown" id="notificationDropdown" style="display: none;">
+                        <div class="notification-header">
+                            <h4>通知</h4>
+                            <button class="btn btn-small" onclick="markAllAsRead()">すべて既読</button>
+                        </div>
+                        <div class="notification-list" id="notificationList">
+                            <div class="loading">読み込み中...</div>
+                        </div>
+                    </div>
+                </div>
                 <div class="user-info">
                     <div class="user-details">
                         <span class="user-name" id="userName">読み込み中...</span>
@@ -31,107 +52,195 @@
         </header>
 
         <!-- メインコンテンツ -->
-        <main class="main-container">
-            <!-- プロジェクト選択/作成エリア -->
-            <section class="project-section">
-                <div class="card">
-                <div class="project-header">
-                    <h2>プロジェクト管理</h2>
-                    <div class="header-buttons">
-                        <button class="btn btn-primary" id="newProjectBtn">🚀 新規プロジェクト</button>
-                    </div>
+        <main class="main-container three-column-layout">
+            <!-- 左カラム: プロジェクト一覧 -->
+            <aside class="left-column">
+                <div class="column-header">
+                    <h2>📁 プロジェクト一覧</h2>
+                </div>
+                <div class="left-column-actions">
+                    <button class="btn btn-primary btn-small" id="newProjectBtn">🚀 新規プロジェクト作成</button>
                 </div>
                 
-                <div class="project-selector">
-                    <select id="projectSelect" class="project-select">
-                        <option value="">プロジェクトを選択してください</option>
-                    </select>
+                <div class="project-filters">
+                    <div class="filter-group">
+                        <label for="statusFilter">ステータス:</label>
+                        <select id="statusFilter" class="filter-select">
+                            <option value="">すべて</option>
+                            <option value="planning">計画中</option>
+                            <option value="in_progress">進行中</option>
+                            <option value="completed">完了</option>
+                            <option value="cancelled">キャンセル</option>
+                        </select>
                     </div>
+                    <div class="filter-group">
+                        <label for="sortBy">並び順:</label>
+                        <select id="sortBy" class="filter-select">
+                            <option value="created_at">登録日</option>
+                            <option value="name">プロジェクト名</option>
+                            <option value="start_date">開始日</option>
+                            <option value="target_end_date">終了日</option>
+                            <option value="status">ステータス</option>
+                            <option value="total_tasks">タスク数</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label for="sortOrder">順序:</label>
+                        <select id="sortOrder" class="filter-select">
+                            <option value="DESC">降順</option>
+                            <option value="ASC">昇順</option>
+                        </select>
+                    </div>
+                    <button id="applyFilters" class="btn btn-secondary btn-small">適用</button>
                 </div>
-            </section>
+                
+                <div class="project-list" id="projectList">
+                    <div class="loading">読み込み中...</div>
+                </div>
+            </aside>
 
-            <!-- プロジェクト情報 -->
-            <section class="project-info" id="projectInfo" style="display: none;">
-                <div class="card">
-                <div class="project-details">
-                        <div class="project-header-row">
-                    <h3 id="projectName"></h3>
-                            <div class="project-actions">
-                                <button class="btn btn-primary btn-small" id="editProjectBtn" onclick="editProject()">
-                                    ✏️ プロジェクト編集
-                                </button>
-                                <button class="btn btn-secondary btn-small" id="refreshProjectBtn" onclick="refreshProjectData()" title="最新のテンプレート情報を取得">
-                                    🔄 更新
-                                </button>
-                                <button class="btn btn-danger btn-small" id="deleteProjectBtn" onclick="deleteProject()">
-                                    🗑️ プロジェクト削除
-                                </button>
+            <!-- 中央カラム: 選択されたプロジェクトの詳細 -->
+            <main class="center-column">
+                <!-- プロジェクト情報 -->
+                <section class="project-info" id="projectInfo" style="display: none;">
+                    <div class="project-header">
+                        <div class="project-title">
+                            <h2 id="projectName">プロジェクト名</h2>
+                            <div class="project-meta">
+                                <span id="projectPeriod"></span>
+                                <span class="project-status" id="projectStatus"></span>
                             </div>
                         </div>
-                    <div class="project-meta">
-                        <span id="projectClientInfo"></span>
-                        <span id="projectPeriod"></span>
-                        <span class="project-status" id="projectStatus"></span>
+                        <div class="project-actions">
+                            <button class="btn btn-secondary" id="editProjectBtn">✏️ 編集</button>
+                            <button class="btn btn-danger" id="deleteProjectBtn">🗑️ 削除</button>
+                        </div>
                     </div>
-                </div>
-                
-                <!-- 進捗サマリー -->
-                <div class="progress-summary">
-                    <div class="progress-card">
-                        <div class="progress-number" id="totalTasks">0</div>
-                        <div class="progress-label">総タスク数</div>
-                    </div>
-                    <div class="progress-card">
-                        <div class="progress-number" id="completedTasks">0</div>
-                        <div class="progress-label">完了済み</div>
-                    </div>
-                    <div class="progress-card">
-                        <div class="progress-number" id="inProgressTasks">0</div>
-                        <div class="progress-label">進行中</div>
-                    </div>
-                    <div class="progress-card">
-                        <div class="progress-number danger" id="needsConfirmationTasks">0</div>
-                        <div class="progress-label">要確認</div>
-                    </div>
-                    <div class="progress-card">
-                        <div class="progress-number danger" id="overdueTasks">0</div>
-                        <div class="progress-label">遅延</div>
-                    </div>
-                </div>
-                
-                <!-- プログレスバー -->
-                <div class="overall-progress">
-                    <div class="progress-bar">
-                        <div class="progress-fill" id="progressFill"></div>
-                    </div>
-                    <span class="progress-text" id="progressText">0%</span>
-                    </div>
-                </div>
-            </section>
-
-            <!-- タスク管理 -->
-            <section class="task-section" id="taskSection" style="display: none;">
-                <div class="card">
-                    <h3>タスク管理</h3>
                     
-                    <!-- フェーズフィルター -->
-                    <div class="task-filters" id="taskFilters">
-                        <!-- フェーズボタンがここに動的に追加される -->
-                </div>
+                    <!-- 進捗サマリー -->
+                    <div class="progress-summary">
+                        <div class="progress-card">
+                            <div class="progress-number" id="totalTasks">0</div>
+                            <div class="progress-label">総タスク数</div>
+                        </div>
+                        <div class="progress-card clickable" onclick="openNotStartedTasksModal()">
+                            <div class="progress-number" id="notStartedTasks">0</div>
+                            <div class="progress-label">未着手</div>
+                        </div>
+                        <div class="progress-card clickable" onclick="openInProgressTasksModal()">
+                            <div class="progress-number" id="inProgressTasks">0</div>
+                            <div class="progress-label">進行中</div>
+                        </div>
+                        <div class="progress-card clickable" onclick="openCompletedTasksModal()">
+                            <div class="progress-number" id="completedTasks">0</div>
+                            <div class="progress-label">完了済み</div>
+                        </div>
+                        <div class="progress-card clickable" onclick="openNeedsConfirmationModal()">
+                            <div class="progress-number danger" id="needsConfirmationTasks">0</div>
+                            <div class="progress-label">要確認</div>
+                        </div>
+                        <div class="progress-card clickable" onclick="openOverdueTasksModal()">
+                            <div class="progress-number danger" id="overdueTasks">0</div>
+                            <div class="progress-label">遅延</div>
+                        </div>
+                        <div class="progress-card clickable" onclick="openPendingTasksModal()">
+                            <div class="progress-number" id="pendingTasks">0</div>
+                            <div class="progress-label">保留</div>
+                        </div>
+                        <div class="progress-card clickable" onclick="openNotApplicableTasksModal()">
+                            <div class="progress-number" id="notApplicableTasks">0</div>
+                            <div class="progress-label">対象外</div>
+                        </div>
+                    </div>
+                    
+                    <!-- プログレスバー -->
+                    <div class="overall-progress">
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="progressFill"></div>
+                        </div>
+                        <span class="progress-text" id="progressText">0%</span>
+                    </div>
+                </section>
 
-                    <!-- タスクリスト -->
-                    <div id="taskList" class="task-content">
-                        <!-- タスクがここに動的に追加される -->
+                <!-- タスク一覧 -->
+                <section class="task-section" id="taskSection" style="display: none;">
+                    <div class="task-header">
+                        <h3>📋 タスク一覧</h3>
+                    </div>
+                    
+                    <div class="task-filters">
+                        <div class="filter-group">
+                            <label for="taskStatusFilter">ステータス:</label>
+                            <select id="taskStatusFilter" class="filter-select">
+                                <option value="">すべて</option>
+                                <option value="not_started">未着手</option>
+                                <option value="in_progress">進行中</option>
+                                <option value="completed">完了</option>
+                                <option value="needs_confirmation">要確認</option>
+                            </select>
+                        </div>
+                        <div class="filter-group">
+                            <label for="taskPhaseFilter">フェーズ:</label>
+                            <select id="taskPhaseFilter" class="filter-select">
+                                <option value="">すべて</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="task-list" id="taskList">
+                        <div class="empty">プロジェクトを選択してください</div>
+                    </div>
+                </section>
+
+                <!-- プロジェクト未選択状態 -->
+                <section class="no-project-selected" id="noProjectSelected">
+                    <div class="empty-state">
+                        <div class="empty-icon">📁</div>
+                        <h3>プロジェクトを選択してください</h3>
+                        <p>左側のプロジェクト一覧からプロジェクトを選択するか、新しいプロジェクトを作成してください。</p>
+                        <button class="btn btn-primary" onclick="document.getElementById('newProjectBtn').click()">🚀 新規プロジェクト作成</button>
+                    </div>
+                </section>
+            </main>
+
+            <!-- 右カラム: 要確認・期限切れタスク -->
+            <aside class="right-column">
+                <div class="column-header">
+                    <h2>⚠️ 重要なタスク</h2>
+                    <button class="btn btn-secondary btn-small" id="refreshImportantTasksBtn">🔄 更新</button>
+                </div>
+                
+                <!-- 要確認タスク -->
+                <div class="important-tasks-section">
+                    <h3>要確認タスク</h3>
+                    <div class="important-task-list" id="rightColumnNeedsConfirmation">
+                        <div class="loading">読み込み中...</div>
                     </div>
                 </div>
-            </section>
+                
+                <!-- 期限切れタスク -->
+                <div class="important-tasks-section">
+                    <h3>期限切れタスク</h3>
+                    <div class="important-task-list" id="rightColumnOverdueTasks">
+                        <div class="loading">読み込み中...</div>
+                    </div>
+                </div>
+                
+                <!-- 期限間近タスク -->
+                <div class="important-tasks-section">
+                    <h3>期限間近タスク</h3>
+                    <div class="important-task-list" id="rightColumnUpcomingTasks">
+                        <div class="loading">読み込み中...</div>
+                    </div>
+                </div>
+            </aside>
         </main>
 
         <!-- ローディング表示 -->
         <div class="loading-overlay" id="loadingOverlay">
             <div class="loading-spinner"></div>
             <div class="loading-text">読み込み中...</div>
-    </div>
+        </div>
 
         <!-- メッセージ表示 -->
         <div id="messageContainer" style="position: fixed; top: 20px; right: 20px; z-index: 2000;"></div>
@@ -355,6 +464,139 @@
             </div>
         </div>
 
+        <!-- 要確認タスク一覧モーダル -->
+        <div class="modal-overlay" id="needsConfirmationModal">
+            <div class="modal task-list-modal">
+                <div class="modal-header">
+                    <h3 class="modal-title">要確認タスク一覧</h3>
+                    <button class="modal-close" onclick="closeNeedsConfirmationModal()">&times;</button>
+                </div>
+                <div class="modal-content">
+                    <div id="needsConfirmationList" class="task-list-container">
+                        <div class="loading">読み込み中...</div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeNeedsConfirmationModal()">閉じる</button>
+                    <button type="button" class="btn btn-primary" onclick="refreshNeedsConfirmationList()">更新</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 期限切れタスク一覧モーダル -->
+        <div class="modal-overlay" id="overdueTasksModal">
+            <div class="modal task-list-modal">
+                <div class="modal-header">
+                    <h3 class="modal-title">期限切れタスク一覧</h3>
+                    <button class="modal-close" onclick="closeOverdueTasksModal()">&times;</button>
+                </div>
+                <div class="modal-content">
+                    <div id="overdueTasksList" class="task-list-container">
+                        <div class="loading">読み込み中...</div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeOverdueTasksModal()">閉じる</button>
+                    <button type="button" class="btn btn-primary" onclick="refreshOverdueTasksList()">更新</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 保留タスク一覧モーダル -->
+        <div class="modal-overlay" id="pendingTasksModal">
+            <div class="modal task-list-modal">
+                <div class="modal-header">
+                    <h3 class="modal-title">保留タスク一覧</h3>
+                    <button class="modal-close" onclick="closePendingTasksModal()">&times;</button>
+                </div>
+                <div class="modal-content">
+                    <div id="pendingTasksList" class="task-list-container">
+                        <div class="loading">読み込み中...</div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closePendingTasksModal()">閉じる</button>
+                    <button type="button" class="btn btn-primary" onclick="refreshPendingTasksList()">更新</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 対象外タスク一覧モーダル -->
+        <div class="modal-overlay" id="notApplicableTasksModal">
+            <div class="modal task-list-modal">
+                <div class="modal-header">
+                    <h3 class="modal-title">対象外タスク一覧</h3>
+                    <button class="modal-close" onclick="closeNotApplicableTasksModal()">&times;</button>
+                </div>
+                <div class="modal-content">
+                    <div id="notApplicableTasksList" class="task-list-container">
+                        <div class="loading">読み込み中...</div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeNotApplicableTasksModal()">閉じる</button>
+                    <button type="button" class="btn btn-primary" onclick="refreshNotApplicableTasksList()">更新</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 未着手タスク一覧モーダル -->
+        <div class="modal-overlay" id="notStartedTasksModal">
+            <div class="modal task-list-modal">
+                <div class="modal-header">
+                    <h3 class="modal-title">未着手タスク一覧</h3>
+                    <button class="modal-close" onclick="closeNotStartedTasksModal()">&times;</button>
+                </div>
+                <div class="modal-content">
+                    <div id="notStartedTasksList" class="task-list-container">
+                        <div class="loading">読み込み中...</div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeNotStartedTasksModal()">閉じる</button>
+                    <button type="button" class="btn btn-primary" onclick="refreshNotStartedTasksList()">更新</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 進行中タスク一覧モーダル -->
+        <div class="modal-overlay" id="inProgressTasksModal">
+            <div class="modal task-list-modal">
+                <div class="modal-header">
+                    <h3 class="modal-title">進行中タスク一覧</h3>
+                    <button class="modal-close" onclick="closeInProgressTasksModal()">&times;</button>
+                </div>
+                <div class="modal-content">
+                    <div id="inProgressTasksList" class="task-list-container">
+                        <div class="loading">読み込み中...</div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeInProgressTasksModal()">閉じる</button>
+                    <button type="button" class="btn btn-primary" onclick="refreshInProgressTasksList()">更新</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 完了済みタスク一覧モーダル -->
+        <div class="modal-overlay" id="completedTasksModal">
+            <div class="modal task-list-modal">
+                <div class="modal-header">
+                    <h3 class="modal-title">完了済みタスク一覧</h3>
+                    <button class="modal-close" onclick="closeCompletedTasksModal()">&times;</button>
+                </div>
+                <div class="modal-content">
+                    <div id="completedTasksList" class="task-list-container">
+                        <div class="loading">読み込み中...</div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeCompletedTasksModal()">閉じる</button>
+                    <button type="button" class="btn btn-primary" onclick="refreshCompletedTasksList()">更新</button>
+                </div>
+            </div>
+        </div>
+
         <!-- タスク編集モーダル -->
     <div class="modal-overlay" id="taskModal">
         <div class="modal task-modal">
@@ -475,7 +717,6 @@
                     }
                 }
             } catch (e) {
-                console.warn('テンプレート選択の復元に失敗:', e);
             }
         }
 
@@ -483,7 +724,6 @@
             try {
                 localStorage.setItem('selectedTemplateIds', JSON.stringify(Array.from(selectedTemplateIds)));
             } catch (e) {
-                console.warn('テンプレート選択の保存に失敗:', e);
             }
         }
 
@@ -502,7 +742,6 @@
                 };
                 localStorage.setItem('newProjectDraft', JSON.stringify(draft));
             } catch (e) {
-                console.warn('新規プロジェクト下書き保存に失敗:', e);
             }
         }
 
@@ -512,16 +751,21 @@
                 if (!raw) return;
                 const draft = JSON.parse(raw);
                 if (!draft) return;
-                if (draft.name) document.getElementById('projectName').value = draft.name;
-                // クライアントはロード後に設定
-                if (draft.start_date) document.getElementById('projectStartDate').value = draft.start_date;
-                if (draft.end_date) document.getElementById('projectEndDate').value = draft.end_date;
+                
+                const projectName = document.getElementById('projectName');
+                const projectStartDate = document.getElementById('projectStartDate');
+                const projectEndDate = document.getElementById('projectEndDate');
+                const newProjectClient = document.getElementById('newProjectClient');
+                
+                if (draft.name && projectName) projectName.value = draft.name;
+                if (draft.start_date && projectStartDate) projectStartDate.value = draft.start_date;
+                if (draft.end_date && projectEndDate) projectEndDate.value = draft.end_date;
+                
                 // クライアントは loadClients 完了後に適用
                 setTimeout(() => {
-                    if (draft.client_id) document.getElementById('newProjectClient').value = draft.client_id;
+                    if (draft.client_id && newProjectClient) newProjectClient.value = draft.client_id;
                 }, 0);
             } catch (e) {
-                console.warn('新規プロジェクト下書き復元に失敗:', e);
             }
         }
 
@@ -543,7 +787,6 @@
                 });
                 newProjectModalObserver.observe(modal, { attributes: true, attributeFilter: ['style', 'hidden'] });
             } catch (e) {
-                console.warn('モーダルガード設定に失敗:', e);
             }
         }
 
@@ -556,8 +799,59 @@
 
         // 初期化
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('DOM読み込み完了');
             loadSelectedTemplatesFromStorage();
+            loadProjects();
+            loadPhases(); // フェーズを読み込み
+            loadDashboard();
+            loadImportantTasks();
+            loadNotifications();
+            startNotificationCheck();
+            
+            // イベントリスナーを設定
+            // タスクフィルターのイベント
+            const statusSelect = document.getElementById('taskStatusFilter');
+            const phaseSelect = document.getElementById('taskPhaseFilter');
+            if (statusSelect) {
+                statusSelect.addEventListener('change', applyTaskFilters);
+            }
+            if (phaseSelect) {
+                phaseSelect.addEventListener('change', function() {
+                    currentPhaseFilter = this.value || 'all';
+                    try { localStorage.setItem('currentPhaseFilter', String(currentPhaseFilter)); } catch (e) {}
+                    displayTasks(filteredTasks);
+                });
+            }
+            const refreshImportantTasksBtn = document.getElementById('refreshImportantTasksBtn');
+            if (refreshImportantTasksBtn) {
+                refreshImportantTasksBtn.addEventListener('click', refreshImportantTasks);
+            }
+            
+            const notificationBtn = document.getElementById('notificationBtn');
+            if (notificationBtn) {
+                notificationBtn.addEventListener('click', toggleNotifications);
+            }
+            
+            // 新規プロジェクト作成ボタン
+            const newProjectBtn = document.getElementById('newProjectBtn');
+            if (newProjectBtn) {
+                newProjectBtn.addEventListener('click', openNewProjectModal);
+            }
+            
+            // タスク追加ボタン削除済み（イベント登録不要）
+            
+            // プロジェクト編集ボタン
+        const editProjectBtn = document.getElementById('editProjectBtn');
+        if (editProjectBtn) {
+            // 既存の包括的編集処理を使用（クライアント読込などを含む）
+            editProjectBtn.addEventListener('click', () => window.editProject && window.editProject());
+        }
+            
+            // プロジェクト削除ボタン
+            const deleteProjectBtn = document.getElementById('deleteProjectBtn');
+            if (deleteProjectBtn) {
+                deleteProjectBtn.addEventListener('click', openDeleteProjectModal);
+            }
+            
             // 一度開いていた場合は再表示
             if (localStorage.getItem('newProjectModalOpen') === 'true') {
                 // 必要データ読み込み後に復元
@@ -567,99 +861,46 @@
                     startNewProjectModalGuard();
                 });
             }
-            loadProjects();
             loadUserInfo();
-            setupEventListeners();
         });
 
-        // イベントリスナー設定
-        function setupEventListeners() {
-            // プロジェクト選択
-            document.getElementById('projectSelect').addEventListener('change', function() {
-                const projectId = this.value;
-                if (projectId) {
-                    // 選択されたプロジェクトをローカルストレージに保存
-                    localStorage.setItem('selectedProjectId', projectId);
-                    loadProject(projectId);
-                } else {
-                    // プロジェクト選択をクリア
-                    localStorage.removeItem('selectedProjectId');
-                    hideProjectInfo();
-                }
-            });
-
-            // 新規プロジェクトボタン
-            document.getElementById('newProjectBtn').addEventListener('click', function() {
-                openNewProjectModal();
-            });
-
-            // モーダル背景クリックを無効化（モーダル内の要素は除外）
-            document.querySelectorAll('.modal-overlay').forEach(overlay => {
-                overlay.addEventListener('click', function(e) {
-                    // モーダル内の要素がクリックされた場合は何もしない
-                    if (e.target.closest('.modal')) {
-                        return;
-                    }
-                    // 背景がクリックされた場合のみ無効化
-                    e.preventDefault();
-                    e.stopPropagation();
-                }, true);
-            });
-
-            // 入力変更の自動保存（新規プロジェクトフォーム）
-            ['projectName','newProjectClient','projectStartDate','projectEndDate'].forEach(id => {
-                const el = document.getElementById(id);
-                if (el) {
-                    el.addEventListener('input', saveNewProjectDraft);
-                    el.addEventListener('change', saveNewProjectDraft);
-                }
-            });
-
-            // タブ復帰時に新規プロジェクトモーダルを再表示
-            document.addEventListener('visibilitychange', () => {
-                if (!document.hidden && localStorage.getItem('newProjectModalOpen') === 'true') {
-                    document.getElementById('newProjectModal').style.display = 'block';
-                    loadNewProjectDraft();
-                }
-            });
-        }
 
         // デフォルトユーザー情報設定
         function setDefaultUserInfo() {
-            document.getElementById('userName').textContent = 'ゲスト';
-            document.getElementById('userRole').textContent = 'ゲスト';
-            console.log('デフォルトユーザー情報をゲストに設定しました');
+            const userName = document.getElementById('userName');
+            const userRole = document.getElementById('userRole');
+            
+            if (userName) userName.textContent = 'ゲスト';
+            if (userRole) userRole.textContent = 'ゲスト';
             updateRoleBasedVisibility('guest');
         }
 
         // ユーザー情報読み込み
         async function loadUserInfo() {
             try {
-                console.log('ユーザー情報を読み込み中...');
                 
                 // まず専用のプロフィールエンドポイントを試す
                 const response = await fetch('api.php?path=user/profile&t=' + Date.now(), { cache: 'no-store' });
                 const data = await response.json();
                 
-                console.log('プロフィールAPI応答:', data);
                 
                 if (data.success && data.name) {
-                    document.getElementById('userName').textContent = data.name;
-                    document.getElementById('userRole').textContent = getRoleText(data.role || 'guest');
+                    const userName = document.getElementById('userName');
+                    const userRole = document.getElementById('userRole');
+                    
+                    if (userName) userName.textContent = data.name;
+                    if (userRole) userRole.textContent = getRoleText(data.role || 'guest');
+                    
                     // 設定ボタン表示制御
                     const settingsBtn = document.getElementById('settingsBtn');
                     if (settingsBtn) settingsBtn.style.display = (data.role === 'manager' || data.role === 'technical') ? 'inline-block' : 'none';
                     updateRoleBasedVisibility(data.role);
-                    console.log('ユーザー情報設定完了:', data.name, data.role);
                 } else {
-                    console.log('認証されていません。ログインページにリダイレクトします');
                     // 未認証の場合はログインページにリダイレクト
                     window.location.href = 'login.html?message=' + encodeURIComponent('ログインが必要です');
                     return;
                 }
             } catch (error) {
-                console.error('ユーザー情報読み込みエラー:', error);
-                console.log('認証エラーのためログインページにリダイレクトします');
                 // エラーの場合もログインページにリダイレクト
                 window.location.href = 'login.html?message=' + encodeURIComponent('認証エラーが発生しました');
                 return;
@@ -692,53 +933,81 @@
         // プロジェクト一覧読み込み
         async function loadProjects() {
             try {
-                console.log('プロジェクト一覧を読み込み中...');
-                console.log('API URL:', `api.php?path=projects&t=${Date.now()}`);
                 
-                const response = await fetch(`api.php?path=projects&t=${Date.now()}`, { cache: 'no-store' });
-                console.log('レスポンスステータス:', response.status);
-                console.log('レスポンスヘッダー:', response.headers);
+                // ソート・フィルタパラメータの取得
+                const sortBy = document.getElementById('sortBy')?.value || 'created_at';
+                const sortOrder = document.getElementById('sortOrder')?.value || 'DESC';
+                const statusFilter = document.getElementById('statusFilter')?.value || '';
+                
+                const params = new URLSearchParams({
+                    sort_by: sortBy,
+                    sort_order: sortOrder,
+                    t: Date.now()
+                });
+                
+                if (statusFilter) {
+                    params.append('status_filter', statusFilter);
+                }
+                
+                const apiUrl = `api.php?path=projects&${params.toString()}`;
+                
+                const response = await fetch(apiUrl, { cache: 'no-store' });
                 
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
                 
                 const responseText = await response.text();
-                console.log('生レスポンス:', responseText);
                 
                 let data;
                 try {
                     data = JSON.parse(responseText);
                 } catch (parseError) {
-                    console.error('JSON解析エラー:', parseError);
-                    console.error('レスポンス内容:', responseText);
                     throw new Error('APIからの応答がJSON形式ではありません');
                 }
                 
-                console.log('プロジェクトAPI応答:', data);
                 
                 if (data.success && data.projects) {
-                    populateProjectSelect(data.projects);
+                    populateProjectList(data.projects);
+                    updateProjectStats(data.projects);
                 } else {
-                    console.error('プロジェクト読み込みエラー:', data.error || 'データが見つかりません');
                     showMessage('プロジェクトの読み込みに失敗しました: ' + (data.message || '不明なエラー'), 'error');
                 }
             } catch (error) {
-                console.error('プロジェクト読み込みエラー:', error);
                 showMessage('プロジェクトの読み込み中にエラーが発生しました: ' + error.message, 'error');
             }
         }
 
-        // プロジェクト選択肢を設定
-        function populateProjectSelect(projects) {
-            const select = document.getElementById('projectSelect');
-            select.innerHTML = '<option value="">プロジェクトを選択してください</option>';
+        // プロジェクト一覧を表示
+        function populateProjectList(projects) {
+            const container = document.getElementById('projectList');
+            if (!container) {
+                return;
+            }
             
-            projects.forEach(project => {
-                const option = document.createElement('option');
-                option.value = project.id;
-                option.textContent = project.name;
-                select.appendChild(option);
+            if (projects.length === 0) {
+                container.innerHTML = '<div class="empty">プロジェクトがありません</div>';
+                return;
+            }
+
+            const html = projects.map(project => `
+                <div class="project-item" data-project-id="${project.id}">
+                    <div class="project-item-name">${project.name}</div>
+                    <div class="project-item-meta">
+                        <span>${project.total_tasks || 0}タスク</span>
+                        <span class="project-item-status ${project.status}">${getStatusText(project.status)}</span>
+                    </div>
+                </div>
+            `).join('');
+
+            container.innerHTML = html;
+            
+            // プロジェクト項目にクリックイベントリスナーを追加
+            container.querySelectorAll('.project-item').forEach(item => {
+                item.addEventListener('click', function() {
+                    const projectId = this.getAttribute('data-project-id');
+                    selectProject(parseInt(projectId));
+                });
             });
             
             // 保存されたプロジェクトを復元
@@ -747,25 +1016,50 @@
                 // 保存されたプロジェクトが存在するかチェック
                 const projectExists = projects.some(project => project.id == savedProjectId);
                 if (projectExists) {
-                    select.value = savedProjectId;
-                    console.log('保存されたプロジェクトを復元:', savedProjectId);
                     // プロジェクトを自動的に読み込み
-                    loadProject(savedProjectId);
+                    selectProject(savedProjectId);
                 } else {
                     // 存在しないプロジェクトの場合はローカルストレージをクリア
                     localStorage.removeItem('selectedProjectId');
-                    console.log('保存されたプロジェクトが存在しないため、選択をクリアしました');
                 }
             }
             
-            console.log(`${projects.length}個のプロジェクトを読み込みました`);
+        }
+
+        // プロジェクト選択
+        function selectProject(projectId) {
+            // 選択状態を更新
+            document.querySelectorAll('.project-item').forEach(item => {
+                item.classList.remove('selected');
+            });
+            const selectedItem = document.querySelector(`[data-project-id="${projectId}"]`);
+            if (selectedItem) {
+                selectedItem.classList.add('selected');
+            }
+            
+            // 表示を切り替え
+            const noProjectSelected = document.getElementById('noProjectSelected');
+            const projectInfo = document.getElementById('projectInfo');
+            const taskSection = document.getElementById('taskSection');
+            
+            if (noProjectSelected) noProjectSelected.style.display = 'none';
+            if (projectInfo) projectInfo.style.display = 'block';
+            if (taskSection) taskSection.style.display = 'block';
+            
+            // プロジェクトを読み込み
+            loadProject(projectId);
+            
+            // ダッシュボードを更新
+            updateDashboardForCurrentProject();
+            
+            // 選択したプロジェクトをローカルストレージに保存
+            localStorage.setItem('selectedProjectId', projectId);
         }
 
         // プロジェクト読み込み
         async function loadProject(projectId) {
             try {
                 showLoading();
-                console.log('プロジェクトを読み込み中:', projectId);
                 
                 // プロジェクト詳細、タスク、フェーズを並行取得
                 const [projectResponse, tasksResponse, phasesResponse] = await Promise.all([
@@ -780,9 +1074,6 @@
                     phasesResponse.json()
                 ]);
 
-                console.log('プロジェクトデータ:', projectData);
-                console.log('タスクデータ:', tasksData);
-                console.log('フェーズデータ:', phasesData);
 
                 if (projectData.success && projectData.project) {
                     currentProject = projectData.project;
@@ -794,50 +1085,27 @@
                     }
                     
                     if (tasksData.success && tasksData.tasks) {
-                        console.log('=== タスクデータ取得成功 ===');
-                        console.log('タスクデータ取得成功:', tasksData.tasks);
-                        console.log('タスクデータの詳細:', JSON.stringify(tasksData.tasks, null, 2));
-                        
-                        // 各タスクのステータス、担当者、期限を確認
-                        tasksData.tasks.forEach((task, index) => {
-                            console.log(`タスク${index + 1} (ID: ${task.id}):`, {
-                                name: task.task_name || task.name,
-                                status: task.status,
-                                status_type: typeof task.status,
-                                assigned_to: task.assigned_to,
-                                assigned_to_name: task.assigned_to_name,
-                                planned_date: task.planned_date,
-                                full_task_data: task // 完全なタスクデータを表示
-                            });
-                            
-                            // ステータスが未定義の場合は警告
-                            if (task.status === undefined || task.status === null || task.status === '') {
-                                console.warn(`⚠️ タスク${index + 1} (${task.task_name || task.name}) のステータスが未定義です:`, task.status);
-                                console.warn('タスクの完全なデータ:', task);
-                            }
-                        });
-                        
+                        console.log('タスクデータ取得成功:', tasksData.tasks.length, '件');
                         allTasks = tasksData.tasks;
                         filteredTasks = [...allTasks]; // 直接コピー
-                        console.log('filteredTasks 設定完了:', filteredTasks);
+                        // フェーズプルダウン更新（空フェーズを除外）
+                        updateTaskPhaseDropdown(allTasks);
                         displayTasks(filteredTasks);
                         updateProgress();
                     } else {
                         console.log('タスクデータ取得失敗:', tasksData);
-                        console.log('タスクデータの詳細:', JSON.stringify(tasksData, null, 2));
                         allTasks = [];
                         filteredTasks = [];
+                        updateTaskPhaseDropdown([]);
                         displayTasks([]);
                         updateProgress();
                     }
                     
                     showProjectInfo();
                 } else {
-                    console.error('プロジェクト読み込みエラー:', projectData.error);
                     showMessage('プロジェクトの読み込みに失敗しました', 'error');
                 }
             } catch (error) {
-                console.error('プロジェクト読み込みエラー:', error);
                 showMessage('プロジェクトの読み込み中にエラーが発生しました', 'error');
             } finally {
                 hideLoading();
@@ -847,23 +1115,36 @@
 
         // プロジェクト情報表示
         function displayProject(project) {
-            document.getElementById('projectName').textContent = project.name || '不明なプロジェクト';
-            document.getElementById('projectClientInfo').textContent = `発注者: ${project.client_name || '不明'}`;
-            const end = project.end_date || project.target_end_date || '';
-            document.getElementById('projectPeriod').textContent = `期間: ${formatDate(project.start_date)} - ${formatDate(end)}`;
-            document.getElementById('projectStatus').textContent = getStatusText(project.status);
+            const projectName = document.getElementById('projectName');
+            const projectPeriod = document.getElementById('projectPeriod');
+            const projectStatus = document.getElementById('projectStatus');
             
+            if (projectName) projectName.textContent = project.name || '不明なプロジェクト';
+            if (projectPeriod) {
+                const end = project.end_date || project.target_end_date || '';
+                projectPeriod.textContent = `期間: ${formatDate(project.start_date)} - ${formatDate(end)}`;
+            }
+            if (projectStatus) projectStatus.textContent = getStatusText(project.status);
+            
+            // プロジェクト情報を表示
+            showProjectInfo();
         }
 
         // プロジェクト情報表示/非表示
         function showProjectInfo() {
-            document.getElementById('projectInfo').style.display = 'block';
-            document.getElementById('taskSection').style.display = 'block';
+            const projectInfo = document.getElementById('projectInfo');
+            const taskSection = document.getElementById('taskSection');
+            
+            if (projectInfo) projectInfo.style.display = 'block';
+            if (taskSection) taskSection.style.display = 'block';
         }
 
         function hideProjectInfo() {
-            document.getElementById('projectInfo').style.display = 'none';
-            document.getElementById('taskSection').style.display = 'none';
+            const projectInfo = document.getElementById('projectInfo');
+            const taskSection = document.getElementById('taskSection');
+            
+            if (projectInfo) projectInfo.style.display = 'none';
+            if (taskSection) taskSection.style.display = 'none';
             currentProject = null;
             allTasks = [];
             filteredTasks = [];
@@ -871,18 +1152,32 @@
 
         // フェーズフィルター設定（現在の選択を維持）
         function setupPhaseFilters(phases) {
+            console.log('setupPhaseFilters呼び出し:', phases);
             const filtersContainer = document.getElementById('taskFilters');
+            if (!filtersContainer) {
+                console.log('taskFilters要素が見つかりません');
+                return;
+            }
+            
             filtersContainer.innerHTML = '';
 
             if (phases.length > 0) {
+                console.log('フェーズ数:', phases.length);
                 // 直近の選択を優先（ローカル保存があればそれも考慮）
                 const savedPhaseId = localStorage.getItem('currentPhaseFilter');
-                let desiredPhaseId = currentPhaseFilter || savedPhaseId;
+                let desiredPhaseId = currentPhaseFilter || savedPhaseId || 'all';
                 const exists = phases.some(p => String(p.id) === String(desiredPhaseId));
-                if (!exists) {
-                    desiredPhaseId = phases[0].id;
+                if (!exists && desiredPhaseId !== 'all') {
+                    desiredPhaseId = 'all';
                 }
                 currentPhaseFilter = desiredPhaseId;
+
+                // 「すべて」フィルターボタンを追加
+                const allBtn = document.createElement('button');
+                allBtn.className = currentPhaseFilter === 'all' ? 'filter-btn active' : 'filter-btn';
+                allBtn.textContent = 'すべて';
+                allBtn.onclick = () => filterByPhase('all');
+                filtersContainer.appendChild(allBtn);
 
                 // 各フェーズフィルター
                 phases.forEach((phase) => {
@@ -916,22 +1211,32 @@
 
         // タスク表示
         function displayTasks(tasks) {
-            console.log('displayTasks 呼び出し:', tasks);
-            console.log('displayTasks の詳細:', JSON.stringify(tasks, null, 2));
+            console.log('displayTasks呼び出し:', tasks ? tasks.length : 'null', '件');
             const taskList = document.getElementById('taskList');
-            console.log('taskList 要素:', taskList);
+            
+            if (!taskList) {
+                console.log('taskList要素が見つかりません');
+                return;
+            }
             
             if (!tasks || tasks.length === 0) {
-                console.log('タスクが空または未定義');
+                console.log('タスクが空のため空メッセージを表示');
                 taskList.innerHTML = '<div class="empty">タスクがありません</div>';
                 return;
             }
 
             // フェーズによるフィルタリング
-            let filteredByPhase = tasks.filter(task => {
-                const phase = allPhases.find(p => p.name === task.phase_name);
-                return phase && phase.id == currentPhaseFilter;
-            });
+            let filteredByPhase = tasks;
+            console.log('現在のフェーズフィルター:', currentPhaseFilter);
+            if (currentPhaseFilter !== 'all') {
+                filteredByPhase = tasks.filter(task => {
+                    const phase = allPhases.find(p => p.name === task.phase_name);
+                    return phase && phase.id == currentPhaseFilter;
+                });
+                console.log('フィルタリング後:', filteredByPhase.length, '件');
+            } else {
+                console.log('すべてのタスクを表示');
+            }
 
             // フェーズごとにグループ化
             const tasksByPhase = {};
@@ -946,6 +1251,11 @@
             // フェーズごとに表示
             taskList.innerHTML = '';
             Object.entries(tasksByPhase).forEach(([phaseName, phaseTasks]) => {
+                // 空のフェーズは表示しない
+                if (phaseTasks.length === 0) {
+                    return;
+                }
+                
                 const phaseContainer = document.createElement('div');
                 phaseContainer.className = 'phase-container';
                 
@@ -1062,57 +1372,54 @@
         // タスク編集
         async function editTask(taskId) {
             try {
-                console.log('タスク編集開始:', taskId);
+                console.log('editTask呼び出し:', taskId);
                 
                 // ユーザー一覧を先に読み込む
                 await loadUsers();
                 
-                const task = filteredTasks.find(t => t.id == taskId);
+                // タスクを検索（filteredTasksとallTasksの両方を確認）
+                let task = filteredTasks.find(t => t.id == taskId);
                 if (!task) {
-                    console.error('タスクが見つかりません:', taskId);
+                    task = allTasks.find(t => t.id == taskId);
+                }
+                
+                if (!task) {
+                    console.log('タスクが見つかりません:', taskId);
                     showMessage('タスクが見つかりません', 'error');
                     return;
                 }
+                
+                console.log('タスクが見つかりました:', task);
 
-                console.log('編集対象タスク:', task);
-                console.log('assigned_to 値:', task.assigned_to);
 
                 // タスク詳細を取得
+                console.log('タスク詳細を取得中:', taskId);
                 const response = await fetch(`api.php?path=tasks/${taskId}`);
-                const data = await response.json();
                 
-                console.log('タスク詳細API応答:', data);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                console.log('タスク詳細取得結果:', data);
                 
                 if (data.success && data.task) {
                     const taskData = data.task;
-                    console.log('API取得タスク assigned_to:', taskData.assigned_to);
-                    
                     // モーダルにデータを設定
-                    console.log('=== タスク編集データ設定開始 ===');
-                    console.log('API取得タスクデータ:', taskData);
                     
                     document.getElementById('taskId').value = taskData.id;
-                    console.log('タスクID設定:', taskData.id);
                     
                     document.getElementById('taskTitle').textContent = taskData.task_name || taskData.name;
-                    console.log('タスクタイトル設定:', taskData.task_name || taskData.name);
                     
                     // ステータス設定
-                    console.log('API取得タスク status:', taskData.status);
                     const statusValue = taskData.status || 'not_started';
                     document.getElementById('taskStatus').value = statusValue;
-                    console.log('ステータスフィールド設定後の値:', document.getElementById('taskStatus').value);
-                    console.log('ステータス選択肢の確認:', document.getElementById('taskStatus').options);
                     
                     // 期限フィールドの設定
                     const plannedDate = taskData.planned_date || '';
-                    console.log('API取得タスク planned_date:', taskData.planned_date);
-                    console.log('期限フィールドに設定する値:', plannedDate);
                     document.getElementById('taskDueDate').value = plannedDate;
-                    console.log('期限フィールド設定後の値:', document.getElementById('taskDueDate').value);
                     
                     document.getElementById('taskContentDisplay').textContent = taskData.template_content || '内容なし';
-                    console.log('=== タスク編集データ設定完了 ===');
                     
                     // メタ情報表示
                     document.getElementById('taskPhase').textContent = task.phase_name || '未分類';
@@ -1122,17 +1429,10 @@
                     await loadTaskManuals(taskData.task_name || taskData.name);
                     
                     // 担当者設定（ユーザー読み込み後に設定）
-                    console.log('API取得タスク assigned_to:', taskData.assigned_to);
-                    console.log('API取得タスク assigned_to_name:', taskData.assigned_to_name);
-                    
                     if (taskData.assigned_to) {
-                        console.log('担当者を設定中:', taskData.assigned_to);
                         document.getElementById('taskAssignee').value = taskData.assigned_to;
-                        console.log('担当者フィールド設定後の値:', document.getElementById('taskAssignee').value);
                     } else {
-                        console.log('担当者が未設定');
                         document.getElementById('taskAssignee').value = '';
-                        console.log('担当者フィールドを空に設定');
                     }
                     
                     // メモ履歴読み込み
@@ -1143,13 +1443,13 @@
                     
                     // モーダル表示
                     document.getElementById('taskModal').style.display = 'block';
-            } else {
-                    console.error('タスク詳細読み込みエラー:', data.error);
-                    showMessage('タスク詳細の読み込みに失敗しました', 'error');
+                } else {
+                    console.error('タスク詳細の読み込みに失敗:', data);
+                    showMessage('タスク詳細の読み込みに失敗しました: ' + (data.message || '不明なエラー'), 'error');
                 }
             } catch (error) {
-                console.error('タスク編集エラー:', error);
-                showMessage('タスク編集中にエラーが発生しました', 'error');
+                console.error('タスク編集中のエラー:', error);
+                showMessage('タスク編集中にエラーが発生しました: ' + error.message, 'error');
             }
         }
 
@@ -1159,12 +1459,10 @@
                 const taskAssigneeSelect = document.getElementById('taskAssignee');
                 const currentValue = taskAssigneeSelect.value; // 現在の値を保存
                 
-                console.log('ユーザー一覧読み込み中..., 現在の値:', currentValue);
                 
                 const response = await fetch('api.php?path=users');
                 const data = await response.json();
                 
-                console.log('ユーザーAPI応答:', data);
                 
                 if (data.success && data.users) {
                     allUsers = data.users;
@@ -1182,35 +1480,26 @@
                     // 保存していた値を復元
                     if (currentValue) {
                         taskAssigneeSelect.value = currentValue;
-                        console.log('担当者値を復元:', currentValue, '→', taskAssigneeSelect.value);
                     }
                     
-                    console.log(`${data.users.length}人のユーザーを読み込みました`);
             } else {
-                    console.error('ユーザー読み込みエラー:', data.error);
                 }
             } catch (error) {
-                console.error('ユーザー読み込みエラー:', error);
             }
         }
 
         // タスクメモ読み込み
         async function loadTaskNotes(taskId) {
             try {
-                console.log('loadTaskNotes called with taskId:', taskId);
                 const response = await fetch(`api.php?path=tasks/${taskId}/notes&t=${Date.now()}`, { cache: 'no-store' });
                 const data = await response.json();
                 
-                console.log('loadTaskNotes response:', data);
                 
                 const notesHistory = document.getElementById('notesHistory');
                 
                 if (data.success && data.notes && data.notes.length > 0) {
-                    console.log('Found notes:', data.notes);
-                    console.log('Number of notes found:', data.notes.length);
                     notesHistory.innerHTML = '';
                     data.notes.forEach((note, index) => {
-                        console.log(`Processing note ${index + 1}:`, note);
                         const noteItem = document.createElement('div');
                         noteItem.className = 'note-item';
                         noteItem.setAttribute('data-note-id', note.id);
@@ -1237,11 +1526,9 @@
                         notesHistory.appendChild(noteItem);
                     });
             } else {
-                    console.log('No notes found or error:', data);
                     notesHistory.innerHTML = '<div class="note-item">メモはありません</div>';
                 }
             } catch (error) {
-                console.error('メモ読み込みエラー:', error);
                 document.getElementById('notesHistory').innerHTML = '<div class="note-item">メモの読み込みに失敗しました</div>';
             }
         }
@@ -1286,7 +1573,6 @@
                 }).join('');
                 linksWrap.style.display = 'block';
             } catch (e) {
-                console.warn('マニュアル読み込みエラー:', e);
                 const linksWrap = document.getElementById('taskManualLinks');
                 const list = document.getElementById('taskManualList');
                 if (linksWrap && list) {
@@ -1372,12 +1658,6 @@
                 user.name.toLowerCase().includes(query.toLowerCase())
             );
 
-            console.log('showUserSuggestions called:', {
-                query: query,
-                position: position,
-                allUsers: allUsers,
-                filteredUsers: filteredUsers
-            });
 
             if (filteredUsers.length === 0) {
                 hideUserSuggestions();
@@ -1398,13 +1678,11 @@
                 item.addEventListener('mousedown', (e) => {
                     e.preventDefault();
                     e.stopPropagation();
-                    console.log('User suggestion mousedown:', user.name);
                 });
                 
                 item.addEventListener('click', (e) => {
                     e.preventDefault();
                     e.stopPropagation();
-                    console.log('User suggestion clicked:', user.name);
                     selectUserSuggestion(item);
                 });
                 
@@ -1412,7 +1690,6 @@
                 item.addEventListener('touchend', (e) => {
                     e.preventDefault();
                     e.stopPropagation();
-                    console.log('User suggestion touchend:', user.name);
                     selectUserSuggestion(item);
                 });
                 
@@ -1425,7 +1702,6 @@
                 if (item) {
                     e.preventDefault();
                     e.stopPropagation();
-                    console.log('User suggestion clicked via delegation:', item.getAttribute('data-user-name'));
                     selectUserSuggestion(item);
                 }
             });
@@ -1445,6 +1721,60 @@
             });
         }
 
+        // タスクフェーズ用プルダウンを更新（空フェーズは除外）
+        function updateTaskPhaseDropdown(baseTasks) {
+            const select = document.getElementById('taskPhaseFilter');
+            if (!select) return;
+            const tasks = Array.isArray(baseTasks) ? baseTasks : allTasks;
+            // フェーズごとの件数
+            const phaseCountMap = {};
+            tasks.forEach(t => {
+                const name = t.phase_name || '未分類';
+                phaseCountMap[name] = (phaseCountMap[name] || 0) + 1;
+            });
+
+            const prevValue = select.value;
+            select.innerHTML = '<option value="">すべて</option>';
+            allPhases.forEach(phase => {
+                const count = phaseCountMap[phase.name] || 0;
+                if (count > 0) {
+                    const opt = document.createElement('option');
+                    opt.value = String(phase.id);
+                    opt.textContent = phase.name;
+                    select.appendChild(opt);
+                }
+            });
+
+            // 以前の選択が有効なら維持、無効なら「すべて」へ
+            if (prevValue && Array.from(select.options).some(o => o.value === prevValue)) {
+                select.value = prevValue;
+            } else {
+                select.value = '';
+            }
+        }
+
+        // ステータス/フェーズのフィルター適用
+        function applyTaskFilters() {
+            const statusSelect = document.getElementById('taskStatusFilter');
+            const phaseSelect = document.getElementById('taskPhaseFilter');
+            const status = statusSelect ? statusSelect.value : '';
+
+            let tasks = allTasks.slice();
+            if (status) {
+                tasks = tasks.filter(t => t.status === status);
+            }
+
+            filteredTasks = tasks;
+            // ドロップダウンの候補を更新（空フェーズ除外）
+            updateTaskPhaseDropdown(tasks);
+
+            // 現在のフェーズ選択を反映
+            currentPhaseFilter = phaseSelect && phaseSelect.value ? phaseSelect.value : 'all';
+            try { localStorage.setItem('currentPhaseFilter', String(currentPhaseFilter)); } catch (e) {}
+
+            displayTasks(filteredTasks);
+        }
+
         // ユーザー候補の選択
         function selectUserSuggestion(selectedItem) {
             const textarea = document.getElementById('newNote');
@@ -1453,14 +1783,6 @@
             const beforeMention = textarea.value.substring(0, mentionStartPos);
             const afterMention = textarea.value.substring(currentPos);
             
-            console.log('selectUserSuggestion called:', {
-                userName: userName,
-                mentionStartPos: mentionStartPos,
-                currentPos: currentPos,
-                beforeMention: beforeMention,
-                afterMention: afterMention,
-                originalValue: textarea.value
-            });
             
             // メンション部分を置き換え
             const newValue = beforeMention + '@' + userName + ' ' + afterMention;
@@ -1471,18 +1793,11 @@
             textarea.setSelectionRange(newCursorPos, newCursorPos);
             textarea.focus();
             
-            console.log('Text updated:', {
-                newValue: newValue,
-                newCursorPos: newCursorPos
-            });
             
             // メンションが追加された場合、要確認ステータスに自動変更
             const statusSelect = document.getElementById('taskStatus');
             if (statusSelect && statusSelect.value !== 'needs_confirmation') {
-                console.log('メンションが追加されたため、要確認ステータスに自動変更');
-                console.log('変更前のステータス:', statusSelect.value);
                 statusSelect.value = 'needs_confirmation';
-                console.log('変更後のステータス:', statusSelect.value);
                 
                 // 視覚的なフィードバック
                 statusSelect.style.backgroundColor = '#fff5f5';
@@ -1492,7 +1807,6 @@
                     statusSelect.style.borderColor = '';
                 }, 2000);
             } else {
-                console.log('既に要確認ステータスまたはステータス選択要素が見つかりません');
             }
             
             hideUserSuggestions();
@@ -1519,7 +1833,6 @@
                 event.preventDefault();
                 event.stopPropagation();
             }
-            console.log('editNote called with noteId:', noteId);
             
             // 編集フォームを表示
             document.getElementById(`note-edit-${noteId}`).style.display = 'block';
@@ -1537,7 +1850,6 @@
                 event.preventDefault();
                 event.stopPropagation();
             }
-            console.log('cancelNoteEdit called with noteId:', noteId);
             
             // 編集フォームを非表示
             document.getElementById(`note-edit-${noteId}`).style.display = 'none';
@@ -1552,7 +1864,6 @@
             }
             const content = document.getElementById(`note-edit-text-${noteId}`).value.trim();
             
-            console.log('saveNoteEdit called with noteId:', noteId, 'content:', content);
             
             if (!content) {
                 showMessage('メモ内容を入力してください', 'error');
@@ -1563,8 +1874,6 @@
                 const requestData = {
                     note: content
                 };
-                console.log('Sending edit request to:', `api.php?path=notes/${noteId}`);
-                console.log('Request data:', requestData);
                 
                 const response = await fetch(`api.php?path=notes/${noteId}&t=${Date.now()}`, {
                     method: 'PUT',
@@ -1574,9 +1883,7 @@
                     body: JSON.stringify(requestData)
                 });
                 
-                console.log('Edit response status:', response.status);
                 const data = await response.json();
-                console.log('Edit response data:', data);
                 
                 if (data.success) {
                     // 即座にメモ内容を更新
@@ -1588,11 +1895,9 @@
                     
                     showMessage('メモを更新しました', 'success');
                 } else {
-                    console.error('メモ更新エラー:', data.error || data.message);
                     showMessage('メモの更新に失敗しました: ' + (data.error || data.message), 'error');
                 }
             } catch (error) {
-                console.error('メモ更新エラー:', error);
                 showMessage('メモの更新中にエラーが発生しました', 'error');
             }
         }
@@ -1603,14 +1908,12 @@
                 event.preventDefault();
                 event.stopPropagation();
             }
-            console.log('deleteNote called with noteId:', noteId);
             
             if (!confirm('このメモを削除しますか？')) {
                 return;
             }
             
             try {
-                console.log('Sending delete request to:', `api.php?path=notes/${noteId}`);
                 
                 const response = await fetch(`api.php?path=notes/${noteId}&t=${Date.now()}`, {
                     method: 'DELETE',
@@ -1619,9 +1922,7 @@
                     }
                 });
                 
-                console.log('Delete response status:', response.status);
                 const data = await response.json();
-                console.log('Delete response data:', data);
                 
                 if (data.success) {
                     // 即座にメモ要素を削除（アニメーション付き）
@@ -1639,11 +1940,9 @@
                     
                     showMessage('メモを削除しました', 'success');
                 } else {
-                    console.error('メモ削除エラー:', data.error || data.message);
                     showMessage('メモの削除に失敗しました: ' + (data.error || data.message), 'error');
                 }
             } catch (error) {
-                console.error('メモ削除エラー:', error);
                 showMessage('メモの削除中にエラーが発生しました', 'error');
             }
         }
@@ -1657,7 +1956,6 @@
             const taskId = document.getElementById('taskId').value;
             const content = document.getElementById('newNote').value.trim();
             
-            console.log('addNote called with taskId:', taskId, 'content:', content);
             
             if (!content) {
                 showMessage('メモ内容を入力してください', 'error');
@@ -1673,8 +1971,6 @@
                 const requestData = {
                     note: content
                 };
-                console.log('Sending request to:', `api.php?path=tasks/${taskId}/notes`);
-                console.log('Request data:', requestData);
                 
                 const response = await fetch(`api.php?path=tasks/${taskId}/notes`, {
                     method: 'POST',
@@ -1684,12 +1980,9 @@
                     body: JSON.stringify(requestData)
                 });
                 
-                console.log('Response status:', response.status);
                 const data = await response.json();
-                console.log('Response data:', data);
                 
                 if (data.success) {
-                    console.log('メモ追加成功、即座にUIに反映中...');
                     
                     // 入力フィールドをクリア
                     document.getElementById('newNote').value = '';
@@ -1697,14 +1990,11 @@
                     // 即座にUIに新しいメモを追加
                     addMemoToUI(content, data.note_id || Date.now());
                     
-                    console.log('メモをUIに即座に反映完了');
                     showMessage('メモを追加しました', 'success');
                 } else {
-                    console.error('メモ追加エラー:', data.error || data.message);
                     showMessage('メモの追加に失敗しました: ' + (data.error || data.message), 'error');
                 }
             } catch (error) {
-                console.error('メモ追加エラー:', error);
                 showMessage('メモの追加中にエラーが発生しました', 'error');
             }
         }
@@ -1715,7 +2005,6 @@
             
             // 重複実行防止
             if (window.isSavingTask) {
-                console.log('タスク保存が既に実行中です');
                 return;
             }
             
@@ -1844,47 +2133,75 @@
         // 進捗更新
         function updateProgress() {
             if (!filteredTasks || filteredTasks.length === 0) {
-                document.getElementById('totalTasks').textContent = '0';
-                document.getElementById('completedTasks').textContent = '0';
-                document.getElementById('inProgressTasks').textContent = '0';
-                document.getElementById('needsConfirmationTasks').textContent = '0';
-                document.getElementById('overdueTasks').textContent = '0';
-                document.getElementById('progressFill').style.width = '0%';
-                document.getElementById('progressText').textContent = '0%';
+                const totalTasksEl = document.getElementById('totalTasks');
+                const notStartedTasksEl = document.getElementById('notStartedTasks');
+                const completedTasksEl = document.getElementById('completedTasks');
+                const inProgressTasksEl = document.getElementById('inProgressTasks');
+                const needsConfirmationTasksEl = document.getElementById('needsConfirmationTasks');
+                const overdueTasksEl = document.getElementById('overdueTasks');
+                const pendingTasksEl = document.getElementById('pendingTasks');
+                const notApplicableTasksEl = document.getElementById('notApplicableTasks');
+                const progressFillEl = document.getElementById('progressFill');
+                const progressTextEl = document.getElementById('progressText');
+                
+                if (totalTasksEl) totalTasksEl.textContent = '0';
+                if (notStartedTasksEl) notStartedTasksEl.textContent = '0';
+                if (completedTasksEl) completedTasksEl.textContent = '0';
+                if (inProgressTasksEl) inProgressTasksEl.textContent = '0';
+                if (needsConfirmationTasksEl) needsConfirmationTasksEl.textContent = '0';
+                if (overdueTasksEl) overdueTasksEl.textContent = '0';
+                if (pendingTasksEl) pendingTasksEl.textContent = '0';
+                if (notApplicableTasksEl) notApplicableTasksEl.textContent = '0';
+                if (progressFillEl) progressFillEl.style.width = '0%';
+                if (progressTextEl) progressTextEl.textContent = '0%';
                 return;
             }
 
             const total = filteredTasks.length;
+            const notStarted = filteredTasks.filter(task => task.status === 'not_started').length;
             const completed = filteredTasks.filter(task => task.status === 'completed').length;
             const inProgress = filteredTasks.filter(task => task.status === 'in_progress').length;
             const needsConfirmation = filteredTasks.filter(task => task.status === 'needs_confirmation').length;
+            const pending = filteredTasks.filter(task => task.status === 'pending').length;
+            const notApplicable = filteredTasks.filter(task => task.status === 'not_applicable').length;
             const overdue = filteredTasks.filter(task => {
                 return task.planned_date && new Date(task.planned_date) < new Date() && task.status !== 'completed';
             }).length;
 
             const progressPercent = total > 0 ? Math.round((completed / total) * 100) : 0;
 
-            document.getElementById('totalTasks').textContent = total;
-            document.getElementById('completedTasks').textContent = completed;
-            document.getElementById('inProgressTasks').textContent = inProgress;
-            document.getElementById('overdueTasks').textContent = overdue;
+            const totalTasksEl = document.getElementById('totalTasks');
+            const notStartedTasksEl = document.getElementById('notStartedTasks');
+            const completedTasksEl = document.getElementById('completedTasks');
+            const inProgressTasksEl = document.getElementById('inProgressTasks');
+            const overdueTasksEl = document.getElementById('overdueTasks');
+            const pendingTasksEl = document.getElementById('pendingTasks');
+            const notApplicableTasksEl = document.getElementById('notApplicableTasks');
+            const progressFillEl = document.getElementById('progressFill');
+            const progressTextEl = document.getElementById('progressText');
+            
+            if (totalTasksEl) totalTasksEl.textContent = total;
+            if (notStartedTasksEl) notStartedTasksEl.textContent = notStarted;
+            if (completedTasksEl) completedTasksEl.textContent = completed;
+            if (inProgressTasksEl) inProgressTasksEl.textContent = inProgress;
+            if (overdueTasksEl) overdueTasksEl.textContent = overdue;
+            if (pendingTasksEl) pendingTasksEl.textContent = pending;
+            if (notApplicableTasksEl) notApplicableTasksEl.textContent = notApplicable;
             
             // 要確認タスクの表示（要素が存在する場合のみ）
             const needsConfirmationElement = document.getElementById('needsConfirmationTasks');
             if (needsConfirmationElement) {
                 needsConfirmationElement.textContent = needsConfirmation;
             }
-            document.getElementById('progressFill').style.width = `${progressPercent}%`;
-            document.getElementById('progressText').textContent = `${progressPercent}%`;
+            if (progressFillEl) progressFillEl.style.width = `${progressPercent}%`;
+            if (progressTextEl) progressTextEl.textContent = `${progressPercent}%`;
         }
 
         // 新規プロジェクトモーダル関連
         async function openNewProjectModal() {
             try {
-                console.log('=== 新規プロジェクトモーダル表示開始 ===');
                 
                 // クライアント、フェーズを並行読み込み
-                console.log('データ読み込み開始...');
                 await Promise.allSettled([
                     loadClients(),
                     loadPhases()
@@ -1901,18 +2218,11 @@
                     }
                 });
                 
-                console.log('データ読み込み完了');
-                console.log('allClients:', allClients);
-                console.log('allPhases:', allPhases);
-                console.log('allTemplates:', allTemplates);
                 
                 // 発注者セレクトボックスが正しく設定されているか確認
                 const clientSelect = document.getElementById('newProjectClient');
                 if (clientSelect) {
-                    console.log('新規プロジェクト発注者セレクトボックス:', clientSelect);
-                    console.log('選択肢数:', clientSelect.options.length);
                 } else {
-                    console.error('newProjectClient セレクトボックスが見つかりません');
                 }
                 
                 document.getElementById('newProjectModal').style.display = 'block';
@@ -1920,9 +2230,7 @@
                 // 途中の下書きがあれば復元
                 loadNewProjectDraft();
                 startNewProjectModalGuard();
-                console.log('新規プロジェクトモーダル表示完了');
             } catch (error) {
-                console.error('新規プロジェクトモーダル表示エラー:', error);
                 showMessage('モーダルの表示に失敗しました', 'error');
             }
         }
@@ -1937,31 +2245,23 @@
         // クライアント読み込み
         async function loadClients() {
             try {
-                console.log('クライアント読み込み開始...');
                 const response = await fetch(`api.php?path=clients&t=${Date.now()}`, { cache: 'no-store' });
-                console.log('クライアントAPI応答:', response.status);
                 
                 const data = await response.json();
-                console.log('クライアントデータ:', data);
                 
                 if (data.success && data.clients) {
                     allClients = data.clients;
-                    console.log('クライアント取得成功:', allClients);
                     populateClientSelect();
                 } else {
-                    console.error('クライアント読み込み失敗:', data.error || 'データが見つかりません');
                 }
             } catch (error) {
-                console.error('クライアント読み込みエラー:', error);
             }
         }
 
         function populateClientSelect() {
-            console.log('populateClientSelect called with allClients:', allClients);
             const selects = ['newProjectClient', 'editProjectClient'];
             selects.forEach(selectId => {
                 const select = document.getElementById(selectId);
-                console.log(`Select element ${selectId}:`, select);
                 if (select) {
                     select.innerHTML = '<option value="">発注者を選択</option>';
                     allClients.forEach(client => {
@@ -1969,11 +2269,8 @@
                         option.value = client.id;
                         option.textContent = client.name;
                         select.appendChild(option);
-                        console.log(`Added client option: ${client.name} (ID: ${client.id})`);
                     });
-                    console.log(`Client select ${selectId} populated with ${allClients.length} clients`);
                 } else {
-                    console.error(`Select element ${selectId} not found`);
                 }
             });
         }
@@ -1987,6 +2284,8 @@
                 if (data.success && data.phases) {
                     allPhases = data.phases;
                     setupTemplateFilters();
+                    // タスクフィルターも設定
+                    setupPhaseFilters(allPhases);
                 }
             } catch (error) {
                 console.error('フェーズ読み込みエラー:', error);
@@ -1996,6 +2295,10 @@
         // テンプレートフィルター設定
         function setupTemplateFilters() {
             const filtersContainer = document.getElementById('templateFilters');
+            if (!filtersContainer) {
+                return;
+            }
+            
             filtersContainer.innerHTML = '';
 
             // 全体フィルターは非表示（最初のフェーズをデフォルト選択）
@@ -2022,20 +2325,16 @@
         // テンプレート読み込み
         async function loadTemplates() {
             try {
-                console.log('テンプレート読み込み開始...');
                 const response = await fetch(`api.php?path=templates&t=${Date.now()}`, { cache: 'no-store' });
-                console.log('テンプレートAPI応答:', response.status);
                 
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
                 
                 const data = await response.json();
-                console.log('テンプレートデータ:', data);
                 
                 if (data.success && data.templates) {
                     allTemplates = data.templates;
-                    console.log('テンプレート取得成功:', allTemplates);
                     
                     // フェーズが既に読み込まれている場合は、最初のフェーズのテンプレートを表示
                     if (allPhases.length > 0) {
@@ -2044,12 +2343,10 @@
                         displayTemplates(allTemplates);
                     }
                 } else {
-                    console.error('テンプレート読み込み失敗:', data.error || data.message || 'データが見つかりません');
                     allTemplates = [];
                     displayTemplates([]);
                 }
             } catch (error) {
-                console.error('テンプレート読み込みエラー:', error);
                 allTemplates = [];
                 displayTemplates([]);
             }
@@ -2057,8 +2354,6 @@
 
         // テンプレートフィルタリング
         function filterTemplates(phaseId) {
-            console.log('filterTemplates called with phaseId:', phaseId);
-            
             // フェーズIDからフェーズ名を取得
             const phase = allPhases.find(p => p.id == phaseId);
             if (!phase) {
@@ -2067,12 +2362,14 @@
             }
             
             const phaseName = phase.name;
-            console.log('Found phase name:', phaseName);
             
             // フィルターボタンのアクティブ状態更新
-            document.querySelectorAll('#templateFilters .filter-btn').forEach(btn => {
-                btn.classList.remove('active');
-            });
+            const filterBtns = document.querySelectorAll('#templateFilters .filter-btn');
+            if (filterBtns.length > 0) {
+                filterBtns.forEach(btn => {
+                    btn.classList.remove('active');
+                });
+            }
             
             // クリックされたボタンをアクティブにする
             const clickedBtn = document.querySelector(`#templateFilters .filter-btn[data-phase-id="${phaseId}"]`);
@@ -2082,19 +2379,12 @@
 
             // フェーズ名でテンプレートをフィルタリング
             const filtered = allTemplates.filter(template => template.phase_name === phaseName);
-            console.log('Filtered templates for phase', phaseName, ':', filtered);
             displayTemplates(filtered);
         }
 
         // テンプレート表示
         function displayTemplates(templates) {
-            console.log('displayTemplates called with templates:', templates);
-            if (templates && templates.length > 0) {
-                console.log('First template structure:', templates[0]);
-                console.log('Template properties:', Object.keys(templates[0]));
-            }
             const container = document.getElementById('templateGroups');
-            console.log('Template container element:', container);
             
             if (!container) {
                 console.error('Template container element not found');
@@ -2104,12 +2394,9 @@
             container.innerHTML = '';
 
             if (!templates || templates.length === 0) {
-                console.log('No templates to display');
                 container.innerHTML = '<div class="empty">テンプレートがありません</div>';
                 return;
             }
-            
-            console.log(`Displaying ${templates.length} templates`);
 
             // フェーズごとにグループ化
             const templatesByPhase = {};
@@ -2136,12 +2423,7 @@
                 templateItems.className = 'template-items';
                 
                 phaseTemplates.forEach(template => {
-                    console.log('Creating template item for:', template);
-                    console.log('Template task_name:', template.task_name);
-                    console.log('Template content:', template.content);
-                    
                     const isSelected = selectedTemplateIds.has(template.id.toString());
-                    console.log('Template', template.id, 'is selected:', isSelected);
                     
                     const item = document.createElement('div');
                     item.className = 'template-item';
@@ -2169,7 +2451,6 @@
                         }
                         saveSelectedTemplatesToStorage();
                         updateSelectedCount();
-                        console.log('Selected templates:', Array.from(selectedTemplateIds));
                     });
                     
                     templateItems.appendChild(item);
@@ -2186,7 +2467,6 @@
         function updateSelectedCount() {
             const count = selectedTemplateIds.size;
             document.getElementById('selectedCount').textContent = count;
-            console.log('Updated selected count:', count);
         }
 
         // すべて選択
@@ -2209,8 +2489,6 @@
             
             saveSelectedTemplatesToStorage();
             updateSelectedCount();
-            console.log('All templates selected for phase:', activePhaseText);
-            console.log('Selected templates:', Array.from(selectedTemplateIds));
         }
 
         // すべて解除
@@ -2233,8 +2511,6 @@
             
             saveSelectedTemplatesToStorage();
             updateSelectedCount();
-            console.log('All templates deselected for phase:', activePhaseText);
-            console.log('Selected templates:', Array.from(selectedTemplateIds));
         }
 
         // プロジェクト作成
@@ -2249,11 +2525,6 @@
                 const startDate = formData.get('start_date');
                 const endDate = formData.get('end_date');
                 
-                console.log('フォームデータ検証:');
-                console.log('- プロジェクト名:', name);
-                console.log('- 発注者ID:', clientId);
-                console.log('- 開始日:', startDate);
-                console.log('- 終了日:', endDate);
                 
                 // 必須フィールドの検証
                 if (!name) {
@@ -2292,8 +2563,6 @@
                     templates: selectedTemplates
                 };
 
-                console.log('プロジェクト作成データ:', projectData);
-
                 const response = await fetch('api.php?path=projects', {
                     method: 'POST',
                     headers: {
@@ -2302,21 +2571,15 @@
                     body: JSON.stringify(projectData)
                 });
 
-                console.log('プロジェクト作成レスポンス:', response.status);
-
                 const data = await response.json();
-                console.log('プロジェクト作成レスポンスデータ:', data);
 
                 if (data.success) {
-                    console.log('プロジェクト作成成功');
                     showMessage('プロジェクトを作成しました', 'success');
                     closeNewProjectModal(); // 保存時のみクローズ
                     await loadProjects();
-                    
                     // 新しく作成されたプロジェクトを選択
                     if (data.project_id) {
-                        document.getElementById('projectSelect').value = data.project_id;
-                        await loadProject(data.project_id);
+                        selectProject(parseInt(data.project_id));
                     }
                 } else {
                     console.error('プロジェクト作成エラー:', data.error || data.message);
@@ -2374,11 +2637,6 @@
                     status: document.getElementById('editProjectStatus').value
                 };
 
-                console.log('=== プロジェクト更新開始 ===');
-                console.log('プロジェクト更新データ:', formData);
-                console.log('送信するプロジェクトID:', formData.id);
-                console.log('送信するプロジェクト名:', formData.name);
-                console.log('送信するクライアントID:', formData.client_id);
 
                 const response = await fetch(`api.php?path=projects/${formData.id}`, {
                     method: 'PUT',
@@ -2388,18 +2646,13 @@
                     body: JSON.stringify(formData)
                 });
 
-                console.log('プロジェクト更新レスポンス:', response.status);
-
                 const data = await response.json();
-                console.log('プロジェクト更新レスポンスデータ:', data);
 
                 if (data.success) {
-                    console.log('プロジェクト更新成功');
                     showMessage('プロジェクトを更新しました', 'success');
                     closeEditProjectModal();
                     await loadProjects();
                     await loadProject(formData.id);
-                    console.log('プロジェクト更新処理完了');
                 } else {
                     console.error('プロジェクト更新エラー:', data.error || data.message);
                     showMessage('プロジェクトの更新に失敗しました: ' + (data.error || data.message || '不明なエラー'), 'error');
@@ -2428,14 +2681,12 @@
         async function confirmDeleteProject() {
             try {
                 const projectId = currentProject.id;
-                console.log('プロジェクト削除実行:', projectId);
 
                 const response = await fetch(`api.php?path=projects/${projectId}`, {
                     method: 'DELETE'
                 });
 
                 const data = await response.json();
-                console.log('削除API応答:', data);
 
                 if (data.success) {
                     showMessage('プロジェクトを削除しました', 'success');
@@ -2444,7 +2695,6 @@
                     // ローカルストレージからも削除
                     localStorage.removeItem('selectedProjectId');
                     await loadProjects();
-                    document.getElementById('projectSelect').value = '';
                 } else {
                     console.error('プロジェクト削除エラー:', data.error);
                     showMessage('プロジェクトの削除に失敗しました: ' + (data.error || '不明なエラー'), 'error');
@@ -2480,14 +2730,11 @@
 
         // ユーティリティ関数
         function formatDate(dateString) {
-            console.log('formatDate called with:', dateString);
             if (!dateString) {
-                console.log('formatDate: empty dateString, returning empty string');
                 return '';
             }
             const date = new Date(dateString);
             const formatted = date.toLocaleDateString('ja-JP');
-            console.log('formatDate result:', formatted);
             return formatted;
         }
 
@@ -2512,11 +2759,8 @@
 
         // 確認対象者を取得
         function getConfirmationTarget(task) {
-            console.log('getConfirmationTarget called with task:', task);
-            
             // タスクのメモから@メンションを検索（日本語対応）
             if (task.notes) {
-                console.log('タスクのメモを確認:', task.notes);
                 
                 // より柔軟なメンション検索（日本語、英数字、記号に対応）
                 const mentionMatches = task.notes.match(/@([^\s@]+)/g);
@@ -2524,19 +2768,16 @@
                     // 最新のメンションを取得
                     const latestMention = mentionMatches[mentionMatches.length - 1];
                     const mentionedUser = latestMention.replace('@', '');
-                    console.log('メンションされたユーザー:', mentionedUser);
                     return mentionedUser;
                 }
             }
             
             // メモがない場合は担当者を確認対象とする
             if (task.assigned_to_name) {
-                console.log('担当者を確認対象に設定:', task.assigned_to_name);
                 return task.assigned_to_name;
             }
             
             // 担当者もない場合は管理者
-            console.log('デフォルト確認対象: 管理者');
             return '管理者';
         }
 
@@ -2591,16 +2832,26 @@
 
         // ローディング表示/非表示
         function showLoading() {
-            document.getElementById('loadingOverlay').style.display = 'block';
+            const loadingOverlay = document.getElementById('loadingOverlay');
+            if (loadingOverlay) {
+                loadingOverlay.style.display = 'block';
+            }
         }
 
         function hideLoading() {
-            document.getElementById('loadingOverlay').style.display = 'none';
+            const loadingOverlay = document.getElementById('loadingOverlay');
+            if (loadingOverlay) {
+                loadingOverlay.style.display = 'none';
+            }
         }
 
         // メッセージ表示
         function showMessage(message, type = 'info') {
             const container = document.getElementById('messageContainer');
+            if (!container) {
+                return;
+            }
+            
             const messageDiv = document.createElement('div');
             messageDiv.className = `message message-${type}`;
             messageDiv.textContent = message;
@@ -2655,6 +2906,10 @@
         // プロジェクトのタスク一覧を編集画面に表示
         function displayProjectTasksForEdit(tasks) {
             const tasksList = document.getElementById('projectTasksList');
+            if (!tasksList) {
+                return;
+            }
+            
             tasksList.innerHTML = '';
             
             if (!tasks || tasks.length === 0) {
@@ -3003,15 +3258,11 @@
                 // チェックボックスのイベントリスナー
                 const checkbox = item.querySelector('input[type="checkbox"]');
                 checkbox.addEventListener('change', (e) => {
-                    console.log('Checkbox changed for template:', template.id, 'checked:', e.target.checked);
-                    
                     if (e.target.checked) {
                         this.state.selectedTemplateIds.add(template.id.toString());
                     } else {
                         this.state.selectedTemplateIds.delete(template.id.toString());
                     }
-                    
-                    console.log('Current selectedTemplateIds:', Array.from(this.state.selectedTemplateIds));
                     
                     // 複数回試行して確実に更新
                     this.updateSelectedCount();
@@ -3042,8 +3293,6 @@
                     return;
                 }
                 
-                console.log('Rendering summary for mode:', this.config.mode);
-                console.log('Using container class:', summaryContainer.className);
                 
                 if (this.config.mode === 'new_project') {
                     summaryContainer.innerHTML = `
@@ -3058,7 +3307,6 @@
                     `;
                 }
                 
-                console.log('Summary rendered, selectedCount element created in:', summaryContainer.className);
             },
             
             // アクティブフェーズを設定
@@ -3090,8 +3338,6 @@
             // 選択済み数を更新
             updateSelectedCount: function() {
                 const count = this.state.selectedTemplateIds.size;
-                console.log('updateSelectedCount called, count:', count);
-                console.log('selectedTemplateIds:', Array.from(this.state.selectedTemplateIds));
                 
                 // プロジェクト編集モードの場合は、templateSelectionArea内の要素のみを更新
                 if (this.config.mode === 'edit_project') {
@@ -3103,25 +3349,23 @@
                             const countElement = actionsContainer.querySelector('#selectedCount');
                             if (countElement) {
                                 countElement.textContent = count;
-                                console.log('Updated edit mode selectedCount to:', count);
                             } else {
                                 // 要素が見つからない場合は再生成
                                 actionsContainer.innerHTML = `
                                     <span>選択済み: <span id="selectedCount">${count}</span>件</span>
                                     <span style="color: #666; font-size: 0.9em; margin-left: 10px;">※ チェックを変更すると自動的に更新されます</span>
                                 `;
-                                console.log('Recreated edit mode actions container with count:', count);
                             }
                         }
                     }
                 } else {
                     // 新規プロジェクトモードの場合は、全てのselectedCount要素を更新
                     const allCountElements = document.querySelectorAll('#selectedCount');
-                    console.log('Found selectedCount elements:', allCountElements.length);
+                    // console.log('Found selectedCount elements:', allCountElements.length);
                     
                     allCountElements.forEach((element, index) => {
                         element.textContent = count;
-                        console.log(`Updated selectedCount element ${index + 1} to:`, count);
+                        // console.log(`Updated selectedCount element ${index + 1} to:`, count);
                     });
                 }
             },
@@ -3220,7 +3464,7 @@
                         }
                     });
                     
-                    console.log('使用中のテンプレートID:', Array.from(usedTemplateIds));
+                    // console.log('使用中のテンプレートID:', Array.from(usedTemplateIds));
                 }
                 
                 // ライブラリ化したテンプレート選択機能を初期化
@@ -3230,7 +3474,7 @@
                     onSelectionChange: async function(selectedIds) {
                         // チェックボックス変更時に自動的にプロジェクトのタスクを更新
                         try {
-                            console.log('テンプレート選択が変更されました:', selectedIds);
+                            // console.log('テンプレート選択が変更されました:', selectedIds);
                             
                             // 現在のプロジェクトのタスクを取得
                             const currentTasks = allTasks.filter(task => task.project_id == currentProject.id);
@@ -3238,8 +3482,8 @@
                                 .filter(task => task.template_id)
                                 .map(task => task.template_id.toString());
                             
-                            console.log('現在のテンプレートID:', currentTemplateIds);
-                            console.log('選択されたテンプレートID:', selectedIds);
+                            // console.log('現在のテンプレートID:', currentTemplateIds);
+                            // console.log('選択されたテンプレートID:', selectedIds);
                             
                             // 追加するテンプレート（選択されたが現在存在しないもの）
                             const toAdd = selectedIds.filter(id => !currentTemplateIds.includes(id));
@@ -3247,8 +3491,8 @@
                             // 削除するテンプレート（現在存在するが選択されていないもの）
                             const toRemove = currentTemplateIds.filter(id => !selectedIds.includes(id));
                             
-                            console.log('追加するテンプレート:', toAdd);
-                            console.log('削除するテンプレート:', toRemove);
+                            // console.log('追加するテンプレート:', toAdd);
+                            // console.log('削除するテンプレート:', toRemove);
                             
                             // 削除処理
                             if (toRemove.length > 0) {
@@ -3267,7 +3511,7 @@
                                         
                                         const data = await response.json();
                                         if (data.success) {
-                                            console.log(`タスク ${task.id} を削除しました`);
+                                            // console.log(`タスク ${task.id} を削除しました`);
                                         }
                                     }
                                 }
@@ -3288,7 +3532,7 @@
                                 
                                 const data = await response.json();
                                 if (data.success) {
-                                    console.log('テンプレートからタスクを追加しました:', data.message);
+                                    // console.log('テンプレートからタスクを追加しました:', data.message);
                                 }
                             }
                             
@@ -3310,21 +3554,21 @@
                 
                 // 使用中のテンプレートにチェックを入れる
                 setTimeout(() => {
-                    console.log('Setting up initial template selection for project edit');
-                    console.log('usedTemplateIds:', usedTemplateIds);
+                    // console.log('Setting up initial template selection for project edit');
+                    // console.log('usedTemplateIds:', usedTemplateIds);
                     
                     usedTemplateIds.forEach(templateId => {
                         const checkbox = document.querySelector(`input[name="templates"][value="${templateId}"]`);
                         if (checkbox) {
                             checkbox.checked = true;
                             TemplateSelector.state.selectedTemplateIds.add(templateId);
-                            console.log(`Checked template ${templateId}`);
+                            // console.log(`Checked template ${templateId}`);
                         } else {
                             console.warn(`Checkbox not found for template ${templateId}`);
                         }
                     });
                     
-                    console.log('Final selectedTemplateIds:', Array.from(TemplateSelector.state.selectedTemplateIds));
+                    // console.log('Final selectedTemplateIds:', Array.from(TemplateSelector.state.selectedTemplateIds));
                     
                     // 複数回試行して確実に更新
                     TemplateSelector.updateSelectedCount();
@@ -3343,7 +3587,7 @@
                                     <span>選択済み: <span id="selectedCount">${currentCount}</span>件</span>
                                     <span style="color: #666; font-size: 0.9em; margin-left: 10px;">※ チェックを変更すると自動的に更新されます</span>
                                 `;
-                                console.log('Force updated summary container with count:', currentCount);
+                                // console.log('Force updated summary container with count:', currentCount);
                             }
                         }
                     }, 600);
@@ -3355,6 +3599,1105 @@
         }
         
         // 古いテンプレート選択機能は削除されました（ライブラリ化により置き換え）
+
+        // フィルタ適用機能
+        function applyFilters() {
+            // console.log('フィルタを適用中...');
+            loadProjects();
+        }
+
+        // プロジェクト統計の更新
+        function updateProjectStats(projects) {
+            const stats = {
+                total: projects.length,
+                planning: 0,
+                in_progress: 0,
+                completed: 0,
+                cancelled: 0,
+                totalTasks: 0,
+                completedTasks: 0,
+                notStartedTasks: 0,
+                needsConfirmationTasks: 0
+            };
+
+            projects.forEach(project => {
+                stats[project.status] = (stats[project.status] || 0) + 1;
+                stats.totalTasks += parseInt(project.total_tasks || 0);
+                stats.completedTasks += parseInt(project.completed_tasks || 0);
+                stats.notStartedTasks += parseInt(project.not_started_tasks || 0);
+                stats.needsConfirmationTasks += parseInt(project.needs_confirmation_tasks || 0);
+            });
+
+            // 統計表示の更新（グローバル統計として表示）
+            updateGlobalStats(stats);
+        }
+
+        // グローバル統計の更新
+        function updateGlobalStats(stats) {
+            // プロジェクト数統計
+            const projectStatsElement = document.getElementById('projectStats');
+            if (projectStatsElement) {
+                projectStatsElement.innerHTML = `
+                    <div class="stat-item">
+                        <span class="stat-number">${stats.total}</span>
+                        <span class="stat-label">総プロジェクト数</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-number">${stats.in_progress}</span>
+                        <span class="stat-label">進行中</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-number">${stats.completed}</span>
+                        <span class="stat-label">完了</span>
+                    </div>
+                `;
+            }
+
+            // タスク統計
+            const taskStatsElement = document.getElementById('taskStats');
+            if (taskStatsElement) {
+                taskStatsElement.innerHTML = `
+                    <div class="stat-item">
+                        <span class="stat-number">${stats.totalTasks}</span>
+                        <span class="stat-label">総タスク数</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-number">${stats.notStartedTasks}</span>
+                        <span class="stat-label">未着手</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-number">${stats.completedTasks}</span>
+                        <span class="stat-label">完了</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-number danger">${stats.needsConfirmationTasks}</span>
+                        <span class="stat-label">要確認</span>
+                    </div>
+                `;
+            }
+        }
+
+        // 要確認タスク一覧モーダル
+        async function openNeedsConfirmationModal() {
+            try {
+                document.getElementById('needsConfirmationModal').style.display = 'block';
+                await loadNeedsConfirmationTasks();
+            } catch (error) {
+                console.error('要確認タスク一覧表示エラー:', error);
+                showMessage('要確認タスク一覧の表示中にエラーが発生しました', 'error');
+            }
+        }
+
+        function closeNeedsConfirmationModal() {
+            document.getElementById('needsConfirmationModal').style.display = 'none';
+        }
+
+        async function loadNeedsConfirmationTasks() {
+            try {
+                let tasks = [];
+                if (currentProject) {
+                    const res = await fetch(`api.php?path=projects/${currentProject.id}/tasks&t=${Date.now()}`, { cache: 'no-store' });
+                    const data = await res.json();
+                    if (data.success && Array.isArray(data.tasks)) {
+                        tasks = data.tasks.filter(t => t.status === 'needs_confirmation');
+                    }
+                } else {
+                    const res = await fetch('api.php?path=tasks/needs_confirmation');
+                    const data = await res.json();
+                    if (data.success && Array.isArray(data.tasks)) {
+                        tasks = data.tasks;
+                    }
+                }
+                displayNeedsConfirmationTasks(tasks);
+            } catch (error) {
+                console.error('要確認タスク読み込みエラー:', error);
+                document.getElementById('needsConfirmationList').innerHTML = 
+                    '<div class="error">読み込みに失敗しました</div>';
+            }
+        }
+
+        function displayNeedsConfirmationTasks(tasks) {
+            const container = document.getElementById('needsConfirmationList');
+            
+            if (tasks.length === 0) {
+                container.innerHTML = '<div class="empty">要確認タスクはありません</div>';
+                return;
+            }
+
+            const html = tasks.map(task => `
+                <div class="task-list-item needs-confirmation" onclick="openTaskFromList(${task.project_id}, ${task.id})">
+                    <div class="task-item-header">
+                        <h4>${task.task_name}</h4>
+                        <span class="task-status status-needs_confirmation">要確認</span>
+                    </div>
+                    <div class="task-item-meta">
+                        <div class="task-project">プロジェクト: ${task.project_name}</div>
+                        <div class="task-assignee">担当者: ${task.assigned_to_name || '未割当'}</div>
+                        <div class="task-date">期限: ${task.planned_date ? formatDate(task.planned_date) : '期限なし'}</div>
+                    </div>
+                </div>
+            `).join('');
+
+            container.innerHTML = html;
+        }
+
+        // 期限切れタスク一覧モーダル
+        async function openOverdueTasksModal() {
+            try {
+                document.getElementById('overdueTasksModal').style.display = 'block';
+                await loadOverdueTasks();
+            } catch (error) {
+                console.error('期限切れタスク一覧表示エラー:', error);
+                showMessage('期限切れタスク一覧の表示中にエラーが発生しました', 'error');
+            }
+        }
+
+        function closeOverdueTasksModal() {
+            document.getElementById('overdueTasksModal').style.display = 'none';
+        }
+
+        async function loadOverdueTasks() {
+            try {
+                let tasks = [];
+                if (currentProject) {
+                    const res = await fetch(`api.php?path=projects/${currentProject.id}/tasks&t=${Date.now()}`, { cache: 'no-store' });
+                    const data = await res.json();
+                    if (data.success && Array.isArray(data.tasks)) {
+                        const now = new Date();
+                        tasks = data.tasks.filter(t => t.planned_date && new Date(t.planned_date) < now && t.status !== 'completed')
+                            .map(t => ({ ...t, days_overdue: Math.ceil((now - new Date(t.planned_date)) / (1000*60*60*24)) }));
+                    }
+                } else {
+                    const res = await fetch('api.php?path=tasks/overdue');
+                    const data = await res.json();
+                    if (data.success && Array.isArray(data.tasks)) {
+                        tasks = data.tasks;
+                    }
+                }
+                displayOverdueTasks(tasks);
+            } catch (error) {
+                console.error('期限切れタスク読み込みエラー:', error);
+                document.getElementById('overdueTasksList').innerHTML = 
+                    '<div class="error">読み込みに失敗しました</div>';
+            }
+        }
+
+        function displayOverdueTasks(tasks) {
+            const container = document.getElementById('overdueTasksList');
+            
+            if (tasks.length === 0) {
+                container.innerHTML = '<div class="empty">期限切れタスクはありません</div>';
+                return;
+            }
+
+            const html = tasks.map(task => `
+                <div class="task-list-item overdue" onclick="openTaskFromList(${task.project_id}, ${task.id})">
+                    <div class="task-item-header">
+                        <h4>${task.task_name}</h4>
+                        <span class="task-status status-overdue">遅延 ${task.days_overdue}日</span>
+                    </div>
+                    <div class="task-item-meta">
+                        <div class="task-project">プロジェクト: ${task.project_name}</div>
+                        <div class="task-assignee">担当者: ${task.assigned_to_name || '未割当'}</div>
+                        <div class="task-date overdue">期限: ${task.planned_date ? formatDate(task.planned_date) : '期限なし'}</div>
+                    </div>
+                </div>
+            `).join('');
+
+            container.innerHTML = html;
+        }
+
+        // タスク一覧からタスクを開く
+        async function openTaskFromList(projectId, taskId) {
+            try {
+                console.log('openTaskFromList呼び出し:', projectId, taskId);
+                
+                // プロジェクトを選択
+                selectProject(projectId);
+                
+                // 少し待ってからタスクを開く
+                setTimeout(() => {
+                    editTask(taskId);
+                }, 1000);
+                
+                // モーダルを閉じる
+                closeNeedsConfirmationModal();
+                closeOverdueTasksModal();
+            } catch (error) {
+                console.error('タスク表示エラー:', error);
+                showMessage('タスクの表示中にエラーが発生しました', 'error');
+            }
+        }
+
+        // 更新機能
+        function refreshNeedsConfirmationList() {
+            loadNeedsConfirmationTasks();
+        }
+
+        function refreshOverdueTasksList() {
+            loadOverdueTasks();
+        }
+
+        // 保留タスク一覧モーダル
+        async function openPendingTasksModal() {
+            try {
+                document.getElementById('pendingTasksModal').style.display = 'block';
+                await loadPendingTasks();
+            } catch (error) {
+                console.error('保留タスク一覧表示エラー:', error);
+                showMessage('保留タスク一覧の表示中にエラーが発生しました', 'error');
+            }
+        }
+
+        function closePendingTasksModal() {
+            document.getElementById('pendingTasksModal').style.display = 'none';
+        }
+
+        async function loadPendingTasks() {
+            try {
+                if (!currentProject) return;
+                const response = await fetch(`api.php?path=projects/${currentProject.id}/tasks`);
+                const data = await response.json();
+                if (data.success) {
+                    const tasks = (data.tasks || []).filter(t => t.status === 'pending');
+                    displayPendingTasks(tasks);
+                }
+            } catch (error) {
+                console.error('保留タスク読み込みエラー:', error);
+            }
+        }
+
+        function displayPendingTasks(tasks) {
+            const container = document.getElementById('pendingTasksList');
+            if (!container) return;
+            if (!tasks || tasks.length === 0) {
+                container.innerHTML = '<div class="empty">保留のタスクはありません</div>';
+                return;
+            }
+            const html = tasks.map(task => `
+                <div class="task-list-item pending" onclick="openTaskFromList(${task.project_id}, ${task.id})">
+                    <div class="task-item-header">
+                        <h4>${task.task_name}</h4>
+                        <span class="task-status">保留</span>
+                    </div>
+                    <div class="task-item-meta">
+                        <div class="task-project">プロジェクト: ${task.project_name || ''}</div>
+                        <div class="task-assignee">担当者: ${task.assigned_to_name || '未割当'}</div>
+                    </div>
+                </div>
+            `).join('');
+            container.innerHTML = html;
+        }
+
+        function refreshPendingTasksList() {
+            loadPendingTasks();
+        }
+
+        // 対象外タスク一覧モーダル
+        async function openNotApplicableTasksModal() {
+            try {
+                document.getElementById('notApplicableTasksModal').style.display = 'block';
+                await loadNotApplicableTasks();
+            } catch (error) {
+                console.error('対象外タスク一覧表示エラー:', error);
+                showMessage('対象外タスク一覧の表示中にエラーが発生しました', 'error');
+            }
+        }
+
+        function closeNotApplicableTasksModal() {
+            document.getElementById('notApplicableTasksModal').style.display = 'none';
+        }
+
+        async function loadNotApplicableTasks() {
+            try {
+                if (!currentProject) return;
+                const response = await fetch(`api.php?path=projects/${currentProject.id}/tasks`);
+                const data = await response.json();
+                if (data.success) {
+                    const tasks = (data.tasks || []).filter(t => t.status === 'not_applicable');
+                    displayNotApplicableTasks(tasks);
+                }
+            } catch (error) {
+                console.error('対象外タスク読み込みエラー:', error);
+            }
+        }
+
+        function displayNotApplicableTasks(tasks) {
+            const container = document.getElementById('notApplicableTasksList');
+            if (!container) return;
+            if (!tasks || tasks.length === 0) {
+                container.innerHTML = '<div class="empty">対象外のタスクはありません</div>';
+                return;
+            }
+            const html = tasks.map(task => `
+                <div class="task-list-item not-applicable" onclick="openTaskFromList(${task.project_id}, ${task.id})">
+                    <div class="task-item-header">
+                        <h4>${task.task_name}</h4>
+                        <span class="task-status">対象外</span>
+                    </div>
+                    <div class="task-item-meta">
+                        <div class="task-project">プロジェクト: ${task.project_name || ''}</div>
+                        <div class="task-assignee">担当者: ${task.assigned_to_name || '未割当'}</div>
+                    </div>
+                </div>
+            `).join('');
+            container.innerHTML = html;
+        }
+
+        function refreshNotApplicableTasksList() {
+            loadNotApplicableTasks();
+        }
+
+        // タスク追加モーダルを開く
+        function openAddTaskModal() {
+            if (!currentProject) {
+                showMessage('プロジェクトが選択されていません', 'error');
+                return;
+            }
+            
+            // フォームをリセット
+            document.getElementById('taskEditForm').reset();
+            document.getElementById('editTaskId').value = '';
+            document.getElementById('editTaskProjectId').value = currentProject.id;
+            document.getElementById('taskEditModalTitle').textContent = 'タスク追加';
+            
+            // フェーズ選択肢を設定
+            loadPhaseOptionsForTask();
+            
+            document.getElementById('taskEditModal').style.display = 'block';
+        }
+
+        // タスク編集モーダルを閉じる
+        function closeTaskEditModal() {
+            document.getElementById('taskEditModal').style.display = 'none';
+        }
+
+        // タスク用フェーズ選択肢を読み込み
+        async function loadPhaseOptionsForTask() {
+            try {
+                const response = await fetch('api.php?path=phases');
+                const data = await response.json();
+                
+                if (data.success && data.phases) {
+                    // 正しいセレクトIDに反映
+                    const select = document.getElementById('editTaskPhase');
+                    select.innerHTML = '<option value="">選択してください</option>';
+                    
+                    data.phases.forEach(phase => {
+                        const option = document.createElement('option');
+                        option.value = phase.name;
+                        option.textContent = phase.name;
+                        select.appendChild(option);
+                    });
+                }
+            } catch (error) {
+                console.error('フェーズ選択肢読み込みエラー:', error);
+            }
+        }
+
+        // プロジェクト編集モーダルを開く
+        function openEditProjectModal() {
+            if (!currentProject) {
+                showMessage('プロジェクトが選択されていません', 'error');
+                return;
+            }
+            
+            // 既存の包括的編集処理に委譲（クライアント読込・テンプレ初期化含む）
+            if (window.editProject) {
+                window.editProject();
+                return;
+            }
+            // フォールバック（最低限の項目設定）
+            document.getElementById('editProjectId').value = currentProject.id;
+            document.getElementById('editProjectName').value = currentProject.name;
+            document.getElementById('editProjectStartDate').value = currentProject.start_date || '';
+            document.getElementById('editProjectEndDate').value = currentProject.target_end_date || '';
+            document.getElementById('editProjectStatus').value = currentProject.status || 'planning';
+            document.getElementById('editProjectModal').style.display = 'block';
+        }
+
+        // プロジェクト編集モーダルを閉じる
+        function closeEditProjectModal() {
+            document.getElementById('editProjectModal').style.display = 'none';
+        }
+
+        // プロジェクト削除モーダルを開く
+        function openDeleteProjectModal() {
+            if (!currentProject) {
+                showMessage('プロジェクトが選択されていません', 'error');
+                return;
+            }
+            // プロジェクト名を表示
+            const nameEl = document.getElementById('deleteProjectName');
+            if (nameEl) {
+                nameEl.textContent = currentProject.name || '';
+            }
+            document.getElementById('deleteProjectModal').style.display = 'block';
+        }
+
+        // プロジェクト削除モーダルを閉じる
+        function closeDeleteProjectModal() {
+            document.getElementById('deleteProjectModal').style.display = 'none';
+        }
+
+
+        // ダッシュボード機能
+        async function loadDashboard() {
+            try {
+                // console.log('ダッシュボードデータを読み込み中...');
+                const response = await fetch('api.php?path=dashboard');
+                const data = await response.json();
+                
+                if (data.success) {
+                    updateDashboard(data);
+                } else {
+                    console.error('ダッシュボード読み込みエラー:', data.error);
+                    showMessage('ダッシュボードの読み込みに失敗しました', 'error');
+                }
+            } catch (error) {
+                console.error('ダッシュボード読み込みエラー:', error);
+                showMessage('ダッシュボードの読み込み中にエラーが発生しました', 'error');
+            }
+        }
+
+        function updateDashboard(data) {
+            // プロジェクトが選択されている場合は、そのプロジェクトのタスクのみを表示
+            if (currentProject) {
+                updateDashboardForCurrentProject();
+            } else {
+                // プロジェクト統計の更新
+                updateProjectStatsDisplay(data.stats.projects);
+                
+                // タスク統計の更新
+                updateTaskStatsDisplay(data.stats.tasks);
+                
+                // 要確認タスクの表示
+                updateDashboardNeedsConfirmation(data.needs_confirmation_tasks);
+                
+                // 期限切れタスクの表示
+                updateDashboardOverdueTasks(data.overdue_tasks);
+                
+                // 期限間近タスクの表示
+                updateDashboardUpcomingTasks(data.upcoming_tasks);
+                
+                // 最近の活動の表示（簡易版）
+                updateRecentActivity(data);
+            }
+        }
+
+        // 現在のプロジェクト用ダッシュボード更新
+        async function updateDashboardForCurrentProject() {
+            if (!currentProject) return;
+            
+            try {
+                // プロジェクトのタスク統計を取得
+                const response = await fetch(`api.php?path=projects/${currentProject.id}/tasks`);
+                const data = await response.json();
+                
+                if (data.success && data.tasks) {
+                    const tasks = data.tasks;
+                    
+                    // タスク統計を計算
+                    const stats = {
+                        total: tasks.length,
+                        not_started: tasks.filter(t => t.status === 'not_started').length,
+                        in_progress: tasks.filter(t => t.status === 'in_progress').length,
+                        completed: tasks.filter(t => t.status === 'completed').length,
+                        needs_confirmation: tasks.filter(t => t.status === 'needs_confirmation').length,
+                        pending: tasks.filter(t => t.status === 'pending').length,
+                        not_applicable: tasks.filter(t => t.status === 'not_applicable').length,
+                        overdue: tasks.filter(t => {
+                            return t.planned_date && new Date(t.planned_date) < new Date() && t.status !== 'completed';
+                        }).length
+                    };
+                    
+                    // プロジェクトタスク統計を表示
+                    updateTaskStatsDisplay(stats);
+                    
+                    // 要確認タスクを表示
+                    const needsConfirmationTasks = tasks.filter(t => t.status === 'needs_confirmation');
+                    updateDashboardNeedsConfirmation(needsConfirmationTasks);
+                    
+                    // 期限切れタスクを表示
+                    const overdueTasks = tasks.filter(t => {
+                        return t.planned_date && new Date(t.planned_date) < new Date() && t.status !== 'completed';
+                    });
+                    updateDashboardOverdueTasks(overdueTasks);
+                    
+                }
+            } catch (error) {
+                console.error('プロジェクトタスク取得エラー:', error);
+            }
+        }
+
+        function updateProjectStatsDisplay(projectStats) {
+            const container = document.getElementById('projectStats');
+            if (!container) {
+                // console.log('projectStats要素が見つかりません');
+                return;
+            }
+            container.innerHTML = `
+                <div class="stat-item">
+                    <span class="stat-number">${projectStats.total}</span>
+                    <span class="stat-label">総プロジェクト数</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-number">${projectStats.in_progress}</span>
+                    <span class="stat-label">進行中</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-number">${projectStats.completed}</span>
+                    <span class="stat-label">完了</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-number">${projectStats.planning}</span>
+                    <span class="stat-label">計画中</span>
+                </div>
+            `;
+        }
+
+        function updateTaskStatsDisplay(taskStats) {
+            const container = document.getElementById('taskStats');
+            if (!container) {
+                // console.log('taskStats要素が見つかりません');
+                return;
+            }
+            container.innerHTML = `
+                <div class="stat-item">
+                    <span class="stat-number">${taskStats.total}</span>
+                    <span class="stat-label">総タスク数</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-number">${taskStats.not_started}</span>
+                    <span class="stat-label">未着手</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-number">${taskStats.in_progress}</span>
+                    <span class="stat-label">進行中</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-number">${taskStats.completed}</span>
+                    <span class="stat-label">完了</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-number danger">${taskStats.needs_confirmation}</span>
+                    <span class="stat-label">要確認</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-number">${taskStats.pending || 0}</span>
+                    <span class="stat-label">保留</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-number">${taskStats.not_applicable || 0}</span>
+                    <span class="stat-label">対象外</span>
+                </div>
+            `;
+        }
+
+        function updateDashboardNeedsConfirmation(tasks) {
+            const container = document.getElementById('dashboardNeedsConfirmation');
+            if (!container) {
+                // console.log('dashboardNeedsConfirmation要素が見つかりません');
+                return;
+            }
+            
+            if (tasks.length === 0) {
+                container.innerHTML = '<div class="empty">要確認タスクはありません</div>';
+                return;
+            }
+
+            const html = tasks.slice(0, 5).map(task => `
+                <div class="dashboard-task-item needs-confirmation" onclick="openTaskFromList(${task.project_id}, ${task.id})">
+                    <div class="task-name">${task.task_name}</div>
+                    <div class="task-project">${task.project_name}</div>
+                    <div class="task-assignee">${task.assigned_to_name || '未割当'}</div>
+                </div>
+            `).join('');
+
+            const moreText = tasks.length > 5 ? `<div class="more-items">他 ${tasks.length - 5} 件...</div>` : '';
+            container.innerHTML = html + moreText;
+        }
+
+        function updateDashboardOverdueTasks(tasks) {
+            const container = document.getElementById('dashboardOverdueTasks');
+            if (!container) {
+                // console.log('dashboardOverdueTasks要素が見つかりません');
+                return;
+            }
+            
+            if (tasks.length === 0) {
+                container.innerHTML = '<div class="empty">期限切れタスクはありません</div>';
+                return;
+            }
+
+            const html = tasks.slice(0, 5).map(task => `
+                <div class="dashboard-task-item overdue" onclick="openTaskFromList(${task.project_id}, ${task.id})">
+                    <div class="task-name">${task.task_name}</div>
+                    <div class="task-project">${task.project_name}</div>
+                    <div class="task-deadline">期限: ${formatDate(task.planned_date)} (${task.days_overdue}日遅れ)</div>
+                </div>
+            `).join('');
+
+            const moreText = tasks.length > 5 ? `<div class="more-items">他 ${tasks.length - 5} 件...</div>` : '';
+            container.innerHTML = html + moreText;
+        }
+
+        function updateDashboardUpcomingTasks(tasks) {
+            const container = document.getElementById('dashboardUpcomingTasks');
+            if (!container) {
+                // console.log('dashboardUpcomingTasks要素が見つかりません');
+                return;
+            }
+            
+            if (tasks.length === 0) {
+                container.innerHTML = '<div class="empty">期限間近のタスクはありません</div>';
+                return;
+            }
+
+            const html = tasks.slice(0, 5).map(task => `
+                <div class="dashboard-task-item upcoming" onclick="openTaskFromList(${task.project_id}, ${task.id})">
+                    <div class="task-name">${task.task_name}</div>
+                    <div class="task-project">${task.project_name}</div>
+                    <div class="task-deadline">期限: ${formatDate(task.planned_date)} (${task.days_until_deadline}日後)</div>
+                </div>
+            `).join('');
+
+            const moreText = tasks.length > 5 ? `<div class="more-items">他 ${tasks.length - 5} 件...</div>` : '';
+            container.innerHTML = html + moreText;
+        }
+
+        function updateRecentActivity(data) {
+            const container = document.getElementById('recentActivity');
+            if (!container) {
+                // console.log('recentActivity要素が見つかりません');
+                return;
+            }
+            
+            // 簡易的な最近の活動表示
+            const activities = [];
+            
+            if (data.needs_confirmation_tasks.length > 0) {
+                activities.push({
+                    type: 'warning',
+                    message: `${data.needs_confirmation_tasks.length}件の要確認タスクがあります`,
+                    time: '今'
+                });
+            }
+            
+            if (data.overdue_tasks.length > 0) {
+                activities.push({
+                    type: 'error',
+                    message: `${data.overdue_tasks.length}件の期限切れタスクがあります`,
+                    time: '今'
+                });
+            }
+            
+            if (data.upcoming_tasks.length > 0) {
+                activities.push({
+                    type: 'info',
+                    message: `${data.upcoming_tasks.length}件の期限間近タスクがあります`,
+                    time: '今'
+                });
+            }
+            
+            if (activities.length === 0) {
+                container.innerHTML = '<div class="empty">最近の活動はありません</div>';
+                return;
+            }
+
+            const html = activities.map(activity => `
+                <div class="activity-item ${activity.type}">
+                    <div class="activity-message">${activity.message}</div>
+                    <div class="activity-time">${activity.time}</div>
+                </div>
+            `).join('');
+
+            container.innerHTML = html;
+        }
+
+        // ==================== ステータス別一覧モーダル（未着手/進行中/完了） ====================
+        async function openNotStartedTasksModal() {
+            try {
+                document.getElementById('notStartedTasksModal').style.display = 'block';
+                await loadAndDisplayStatusTasks('not_started', 'notStartedTasksList', '未着手');
+            } catch (e) { showMessage('未着手タスクの表示に失敗しました', 'error'); }
+        }
+        function closeNotStartedTasksModal() { document.getElementById('notStartedTasksModal').style.display = 'none'; }
+        function refreshNotStartedTasksList() { loadAndDisplayStatusTasks('not_started', 'notStartedTasksList', '未着手'); }
+
+        async function openInProgressTasksModal() {
+            try {
+                document.getElementById('inProgressTasksModal').style.display = 'block';
+                await loadAndDisplayStatusTasks('in_progress', 'inProgressTasksList', '進行中');
+            } catch (e) { showMessage('進行中タスクの表示に失敗しました', 'error'); }
+        }
+        function closeInProgressTasksModal() { document.getElementById('inProgressTasksModal').style.display = 'none'; }
+        function refreshInProgressTasksList() { loadAndDisplayStatusTasks('in_progress', 'inProgressTasksList', '進行中'); }
+
+        async function openCompletedTasksModal() {
+            try {
+                document.getElementById('completedTasksModal').style.display = 'block';
+                await loadAndDisplayStatusTasks('completed', 'completedTasksList', '完了');
+            } catch (e) { showMessage('完了タスクの表示に失敗しました', 'error'); }
+        }
+        function closeCompletedTasksModal() { document.getElementById('completedTasksModal').style.display = 'none'; }
+        function refreshCompletedTasksList() { loadAndDisplayStatusTasks('completed', 'completedTasksList', '完了'); }
+
+        // 汎用: ステータス別タスクリストを取得して表示
+        async function loadAndDisplayStatusTasks(status, containerId, label) {
+            try {
+                if (!currentProject) return;
+                const response = await fetch(`api.php?path=projects/${currentProject.id}/tasks`);
+                const data = await response.json();
+                if (data.success) {
+                    const tasks = (data.tasks || []).filter(t => t.status === status);
+                    const container = document.getElementById(containerId);
+                    if (!container) return;
+                    if (tasks.length === 0) {
+                        container.innerHTML = `<div class="empty">${label}のタスクはありません</div>`;
+                        return;
+                    }
+                    const html = tasks.map(task => `
+                        <div class="task-list-item ${status}" onclick="openTaskFromList(${task.project_id}, ${task.id})">
+                            <div class="task-item-header">
+                                <h4>${task.task_name}</h4>
+                                <span class="task-status">${label}</span>
+                            </div>
+                            <div class="task-item-meta">
+                                <div class="task-project">プロジェクト: ${task.project_name || ''}</div>
+                                <div class="task-assignee">担当者: ${task.assigned_to_name || '未割当'}</div>
+                                ${task.planned_date ? `<div class=\"task-date\">期限: ${formatDate(task.planned_date)}</div>` : ''}
+                            </div>
+                        </div>
+                    `).join('');
+                    container.innerHTML = html;
+                }
+            } catch (error) {
+                // 読み込み失敗時は無視（UIで更新ボタンあり）
+            }
+        }
+
+        function refreshDashboard() {
+            loadDashboard();
+        }
+
+        // 右カラムの重要なタスクを更新
+        function refreshImportantTasks() {
+            loadImportantTasks();
+        }
+
+        async function loadImportantTasks() {
+            try {
+                // 要確認、期限切れ、期限間近タスクを並行取得
+                const projectParam = currentProject ? `&project_id=${encodeURIComponent(currentProject.id)}` : '';
+                const [needsConfirmationResponse, overdueResponse, upcomingResponse] = await Promise.all([
+                    fetch(`api.php?path=tasks/needs_confirmation${projectParam}`),
+                    fetch(`api.php?path=tasks/overdue${projectParam}`),
+                    fetch(`api.php?path=tasks/upcoming${projectParam}`)
+                ]);
+
+                const needsConfirmationData = await needsConfirmationResponse.json();
+                const overdueData = await overdueResponse.json();
+                const upcomingData = await upcomingResponse.json();
+
+                // 要確認タスクを表示
+                updateRightColumnNeedsConfirmation(needsConfirmationData.success ? needsConfirmationData.tasks : []);
+                
+                // 期限切れタスクを表示
+                updateRightColumnOverdueTasks(overdueData.success ? overdueData.tasks : []);
+                
+                // 期限間近タスクを表示
+                updateRightColumnUpcomingTasks(upcomingData.success ? upcomingData.tasks : []);
+            } catch (error) {
+                console.error('重要なタスク読み込みエラー:', error);
+            }
+        }
+
+        function updateRightColumnNeedsConfirmation(tasks) {
+            const container = document.getElementById('rightColumnNeedsConfirmation');
+            if (!container) {
+                // console.log('rightColumnNeedsConfirmation要素が見つかりません');
+                return;
+            }
+            
+            if (tasks.length === 0) {
+                container.innerHTML = '<div class="empty">要確認タスクはありません</div>';
+                return;
+            }
+
+            const html = tasks.slice(0, 5).map(task => `
+                <div class="important-task-item needs-confirmation" onclick="openTaskFromList(${task.project_id}, ${task.id})">
+                    <div class="important-task-name">${task.task_name}</div>
+                    <div class="important-task-project">${task.project_name}</div>
+                    <div class="important-task-meta">
+                        <span>${task.assigned_to_name || '未割当'}</span>
+                        <span>${task.planned_date ? formatDate(task.planned_date) : '期限なし'}</span>
+                    </div>
+                </div>
+            `).join('');
+
+            const moreText = tasks.length > 5 ? `<div class="more-items">他 ${tasks.length - 5} 件...</div>` : '';
+            container.innerHTML = html + moreText;
+        }
+
+        function updateRightColumnOverdueTasks(tasks) {
+            const container = document.getElementById('rightColumnOverdueTasks');
+            if (!container) {
+                // console.log('rightColumnOverdueTasks要素が見つかりません');
+                return;
+            }
+            
+            if (tasks.length === 0) {
+                container.innerHTML = '<div class="empty">期限切れタスクはありません</div>';
+                return;
+            }
+
+            const html = tasks.slice(0, 5).map(task => `
+                <div class="important-task-item overdue" onclick="openTaskFromList(${task.project_id}, ${task.id})">
+                    <div class="important-task-name">${task.task_name}</div>
+                    <div class="important-task-project">${task.project_name}</div>
+                    <div class="important-task-meta">
+                        <span>${task.assigned_to_name || '未割当'}</span>
+                        <span>${task.days_overdue}日遅れ</span>
+                    </div>
+                </div>
+            `).join('');
+
+            const moreText = tasks.length > 5 ? `<div class="more-items">他 ${tasks.length - 5} 件...</div>` : '';
+            container.innerHTML = html + moreText;
+        }
+
+        function updateRightColumnUpcomingTasks(tasks) {
+            const container = document.getElementById('rightColumnUpcomingTasks');
+            if (!container) {
+                // console.log('rightColumnUpcomingTasks要素が見つかりません');
+                return;
+            }
+            
+            if (tasks.length === 0) {
+                container.innerHTML = '<div class="empty">期限間近のタスクはありません</div>';
+                return;
+            }
+
+            const html = tasks.slice(0, 5).map(task => `
+                <div class="important-task-item upcoming" onclick="openTaskFromList(${task.project_id}, ${task.id})">
+                    <div class="important-task-name">${task.task_name}</div>
+                    <div class="important-task-project">${task.project_name}</div>
+                    <div class="important-task-meta">
+                        <span>${task.assigned_to_name || '未割当'}</span>
+                        <span>${task.days_until_deadline}日後</span>
+                    </div>
+                </div>
+            `).join('');
+
+            const moreText = tasks.length > 5 ? `<div class="more-items">他 ${tasks.length - 5} 件...</div>` : '';
+            container.innerHTML = html + moreText;
+        }
+
+        // 通知システム
+        let notifications = [];
+        let notificationCheckInterval = null;
+
+        async function loadNotifications() {
+            try {
+                // 要確認タスクと期限切れタスクから通知を生成
+                const [needsConfirmationResponse, overdueResponse] = await Promise.all([
+                    fetch('api.php?path=tasks/needs_confirmation'),
+                    fetch('api.php?path=tasks/overdue')
+                ]);
+
+                const needsConfirmationData = await needsConfirmationResponse.json();
+                const overdueData = await overdueResponse.json();
+
+                notifications = [];
+
+                // 要確認タスクの通知
+                if (needsConfirmationData.success && needsConfirmationData.tasks) {
+                    needsConfirmationData.tasks.forEach(task => {
+                        notifications.push({
+                            id: `needs_confirmation_${task.id}`,
+                            type: 'warning',
+                            title: '要確認タスク',
+                            message: `${task.task_name} (${task.project_name})`,
+                            taskId: task.id,
+                            projectId: task.project_id,
+                            timestamp: new Date().toISOString(),
+                            read: false
+                        });
+                    });
+                }
+
+                // 期限切れタスクの通知
+                if (overdueData.success && overdueData.tasks) {
+                    overdueData.tasks.forEach(task => {
+                        notifications.push({
+                            id: `overdue_${task.id}`,
+                            type: 'error',
+                            title: '期限切れタスク',
+                            message: `${task.task_name} (${task.project_name}) - ${task.days_overdue}日遅れ`,
+                            taskId: task.id,
+                            projectId: task.project_id,
+                            timestamp: new Date().toISOString(),
+                            read: false
+                        });
+                    });
+                }
+
+                updateNotificationDisplay();
+            } catch (error) {
+                console.error('通知読み込みエラー:', error);
+            }
+        }
+
+        function updateNotificationDisplay() {
+            const badge = document.getElementById('notificationBadge');
+            if (!badge) {
+                // console.log('notificationBadge要素が見つかりません');
+                return;
+            }
+            
+            const unreadCount = notifications.filter(n => !n.read).length;
+            
+            if (unreadCount > 0) {
+                badge.textContent = unreadCount;
+                badge.style.display = 'inline';
+            } else {
+                badge.style.display = 'none';
+            }
+
+            // 通知ドロップダウンが開いている場合は更新
+            const dropdown = document.getElementById('notificationDropdown');
+            if (dropdown && dropdown.style.display !== 'none') {
+                displayNotifications();
+            }
+        }
+
+        function displayNotifications() {
+            const container = document.getElementById('notificationList');
+            if (!container) {
+                // console.log('notificationList要素が見つかりません');
+                return;
+            }
+            
+            if (notifications.length === 0) {
+                container.innerHTML = '<div class="empty">通知はありません</div>';
+                return;
+            }
+
+            // 未読の通知を先に表示
+            const sortedNotifications = [...notifications].sort((a, b) => {
+                if (a.read !== b.read) return a.read - b.read;
+                return new Date(b.timestamp) - new Date(a.timestamp);
+            });
+
+            const html = sortedNotifications.map(notification => `
+                <div class="notification-item ${notification.read ? 'read' : 'unread'} ${notification.type}" 
+                     onclick="handleNotificationClick('${notification.id}')">
+                    <div class="notification-content">
+                        <div class="notification-title">${notification.title}</div>
+                        <div class="notification-message">${notification.message}</div>
+                        <div class="notification-time">${formatNotificationTime(notification.timestamp)}</div>
+                    </div>
+                    ${!notification.read ? '<div class="notification-unread-indicator"></div>' : ''}
+                </div>
+            `).join('');
+
+            container.innerHTML = html;
+        }
+
+        function formatNotificationTime(timestamp) {
+            const now = new Date();
+            const time = new Date(timestamp);
+            const diffMs = now - time;
+            const diffMins = Math.floor(diffMs / 60000);
+            const diffHours = Math.floor(diffMs / 3600000);
+            const diffDays = Math.floor(diffMs / 86400000);
+
+            if (diffMins < 1) return 'たった今';
+            if (diffMins < 60) return `${diffMins}分前`;
+            if (diffHours < 24) return `${diffHours}時間前`;
+            return `${diffDays}日前`;
+        }
+
+        function toggleNotifications() {
+            const dropdown = document.getElementById('notificationDropdown');
+            if (!dropdown) {
+                // console.log('notificationDropdown要素が見つかりません');
+                return;
+            }
+            
+            if (dropdown.style.display === 'none') {
+                dropdown.style.display = 'block';
+                displayNotifications();
+            } else {
+                dropdown.style.display = 'none';
+            }
+        }
+
+        function handleNotificationClick(notificationId) {
+            const notification = notifications.find(n => n.id === notificationId);
+            if (!notification) return;
+
+            // 通知を既読にする
+            notification.read = true;
+            updateNotificationDisplay();
+
+            // タスクを開く
+            openTaskFromList(notification.projectId, notification.taskId);
+        }
+
+        function markAllAsRead() {
+            notifications.forEach(notification => {
+                notification.read = true;
+            });
+            updateNotificationDisplay();
+        }
+
+        function startNotificationCheck() {
+            // 5分ごとに通知をチェック
+            notificationCheckInterval = setInterval(() => {
+                loadNotifications();
+            }, 5 * 60 * 1000);
+        }
+
+        function stopNotificationCheck() {
+            if (notificationCheckInterval) {
+                clearInterval(notificationCheckInterval);
+                notificationCheckInterval = null;
+            }
+        }
+
+        // ページ外クリックで通知ドロップダウンを閉じる
+        document.addEventListener('click', function(event) {
+            const notificationArea = document.querySelector('.notification-area');
+            if (notificationArea && !notificationArea.contains(event.target)) {
+                document.getElementById('notificationDropdown').style.display = 'none';
+            }
+        });
+
+        // イベントリスナーの設定
+        document.addEventListener('DOMContentLoaded', function() {
+            // フィルタ適用ボタン
+            const applyFiltersBtn = document.getElementById('applyFilters');
+            if (applyFiltersBtn) {
+                applyFiltersBtn.addEventListener('click', applyFilters);
+            }
+
+            // フィルタ変更時の自動適用
+            const statusFilter = document.getElementById('statusFilter');
+            const sortBy = document.getElementById('sortBy');
+            const sortOrder = document.getElementById('sortOrder');
+            
+            if (statusFilter) {
+                statusFilter.addEventListener('change', applyFilters);
+            }
+            if (sortBy) {
+                sortBy.addEventListener('change', applyFilters);
+            }
+            if (sortOrder) {
+                sortOrder.addEventListener('change', applyFilters);
+            }
+        });
     </script>
 </body>
 </html>

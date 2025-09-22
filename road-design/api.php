@@ -3,7 +3,7 @@ require_once 'config.php';
 require_once 'auth.php';
 require_once 'database.php';
 
-header('Content-Type: application/json');
+header('Content-Type: application/json; charset=utf-8');
 header('X-Content-Type-Options: nosniff');
 // API応答がキャッシュされないように明示的に無効化
 header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
@@ -312,6 +312,18 @@ class ApiController {
                     if ($path === 'progress_report') {
                         return $this->getProgressReport(isset($_GET['project_id']) ? $_GET['project_id'] : null);
                     }
+                    if ($path === 'tasks/needs_confirmation') {
+                        return $this->getNeedsConfirmationTasks();
+                    }
+                    if ($path === 'tasks/overdue') {
+                        return $this->getOverdueTasks();
+                    }
+                    if ($path === 'tasks/upcoming') {
+                        return $this->getUpcomingDeadlineTasks();
+                    }
+                    if ($path === 'dashboard') {
+                        return $this->getDashboardData();
+                    }
 
                     throw new Exception('API endpoint not found', 404);
             }
@@ -382,7 +394,15 @@ class ApiController {
         
         try {
             error_log("=== getProjects 開始 ===");
-            $projects = $this->db->getAllProjects();
+            
+            // ソートパラメータの取得
+            $sortBy = isset($_GET['sort_by']) ? $_GET['sort_by'] : 'created_at';
+            $sortOrder = isset($_GET['sort_order']) ? $_GET['sort_order'] : 'DESC';
+            $statusFilter = isset($_GET['status_filter']) ? $_GET['status_filter'] : null;
+            
+            error_log("Sort parameters: sort_by=$sortBy, sort_order=$sortOrder, status_filter=$statusFilter");
+            
+            $projects = $this->db->getAllProjects($sortBy, $sortOrder, $statusFilter);
             error_log("getAllProjects 結果: " . ($projects === false ? 'false' : count($projects) . '件'));
             
             if ($projects === false) {
@@ -393,7 +413,12 @@ class ApiController {
             error_log("=== getProjects 完了 ===");
             return [
                 'success' => true,
-                'projects' => $projects
+                'projects' => $projects,
+                'sort_info' => [
+                    'sort_by' => $sortBy,
+                    'sort_order' => $sortOrder,
+                    'status_filter' => $statusFilter
+                ]
             ];
         } catch (Exception $e) {
             error_log("getProjects エラー: " . $e->getMessage());
@@ -989,6 +1014,118 @@ class ApiController {
         ];
     }
     
+    // 要確認タスク一覧取得
+    public function getNeedsConfirmationTasks() {
+        try {
+            $projectId = isset($_GET['project_id']) ? intval($_GET['project_id']) : null;
+            $tasks = $this->db->getNeedsConfirmationTasks($projectId);
+            if ($tasks === false) {
+                throw new Exception('Failed to retrieve needs confirmation tasks');
+            }
+
+            return [
+                'success' => true,
+                'tasks' => $tasks
+            ];
+        } catch (Exception $e) {
+            error_log("getNeedsConfirmationTasks error: " . $e->getMessage());
+            throw $e;
+        }
+    }
+
+    // 期限切れタスク一覧取得
+    public function getOverdueTasks() {
+        try {
+            $projectId = isset($_GET['project_id']) ? intval($_GET['project_id']) : null;
+            $tasks = $this->db->getOverdueTasks($projectId);
+            if ($tasks === false) {
+                throw new Exception('Failed to retrieve overdue tasks');
+            }
+
+            return [
+                'success' => true,
+                'tasks' => $tasks
+            ];
+        } catch (Exception $e) {
+            error_log("getOverdueTasks error: " . $e->getMessage());
+            throw $e;
+        }
+    }
+
+    // 期限間近タスク一覧取得
+    public function getUpcomingDeadlineTasks() {
+        try {
+            $daysAhead = isset($_GET['days_ahead']) ? intval($_GET['days_ahead']) : 3;
+            $projectId = isset($_GET['project_id']) ? intval($_GET['project_id']) : null;
+            $tasks = $this->db->getUpcomingDeadlineTasks($daysAhead, $projectId);
+            if ($tasks === false) {
+                throw new Exception('Failed to retrieve upcoming deadline tasks');
+            }
+
+            return [
+                'success' => true,
+                'tasks' => $tasks
+            ];
+        } catch (Exception $e) {
+            error_log("getUpcomingDeadlineTasks error: " . $e->getMessage());
+            throw $e;
+        }
+    }
+
+    // ダッシュボードデータ取得
+    public function getDashboardData() {
+        try {
+            // 並行してデータを取得
+            $projects = $this->db->getAllProjects();
+            $needsConfirmationTasks = $this->db->getNeedsConfirmationTasks();
+            $overdueTasks = $this->db->getOverdueTasks();
+            $upcomingTasks = $this->db->getUpcomingDeadlineTasks(3);
+            
+            if ($projects === false) {
+                throw new Exception('Failed to retrieve projects');
+            }
+
+            // 統計計算
+            $stats = [
+                'projects' => [
+                    'total' => count($projects),
+                    'planning' => 0,
+                    'in_progress' => 0,
+                    'completed' => 0,
+                    'cancelled' => 0
+                ],
+                'tasks' => [
+                    'total' => 0,
+                    'not_started' => 0,
+                    'in_progress' => 0,
+                    'completed' => 0,
+                    'needs_confirmation' => 0
+                ]
+            ];
+
+            foreach ($projects as $project) {
+                $stats['projects'][$project['status']] = ($stats['projects'][$project['status']] ?? 0) + 1;
+                $stats['tasks']['total'] += intval($project['total_tasks'] ?? 0);
+                $stats['tasks']['completed'] += intval($project['completed_tasks'] ?? 0);
+                $stats['tasks']['in_progress'] += intval($project['in_progress_tasks'] ?? 0);
+                $stats['tasks']['not_started'] += intval($project['not_started_tasks'] ?? 0);
+                $stats['tasks']['needs_confirmation'] += intval($project['needs_confirmation_tasks'] ?? 0);
+            }
+
+            return [
+                'success' => true,
+                'stats' => $stats,
+                'needs_confirmation_tasks' => $needsConfirmationTasks ?: [],
+                'overdue_tasks' => $overdueTasks ?: [],
+                'upcoming_tasks' => $upcomingTasks ?: [],
+                'generated_at' => date('Y-m-d H:i:s')
+            ];
+        } catch (Exception $e) {
+            error_log("getDashboardData error: " . $e->getMessage());
+            throw $e;
+        }
+    }
+
     // ヘルパーメソッド
     private function isValidDate($date) {
         $d = DateTime::createFromFormat('Y-m-d', $date);
