@@ -576,23 +576,7 @@ class Database {
             error_log("getProjectTasks called with project ID: $projectId");
             
             $stmt = $this->getConnection()->prepare("
-                SELECT t.*, 
-                       t.task_name as name, 
-                       t.status,
-                       u.name as assigned_to_name, 
-                       tt.task_name as template_name, 
-                       tt.content as template_content, 
-                       tt.is_technical_work, 
-                       tt.has_manual, 
-                       tt.task_order,
-                       tt.phase_name,
-                       (SELECT GROUP_CONCAT(note SEPARATOR '|') FROM task_notes WHERE task_id = t.id ORDER BY created_at DESC) as notes
-                FROM tasks t 
-                LEFT JOIN users u ON t.assigned_to = u.id
-                LEFT JOIN task_templates tt ON t.template_id = tt.id
-                WHERE t.project_id = ?
-                ORDER BY tt.phase_name, tt.task_order
-            ");
+                SELECT t.*, \n                       t.task_name as name, \n                       t.status,\n                       u.name as assigned_to_name, \n                       tt.task_name as template_name, \n                       tt.content as template_content, \n                       tt.is_technical_work, \n                       tt.has_manual, \n                       tt.task_order,\n                       tt.phase_name,\n                       (SELECT GROUP_CONCAT(note SEPARATOR '|') FROM task_notes WHERE task_id = t.id ORDER BY created_at DESC) as notes\n                FROM tasks t \n                LEFT JOIN users u ON t.assigned_to = u.id\n                LEFT JOIN task_templates tt ON t.template_id = tt.id\n                WHERE t.project_id = ?\n                ORDER BY tt.phase_name, tt.task_order\n            ");
             $stmt->execute([$projectId]);
             $result = $stmt->fetchAll();
             

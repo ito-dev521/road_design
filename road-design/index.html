@@ -1248,9 +1248,12 @@
                 tasksByPhase[phaseName].push(task);
             });
 
-            // フェーズごとに表示
+            // フェーズごとに表示（phases.order_num の順）
             taskList.innerHTML = '';
-            Object.entries(tasksByPhase).forEach(([phaseName, phaseTasks]) => {
+            const phaseOrderMap = (allPhases || []).reduce((acc, p) => { acc[p.name] = p.order_num || 0; return acc; }, {});
+            Object.entries(tasksByPhase)
+                .sort((a, b) => (phaseOrderMap[a[0]] ?? 9999) - (phaseOrderMap[b[0]] ?? 9999))
+                .forEach(([phaseName, phaseTasks]) => {
                 // 空のフェーズは表示しない
                 if (phaseTasks.length === 0) {
                     return;
@@ -2926,8 +2929,11 @@
                 tasksByPhase[task.phase_name].push(task);
             });
             
-            // フェーズごとに表示
-            Object.keys(tasksByPhase).sort().forEach(phaseName => {
+            // フェーズごとに表示（phases.order_num の順）
+            const phaseOrderMap = (allPhases || []).reduce((acc, p) => { acc[p.name] = p.order_num || 0; return acc; }, {});
+            Object.keys(tasksByPhase)
+                .sort((a, b) => (phaseOrderMap[a] ?? 9999) - (phaseOrderMap[b] ?? 9999))
+                .forEach(phaseName => {
                 const phaseDiv = document.createElement('div');
                 phaseDiv.className = 'phase-tasks-group';
                 phaseDiv.innerHTML = `<h5>${phaseName}</h5>`;
