@@ -1618,24 +1618,26 @@ class Database {
         }
     }
 
-    // 要確認タスク一覧取得
-    public function getNeedsConfirmationTasks() {
+    // 要確認タスク一覧取得（オプション: プロジェクト絞り込み）
+    public function getNeedsConfirmationTasks($projectId = null) {
         try {
             error_log("=== getNeedsConfirmationTasks 開始 ===");
-            
-            $stmt = $this->getConnection()->prepare("
+            $sql = "
                 SELECT t.*, p.name as project_name, p.status as project_status,
                        u.name as assigned_to_name, u.email as assigned_to_email
                 FROM tasks t
                 LEFT JOIN projects p ON t.project_id = p.id
                 LEFT JOIN users u ON t.assigned_to = u.id
-                WHERE t.status = 'needs_confirmation'
-                ORDER BY t.updated_at DESC, t.planned_date ASC
-            ");
-            
-            $stmt->execute();
+                WHERE t.status = 'needs_confirmation'";
+            $params = [];
+            if ($projectId !== null) {
+                $sql .= " AND t.project_id = ?";
+                $params[] = $projectId;
+            }
+            $sql .= " ORDER BY t.updated_at DESC, t.planned_date ASC";
+            $stmt = $this->getConnection()->prepare($sql);
+            $stmt->execute($params);
             $result = $stmt->fetchAll();
-            
             error_log("要確認タスク取得完了: " . count($result) . "件");
             return $result;
         } catch (PDOException $e) {
@@ -1644,13 +1646,13 @@ class Database {
         }
     }
 
-    // 期限切れタスク一覧取得
-    public function getOverdueTasks() {
+    // 期限切れタスク一覧取得（オプション: プロジェクト絞り込み）
+    public function getOverdueTasks($projectId = null) {
         try {
             error_log("=== getOverdueTasks 開始 ===");
             
             $today = date('Y-m-d');
-            $stmt = $this->getConnection()->prepare("
+            $sql = "
                 SELECT t.*, p.name as project_name, p.status as project_status,
                        u.name as assigned_to_name, u.email as assigned_to_email,
                        DATEDIFF(?, t.planned_date) as days_overdue
@@ -1658,11 +1660,15 @@ class Database {
                 LEFT JOIN projects p ON t.project_id = p.id
                 LEFT JOIN users u ON t.assigned_to = u.id
                 WHERE t.planned_date < ? 
-                AND t.status NOT IN ('completed', 'not_applicable')
-                ORDER BY t.planned_date ASC, t.updated_at DESC
-            ");
-            
-            $stmt->execute([$today, $today]);
+                AND t.status NOT IN ('completed', 'not_applicable')";
+            $params = [$today, $today];
+            if ($projectId !== null) {
+                $sql .= " AND t.project_id = ?";
+                $params[] = $projectId;
+            }
+            $sql .= " ORDER BY t.planned_date ASC, t.updated_at DESC";
+            $stmt = $this->getConnection()->prepare($sql);
+            $stmt->execute($params);
             $result = $stmt->fetchAll();
             
             error_log("期限切れタスク取得完了: " . count($result) . "件");
@@ -1673,15 +1679,14 @@ class Database {
         }
     }
 
-    // 期限間近タスク一覧取得（3日前まで）
-    public function getUpcomingDeadlineTasks($daysAhead = 3) {
+    // 期限間近タスク一覧取得（3日前まで、オプション: プロジェクト絞り込み）
+    public function getUpcomingDeadlineTasks($daysAhead = 3, $projectId = null) {
         try {
             error_log("=== getUpcomingDeadlineTasks 開始 ===");
             
             $today = date('Y-m-d');
             $futureDate = date('Y-m-d', strtotime("+{$daysAhead} days"));
-            
-            $stmt = $this->getConnection()->prepare("
+            $sql = "
                 SELECT t.*, p.name as project_name, p.status as project_status,
                        u.name as assigned_to_name, u.email as assigned_to_email,
                        DATEDIFF(t.planned_date, ?) as days_until_deadline
@@ -1689,11 +1694,15 @@ class Database {
                 LEFT JOIN projects p ON t.project_id = p.id
                 LEFT JOIN users u ON t.assigned_to = u.id
                 WHERE t.planned_date BETWEEN ? AND ?
-                AND t.status NOT IN ('completed', 'not_applicable')
-                ORDER BY t.planned_date ASC, t.updated_at DESC
-            ");
-            
-            $stmt->execute([$today, $today, $futureDate]);
+                AND t.status NOT IN ('completed', 'not_applicable')";
+            $params = [$today, $today, $futureDate];
+            if ($projectId !== null) {
+                $sql .= " AND t.project_id = ?";
+                $params[] = $projectId;
+            }
+            $sql .= " ORDER BY t.planned_date ASC, t.updated_at DESC";
+            $stmt = $this->getConnection()->prepare($sql);
+            $stmt->execute($params);
             $result = $stmt->fetchAll();
             
             error_log("期限間近タスク取得完了: " . count($result) . "件");

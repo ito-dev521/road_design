@@ -57,7 +57,9 @@
             <aside class="left-column">
                 <div class="column-header">
                     <h2>📁 プロジェクト一覧</h2>
-                    <button class="btn btn-primary btn-small" id="newProjectBtn">🚀 新規</button>
+                </div>
+                <div class="left-column-actions">
+                    <button class="btn btn-primary btn-small" id="newProjectBtn">🚀 新規プロジェクト作成</button>
                 </div>
                 
                 <div class="project-filters">
@@ -121,15 +123,15 @@
                             <div class="progress-number" id="totalTasks">0</div>
                             <div class="progress-label">総タスク数</div>
                         </div>
-                        <div class="progress-card">
+                        <div class="progress-card clickable" onclick="openNotStartedTasksModal()">
                             <div class="progress-number" id="notStartedTasks">0</div>
                             <div class="progress-label">未着手</div>
                         </div>
-                        <div class="progress-card">
+                        <div class="progress-card clickable" onclick="openInProgressTasksModal()">
                             <div class="progress-number" id="inProgressTasks">0</div>
                             <div class="progress-label">進行中</div>
                         </div>
-                        <div class="progress-card">
+                        <div class="progress-card clickable" onclick="openCompletedTasksModal()">
                             <div class="progress-number" id="completedTasks">0</div>
                             <div class="progress-label">完了済み</div>
                         </div>
@@ -140,6 +142,14 @@
                         <div class="progress-card clickable" onclick="openOverdueTasksModal()">
                             <div class="progress-number danger" id="overdueTasks">0</div>
                             <div class="progress-label">遅延</div>
+                        </div>
+                        <div class="progress-card clickable" onclick="openPendingTasksModal()">
+                            <div class="progress-number" id="pendingTasks">0</div>
+                            <div class="progress-label">保留</div>
+                        </div>
+                        <div class="progress-card clickable" onclick="openNotApplicableTasksModal()">
+                            <div class="progress-number" id="notApplicableTasks">0</div>
+                            <div class="progress-label">対象外</div>
                         </div>
                     </div>
                     
@@ -156,7 +166,6 @@
                 <section class="task-section" id="taskSection" style="display: none;">
                     <div class="task-header">
                         <h3>📋 タスク一覧</h3>
-                        <button class="btn btn-primary" id="addTaskBtn">➕ タスク追加</button>
                     </div>
                     
                     <div class="task-filters">
@@ -493,6 +502,101 @@
             </div>
         </div>
 
+        <!-- 保留タスク一覧モーダル -->
+        <div class="modal-overlay" id="pendingTasksModal">
+            <div class="modal task-list-modal">
+                <div class="modal-header">
+                    <h3 class="modal-title">保留タスク一覧</h3>
+                    <button class="modal-close" onclick="closePendingTasksModal()">&times;</button>
+                </div>
+                <div class="modal-content">
+                    <div id="pendingTasksList" class="task-list-container">
+                        <div class="loading">読み込み中...</div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closePendingTasksModal()">閉じる</button>
+                    <button type="button" class="btn btn-primary" onclick="refreshPendingTasksList()">更新</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 対象外タスク一覧モーダル -->
+        <div class="modal-overlay" id="notApplicableTasksModal">
+            <div class="modal task-list-modal">
+                <div class="modal-header">
+                    <h3 class="modal-title">対象外タスク一覧</h3>
+                    <button class="modal-close" onclick="closeNotApplicableTasksModal()">&times;</button>
+                </div>
+                <div class="modal-content">
+                    <div id="notApplicableTasksList" class="task-list-container">
+                        <div class="loading">読み込み中...</div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeNotApplicableTasksModal()">閉じる</button>
+                    <button type="button" class="btn btn-primary" onclick="refreshNotApplicableTasksList()">更新</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 未着手タスク一覧モーダル -->
+        <div class="modal-overlay" id="notStartedTasksModal">
+            <div class="modal task-list-modal">
+                <div class="modal-header">
+                    <h3 class="modal-title">未着手タスク一覧</h3>
+                    <button class="modal-close" onclick="closeNotStartedTasksModal()">&times;</button>
+                </div>
+                <div class="modal-content">
+                    <div id="notStartedTasksList" class="task-list-container">
+                        <div class="loading">読み込み中...</div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeNotStartedTasksModal()">閉じる</button>
+                    <button type="button" class="btn btn-primary" onclick="refreshNotStartedTasksList()">更新</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 進行中タスク一覧モーダル -->
+        <div class="modal-overlay" id="inProgressTasksModal">
+            <div class="modal task-list-modal">
+                <div class="modal-header">
+                    <h3 class="modal-title">進行中タスク一覧</h3>
+                    <button class="modal-close" onclick="closeInProgressTasksModal()">&times;</button>
+                </div>
+                <div class="modal-content">
+                    <div id="inProgressTasksList" class="task-list-container">
+                        <div class="loading">読み込み中...</div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeInProgressTasksModal()">閉じる</button>
+                    <button type="button" class="btn btn-primary" onclick="refreshInProgressTasksList()">更新</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 完了済みタスク一覧モーダル -->
+        <div class="modal-overlay" id="completedTasksModal">
+            <div class="modal task-list-modal">
+                <div class="modal-header">
+                    <h3 class="modal-title">完了済みタスク一覧</h3>
+                    <button class="modal-close" onclick="closeCompletedTasksModal()">&times;</button>
+                </div>
+                <div class="modal-content">
+                    <div id="completedTasksList" class="task-list-container">
+                        <div class="loading">読み込み中...</div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeCompletedTasksModal()">閉じる</button>
+                    <button type="button" class="btn btn-primary" onclick="refreshCompletedTasksList()">更新</button>
+                </div>
+            </div>
+        </div>
+
         <!-- タスク編集モーダル -->
     <div class="modal-overlay" id="taskModal">
         <div class="modal task-modal">
@@ -704,6 +808,19 @@
             startNotificationCheck();
             
             // イベントリスナーを設定
+            // タスクフィルターのイベント
+            const statusSelect = document.getElementById('taskStatusFilter');
+            const phaseSelect = document.getElementById('taskPhaseFilter');
+            if (statusSelect) {
+                statusSelect.addEventListener('change', applyTaskFilters);
+            }
+            if (phaseSelect) {
+                phaseSelect.addEventListener('change', function() {
+                    currentPhaseFilter = this.value || 'all';
+                    try { localStorage.setItem('currentPhaseFilter', String(currentPhaseFilter)); } catch (e) {}
+                    displayTasks(filteredTasks);
+                });
+            }
             const refreshImportantTasksBtn = document.getElementById('refreshImportantTasksBtn');
             if (refreshImportantTasksBtn) {
                 refreshImportantTasksBtn.addEventListener('click', refreshImportantTasks);
@@ -714,17 +831,20 @@
                 notificationBtn.addEventListener('click', toggleNotifications);
             }
             
-            // タスク追加ボタン
-            const addTaskBtn = document.getElementById('addTaskBtn');
-            if (addTaskBtn) {
-                addTaskBtn.addEventListener('click', openAddTaskModal);
+            // 新規プロジェクト作成ボタン
+            const newProjectBtn = document.getElementById('newProjectBtn');
+            if (newProjectBtn) {
+                newProjectBtn.addEventListener('click', openNewProjectModal);
             }
             
+            // タスク追加ボタン削除済み（イベント登録不要）
+            
             // プロジェクト編集ボタン
-            const editProjectBtn = document.getElementById('editProjectBtn');
-            if (editProjectBtn) {
-                editProjectBtn.addEventListener('click', openEditProjectModal);
-            }
+        const editProjectBtn = document.getElementById('editProjectBtn');
+        if (editProjectBtn) {
+            // 既存の包括的編集処理を使用（クライアント読込などを含む）
+            editProjectBtn.addEventListener('click', () => window.editProject && window.editProject());
+        }
             
             // プロジェクト削除ボタン
             const deleteProjectBtn = document.getElementById('deleteProjectBtn');
@@ -968,12 +1088,15 @@
                         console.log('タスクデータ取得成功:', tasksData.tasks.length, '件');
                         allTasks = tasksData.tasks;
                         filteredTasks = [...allTasks]; // 直接コピー
+                        // フェーズプルダウン更新（空フェーズを除外）
+                        updateTaskPhaseDropdown(allTasks);
                         displayTasks(filteredTasks);
                         updateProgress();
                     } else {
                         console.log('タスクデータ取得失敗:', tasksData);
                         allTasks = [];
                         filteredTasks = [];
+                        updateTaskPhaseDropdown([]);
                         displayTasks([]);
                         updateProgress();
                     }
@@ -1598,6 +1721,60 @@
             });
         }
 
+        // タスクフェーズ用プルダウンを更新（空フェーズは除外）
+        function updateTaskPhaseDropdown(baseTasks) {
+            const select = document.getElementById('taskPhaseFilter');
+            if (!select) return;
+            const tasks = Array.isArray(baseTasks) ? baseTasks : allTasks;
+            // フェーズごとの件数
+            const phaseCountMap = {};
+            tasks.forEach(t => {
+                const name = t.phase_name || '未分類';
+                phaseCountMap[name] = (phaseCountMap[name] || 0) + 1;
+            });
+
+            const prevValue = select.value;
+            select.innerHTML = '<option value="">すべて</option>';
+            allPhases.forEach(phase => {
+                const count = phaseCountMap[phase.name] || 0;
+                if (count > 0) {
+                    const opt = document.createElement('option');
+                    opt.value = String(phase.id);
+                    opt.textContent = phase.name;
+                    select.appendChild(opt);
+                }
+            });
+
+            // 以前の選択が有効なら維持、無効なら「すべて」へ
+            if (prevValue && Array.from(select.options).some(o => o.value === prevValue)) {
+                select.value = prevValue;
+            } else {
+                select.value = '';
+            }
+        }
+
+        // ステータス/フェーズのフィルター適用
+        function applyTaskFilters() {
+            const statusSelect = document.getElementById('taskStatusFilter');
+            const phaseSelect = document.getElementById('taskPhaseFilter');
+            const status = statusSelect ? statusSelect.value : '';
+
+            let tasks = allTasks.slice();
+            if (status) {
+                tasks = tasks.filter(t => t.status === status);
+            }
+
+            filteredTasks = tasks;
+            // ドロップダウンの候補を更新（空フェーズ除外）
+            updateTaskPhaseDropdown(tasks);
+
+            // 現在のフェーズ選択を反映
+            currentPhaseFilter = phaseSelect && phaseSelect.value ? phaseSelect.value : 'all';
+            try { localStorage.setItem('currentPhaseFilter', String(currentPhaseFilter)); } catch (e) {}
+
+            displayTasks(filteredTasks);
+        }
+
         // ユーザー候補の選択
         function selectUserSuggestion(selectedItem) {
             const textarea = document.getElementById('newNote');
@@ -1962,6 +2139,8 @@
                 const inProgressTasksEl = document.getElementById('inProgressTasks');
                 const needsConfirmationTasksEl = document.getElementById('needsConfirmationTasks');
                 const overdueTasksEl = document.getElementById('overdueTasks');
+                const pendingTasksEl = document.getElementById('pendingTasks');
+                const notApplicableTasksEl = document.getElementById('notApplicableTasks');
                 const progressFillEl = document.getElementById('progressFill');
                 const progressTextEl = document.getElementById('progressText');
                 
@@ -1971,6 +2150,8 @@
                 if (inProgressTasksEl) inProgressTasksEl.textContent = '0';
                 if (needsConfirmationTasksEl) needsConfirmationTasksEl.textContent = '0';
                 if (overdueTasksEl) overdueTasksEl.textContent = '0';
+                if (pendingTasksEl) pendingTasksEl.textContent = '0';
+                if (notApplicableTasksEl) notApplicableTasksEl.textContent = '0';
                 if (progressFillEl) progressFillEl.style.width = '0%';
                 if (progressTextEl) progressTextEl.textContent = '0%';
                 return;
@@ -1981,6 +2162,8 @@
             const completed = filteredTasks.filter(task => task.status === 'completed').length;
             const inProgress = filteredTasks.filter(task => task.status === 'in_progress').length;
             const needsConfirmation = filteredTasks.filter(task => task.status === 'needs_confirmation').length;
+            const pending = filteredTasks.filter(task => task.status === 'pending').length;
+            const notApplicable = filteredTasks.filter(task => task.status === 'not_applicable').length;
             const overdue = filteredTasks.filter(task => {
                 return task.planned_date && new Date(task.planned_date) < new Date() && task.status !== 'completed';
             }).length;
@@ -1992,6 +2175,8 @@
             const completedTasksEl = document.getElementById('completedTasks');
             const inProgressTasksEl = document.getElementById('inProgressTasks');
             const overdueTasksEl = document.getElementById('overdueTasks');
+            const pendingTasksEl = document.getElementById('pendingTasks');
+            const notApplicableTasksEl = document.getElementById('notApplicableTasks');
             const progressFillEl = document.getElementById('progressFill');
             const progressTextEl = document.getElementById('progressText');
             
@@ -2000,6 +2185,8 @@
             if (completedTasksEl) completedTasksEl.textContent = completed;
             if (inProgressTasksEl) inProgressTasksEl.textContent = inProgress;
             if (overdueTasksEl) overdueTasksEl.textContent = overdue;
+            if (pendingTasksEl) pendingTasksEl.textContent = pending;
+            if (notApplicableTasksEl) notApplicableTasksEl.textContent = notApplicable;
             
             // 要確認タスクの表示（要素が存在する場合のみ）
             const needsConfirmationElement = document.getElementById('needsConfirmationTasks');
@@ -2390,11 +2577,9 @@
                     showMessage('プロジェクトを作成しました', 'success');
                     closeNewProjectModal(); // 保存時のみクローズ
                     await loadProjects();
-                    
                     // 新しく作成されたプロジェクトを選択
                     if (data.project_id) {
-                        document.getElementById('projectSelect').value = data.project_id;
-                        await loadProject(data.project_id);
+                        selectProject(parseInt(data.project_id));
                     }
                 } else {
                     console.error('プロジェクト作成エラー:', data.error || data.message);
@@ -2510,7 +2695,6 @@
                     // ローカルストレージからも削除
                     localStorage.removeItem('selectedProjectId');
                     await loadProjects();
-                    document.getElementById('projectSelect').value = '';
                 } else {
                     console.error('プロジェクト削除エラー:', data.error);
                     showMessage('プロジェクトの削除に失敗しました: ' + (data.error || '不明なエラー'), 'error');
@@ -3510,15 +3694,21 @@
 
         async function loadNeedsConfirmationTasks() {
             try {
-                const response = await fetch('api.php?path=tasks/needs_confirmation');
-                const data = await response.json();
-                
-                if (data.success && data.tasks) {
-                    displayNeedsConfirmationTasks(data.tasks);
+                let tasks = [];
+                if (currentProject) {
+                    const res = await fetch(`api.php?path=projects/${currentProject.id}/tasks&t=${Date.now()}`, { cache: 'no-store' });
+                    const data = await res.json();
+                    if (data.success && Array.isArray(data.tasks)) {
+                        tasks = data.tasks.filter(t => t.status === 'needs_confirmation');
+                    }
                 } else {
-                    document.getElementById('needsConfirmationList').innerHTML = 
-                        '<div class="empty">要確認タスクはありません</div>';
+                    const res = await fetch('api.php?path=tasks/needs_confirmation');
+                    const data = await res.json();
+                    if (data.success && Array.isArray(data.tasks)) {
+                        tasks = data.tasks;
+                    }
                 }
+                displayNeedsConfirmationTasks(tasks);
             } catch (error) {
                 console.error('要確認タスク読み込みエラー:', error);
                 document.getElementById('needsConfirmationList').innerHTML = 
@@ -3568,15 +3758,23 @@
 
         async function loadOverdueTasks() {
             try {
-                const response = await fetch('api.php?path=tasks/overdue');
-                const data = await response.json();
-                
-                if (data.success && data.tasks) {
-                    displayOverdueTasks(data.tasks);
+                let tasks = [];
+                if (currentProject) {
+                    const res = await fetch(`api.php?path=projects/${currentProject.id}/tasks&t=${Date.now()}`, { cache: 'no-store' });
+                    const data = await res.json();
+                    if (data.success && Array.isArray(data.tasks)) {
+                        const now = new Date();
+                        tasks = data.tasks.filter(t => t.planned_date && new Date(t.planned_date) < now && t.status !== 'completed')
+                            .map(t => ({ ...t, days_overdue: Math.ceil((now - new Date(t.planned_date)) / (1000*60*60*24)) }));
+                    }
                 } else {
-                    document.getElementById('overdueTasksList').innerHTML = 
-                        '<div class="empty">期限切れタスクはありません</div>';
+                    const res = await fetch('api.php?path=tasks/overdue');
+                    const data = await res.json();
+                    if (data.success && Array.isArray(data.tasks)) {
+                        tasks = data.tasks;
+                    }
                 }
+                displayOverdueTasks(tasks);
             } catch (error) {
                 console.error('期限切れタスク読み込みエラー:', error);
                 document.getElementById('overdueTasksList').innerHTML = 
@@ -3640,6 +3838,116 @@
             loadOverdueTasks();
         }
 
+        // 保留タスク一覧モーダル
+        async function openPendingTasksModal() {
+            try {
+                document.getElementById('pendingTasksModal').style.display = 'block';
+                await loadPendingTasks();
+            } catch (error) {
+                console.error('保留タスク一覧表示エラー:', error);
+                showMessage('保留タスク一覧の表示中にエラーが発生しました', 'error');
+            }
+        }
+
+        function closePendingTasksModal() {
+            document.getElementById('pendingTasksModal').style.display = 'none';
+        }
+
+        async function loadPendingTasks() {
+            try {
+                if (!currentProject) return;
+                const response = await fetch(`api.php?path=projects/${currentProject.id}/tasks`);
+                const data = await response.json();
+                if (data.success) {
+                    const tasks = (data.tasks || []).filter(t => t.status === 'pending');
+                    displayPendingTasks(tasks);
+                }
+            } catch (error) {
+                console.error('保留タスク読み込みエラー:', error);
+            }
+        }
+
+        function displayPendingTasks(tasks) {
+            const container = document.getElementById('pendingTasksList');
+            if (!container) return;
+            if (!tasks || tasks.length === 0) {
+                container.innerHTML = '<div class="empty">保留のタスクはありません</div>';
+                return;
+            }
+            const html = tasks.map(task => `
+                <div class="task-list-item pending" onclick="openTaskFromList(${task.project_id}, ${task.id})">
+                    <div class="task-item-header">
+                        <h4>${task.task_name}</h4>
+                        <span class="task-status">保留</span>
+                    </div>
+                    <div class="task-item-meta">
+                        <div class="task-project">プロジェクト: ${task.project_name || ''}</div>
+                        <div class="task-assignee">担当者: ${task.assigned_to_name || '未割当'}</div>
+                    </div>
+                </div>
+            `).join('');
+            container.innerHTML = html;
+        }
+
+        function refreshPendingTasksList() {
+            loadPendingTasks();
+        }
+
+        // 対象外タスク一覧モーダル
+        async function openNotApplicableTasksModal() {
+            try {
+                document.getElementById('notApplicableTasksModal').style.display = 'block';
+                await loadNotApplicableTasks();
+            } catch (error) {
+                console.error('対象外タスク一覧表示エラー:', error);
+                showMessage('対象外タスク一覧の表示中にエラーが発生しました', 'error');
+            }
+        }
+
+        function closeNotApplicableTasksModal() {
+            document.getElementById('notApplicableTasksModal').style.display = 'none';
+        }
+
+        async function loadNotApplicableTasks() {
+            try {
+                if (!currentProject) return;
+                const response = await fetch(`api.php?path=projects/${currentProject.id}/tasks`);
+                const data = await response.json();
+                if (data.success) {
+                    const tasks = (data.tasks || []).filter(t => t.status === 'not_applicable');
+                    displayNotApplicableTasks(tasks);
+                }
+            } catch (error) {
+                console.error('対象外タスク読み込みエラー:', error);
+            }
+        }
+
+        function displayNotApplicableTasks(tasks) {
+            const container = document.getElementById('notApplicableTasksList');
+            if (!container) return;
+            if (!tasks || tasks.length === 0) {
+                container.innerHTML = '<div class="empty">対象外のタスクはありません</div>';
+                return;
+            }
+            const html = tasks.map(task => `
+                <div class="task-list-item not-applicable" onclick="openTaskFromList(${task.project_id}, ${task.id})">
+                    <div class="task-item-header">
+                        <h4>${task.task_name}</h4>
+                        <span class="task-status">対象外</span>
+                    </div>
+                    <div class="task-item-meta">
+                        <div class="task-project">プロジェクト: ${task.project_name || ''}</div>
+                        <div class="task-assignee">担当者: ${task.assigned_to_name || '未割当'}</div>
+                    </div>
+                </div>
+            `).join('');
+            container.innerHTML = html;
+        }
+
+        function refreshNotApplicableTasksList() {
+            loadNotApplicableTasks();
+        }
+
         // タスク追加モーダルを開く
         function openAddTaskModal() {
             if (!currentProject) {
@@ -3671,7 +3979,8 @@
                 const data = await response.json();
                 
                 if (data.success && data.phases) {
-                    const select = document.getElementById('editTaskPhaseName');
+                    // 正しいセレクトIDに反映
+                    const select = document.getElementById('editTaskPhase');
                     select.innerHTML = '<option value="">選択してください</option>';
                     
                     data.phases.forEach(phase => {
@@ -3693,16 +4002,17 @@
                 return;
             }
             
-            // フォームに現在の値を設定
+            // 既存の包括的編集処理に委譲（クライアント読込・テンプレ初期化含む）
+            if (window.editProject) {
+                window.editProject();
+                return;
+            }
+            // フォールバック（最低限の項目設定）
             document.getElementById('editProjectId').value = currentProject.id;
             document.getElementById('editProjectName').value = currentProject.name;
-            document.getElementById('editProjectCode').value = currentProject.project_code || '';
-            document.getElementById('editProjectClient').value = currentProject.client_name || '';
-            document.getElementById('editProjectDescription').value = currentProject.description || '';
             document.getElementById('editProjectStartDate').value = currentProject.start_date || '';
             document.getElementById('editProjectEndDate').value = currentProject.target_end_date || '';
             document.getElementById('editProjectStatus').value = currentProject.status || 'planning';
-            
             document.getElementById('editProjectModal').style.display = 'block';
         }
 
@@ -3717,7 +4027,11 @@
                 showMessage('プロジェクトが選択されていません', 'error');
                 return;
             }
-            
+            // プロジェクト名を表示
+            const nameEl = document.getElementById('deleteProjectName');
+            if (nameEl) {
+                nameEl.textContent = currentProject.name || '';
+            }
             document.getElementById('deleteProjectModal').style.display = 'block';
         }
 
@@ -3790,6 +4104,8 @@
                         in_progress: tasks.filter(t => t.status === 'in_progress').length,
                         completed: tasks.filter(t => t.status === 'completed').length,
                         needs_confirmation: tasks.filter(t => t.status === 'needs_confirmation').length,
+                        pending: tasks.filter(t => t.status === 'pending').length,
+                        not_applicable: tasks.filter(t => t.status === 'not_applicable').length,
                         overdue: tasks.filter(t => {
                             return t.planned_date && new Date(t.planned_date) < new Date() && t.status !== 'completed';
                         }).length
@@ -3866,6 +4182,14 @@
                 <div class="stat-item">
                     <span class="stat-number danger">${taskStats.needs_confirmation}</span>
                     <span class="stat-label">要確認</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-number">${taskStats.pending || 0}</span>
+                    <span class="stat-label">保留</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-number">${taskStats.not_applicable || 0}</span>
+                    <span class="stat-label">対象外</span>
                 </div>
             `;
         }
@@ -3991,6 +4315,68 @@
             container.innerHTML = html;
         }
 
+        // ==================== ステータス別一覧モーダル（未着手/進行中/完了） ====================
+        async function openNotStartedTasksModal() {
+            try {
+                document.getElementById('notStartedTasksModal').style.display = 'block';
+                await loadAndDisplayStatusTasks('not_started', 'notStartedTasksList', '未着手');
+            } catch (e) { showMessage('未着手タスクの表示に失敗しました', 'error'); }
+        }
+        function closeNotStartedTasksModal() { document.getElementById('notStartedTasksModal').style.display = 'none'; }
+        function refreshNotStartedTasksList() { loadAndDisplayStatusTasks('not_started', 'notStartedTasksList', '未着手'); }
+
+        async function openInProgressTasksModal() {
+            try {
+                document.getElementById('inProgressTasksModal').style.display = 'block';
+                await loadAndDisplayStatusTasks('in_progress', 'inProgressTasksList', '進行中');
+            } catch (e) { showMessage('進行中タスクの表示に失敗しました', 'error'); }
+        }
+        function closeInProgressTasksModal() { document.getElementById('inProgressTasksModal').style.display = 'none'; }
+        function refreshInProgressTasksList() { loadAndDisplayStatusTasks('in_progress', 'inProgressTasksList', '進行中'); }
+
+        async function openCompletedTasksModal() {
+            try {
+                document.getElementById('completedTasksModal').style.display = 'block';
+                await loadAndDisplayStatusTasks('completed', 'completedTasksList', '完了');
+            } catch (e) { showMessage('完了タスクの表示に失敗しました', 'error'); }
+        }
+        function closeCompletedTasksModal() { document.getElementById('completedTasksModal').style.display = 'none'; }
+        function refreshCompletedTasksList() { loadAndDisplayStatusTasks('completed', 'completedTasksList', '完了'); }
+
+        // 汎用: ステータス別タスクリストを取得して表示
+        async function loadAndDisplayStatusTasks(status, containerId, label) {
+            try {
+                if (!currentProject) return;
+                const response = await fetch(`api.php?path=projects/${currentProject.id}/tasks`);
+                const data = await response.json();
+                if (data.success) {
+                    const tasks = (data.tasks || []).filter(t => t.status === status);
+                    const container = document.getElementById(containerId);
+                    if (!container) return;
+                    if (tasks.length === 0) {
+                        container.innerHTML = `<div class="empty">${label}のタスクはありません</div>`;
+                        return;
+                    }
+                    const html = tasks.map(task => `
+                        <div class="task-list-item ${status}" onclick="openTaskFromList(${task.project_id}, ${task.id})">
+                            <div class="task-item-header">
+                                <h4>${task.task_name}</h4>
+                                <span class="task-status">${label}</span>
+                            </div>
+                            <div class="task-item-meta">
+                                <div class="task-project">プロジェクト: ${task.project_name || ''}</div>
+                                <div class="task-assignee">担当者: ${task.assigned_to_name || '未割当'}</div>
+                                ${task.planned_date ? `<div class=\"task-date\">期限: ${formatDate(task.planned_date)}</div>` : ''}
+                            </div>
+                        </div>
+                    `).join('');
+                    container.innerHTML = html;
+                }
+            } catch (error) {
+                // 読み込み失敗時は無視（UIで更新ボタンあり）
+            }
+        }
+
         function refreshDashboard() {
             loadDashboard();
         }
@@ -4003,10 +4389,11 @@
         async function loadImportantTasks() {
             try {
                 // 要確認、期限切れ、期限間近タスクを並行取得
+                const projectParam = currentProject ? `&project_id=${encodeURIComponent(currentProject.id)}` : '';
                 const [needsConfirmationResponse, overdueResponse, upcomingResponse] = await Promise.all([
-                    fetch('api.php?path=tasks/needs_confirmation'),
-                    fetch('api.php?path=tasks/overdue'),
-                    fetch('api.php?path=tasks/upcoming')
+                    fetch(`api.php?path=tasks/needs_confirmation${projectParam}`),
+                    fetch(`api.php?path=tasks/overdue${projectParam}`),
+                    fetch(`api.php?path=tasks/upcoming${projectParam}`)
                 ]);
 
                 const needsConfirmationData = await needsConfirmationResponse.json();

@@ -3,7 +3,7 @@ require_once 'config.php';
 require_once 'auth.php';
 require_once 'database.php';
 
-header('Content-Type: application/json');
+header('Content-Type: application/json; charset=utf-8');
 header('X-Content-Type-Options: nosniff');
 // API応答がキャッシュされないように明示的に無効化
 header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
@@ -1017,7 +1017,8 @@ class ApiController {
     // 要確認タスク一覧取得
     public function getNeedsConfirmationTasks() {
         try {
-            $tasks = $this->db->getNeedsConfirmationTasks();
+            $projectId = isset($_GET['project_id']) ? intval($_GET['project_id']) : null;
+            $tasks = $this->db->getNeedsConfirmationTasks($projectId);
             if ($tasks === false) {
                 throw new Exception('Failed to retrieve needs confirmation tasks');
             }
@@ -1035,7 +1036,8 @@ class ApiController {
     // 期限切れタスク一覧取得
     public function getOverdueTasks() {
         try {
-            $tasks = $this->db->getOverdueTasks();
+            $projectId = isset($_GET['project_id']) ? intval($_GET['project_id']) : null;
+            $tasks = $this->db->getOverdueTasks($projectId);
             if ($tasks === false) {
                 throw new Exception('Failed to retrieve overdue tasks');
             }
@@ -1054,7 +1056,8 @@ class ApiController {
     public function getUpcomingDeadlineTasks() {
         try {
             $daysAhead = isset($_GET['days_ahead']) ? intval($_GET['days_ahead']) : 3;
-            $tasks = $this->db->getUpcomingDeadlineTasks($daysAhead);
+            $projectId = isset($_GET['project_id']) ? intval($_GET['project_id']) : null;
+            $tasks = $this->db->getUpcomingDeadlineTasks($daysAhead, $projectId);
             if ($tasks === false) {
                 throw new Exception('Failed to retrieve upcoming deadline tasks');
             }

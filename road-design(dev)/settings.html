@@ -1188,12 +1188,13 @@
         // ユーザー読み込み
         async function loadUsers() {
             try {
-                const response = await fetch('api.php?path=users', {
+                const response = await fetch('api.php?path=admin/users', {
                     method: 'GET',
                     headers: {
                         'Content-Type': 'application/json',
                         'X-Requested-With': 'XMLHttpRequest'
-                    }
+                    },
+                    credentials: 'same-origin'
                 });
 
                 if (!response.ok) {
@@ -1303,12 +1304,13 @@
         // クライアント読み込み
         async function loadClients() {
             try {
-                const response = await fetch('api.php?path=clients', {
+                const response = await fetch('api.php?path=admin/clients', {
                     method: 'GET',
                     headers: {
                         'Content-Type': 'application/json',
                         'X-Requested-With': 'XMLHttpRequest'
-                    }
+                    },
+                    credentials: 'same-origin'
                 });
 
                 if (!response.ok) {
@@ -1406,12 +1408,13 @@
         // テンプレート読み込み
         async function loadTemplates() {
             try {
-                const response = await fetch('api.php?path=templates', {
+                const response = await fetch('api.php?path=admin/templates', {
                     method: 'GET',
                     headers: {
                         'Content-Type': 'application/json',
                         'X-Requested-With': 'XMLHttpRequest'
-                    }
+                    },
+                    credentials: 'same-origin'
                 });
 
 
@@ -1574,12 +1577,13 @@
         async function loadManuals() {
             try {
                 // console.log('=== マニュアル読み込み開始 ===');
-                const response = await fetch('api.php?path=manuals', {
+                const response = await fetch('api.php?path=admin/manuals', {
                     method: 'GET',
                     headers: {
                         'Content-Type': 'application/json',
                         'X-Requested-With': 'XMLHttpRequest'
-                    }
+                    },
+                    credentials: 'same-origin'
                 });
 
                 // console.log('APIレスポンス:', response);
@@ -2009,13 +2013,8 @@
             const method = isEdit ? 'PUT' : 'POST';
             const url = isEdit ? `api.php?path=admin/users/${data.id}` : 'api.php?path=admin/users';
             
-            // デバッグログ
-            // console.log('ユーザーフォーム送信:', {
-                isEdit: isEdit,
-                data: data,
-                method: method,
-                url: url
-            });
+            // デバッグログ（必要時のみ有効化）
+            // console.log('ユーザーフォーム送信:', { isEdit, data, method, url });
             
             // パスワード処理の詳細ログ
             if (isEdit) {
@@ -2365,17 +2364,17 @@
                         document.getElementById('userIsActive').checked = user.is_active == '1';
                         
                         // console.log('パスワードフィールド初期化完了:', {
-                            value: document.getElementById('userPassword').value,
-                            placeholder: document.getElementById('userPassword').placeholder
-                        });
+                        //     value: document.getElementById('userPassword').value,
+                        //     placeholder: document.getElementById('userPassword').placeholder
+                        // });
                         
                         // console.log('フォーム設定完了:', {
-                            id: document.getElementById('userId').value,
-                            email: document.getElementById('userEmail').value,
-                            name: document.getElementById('userName').value,
-                            role: document.getElementById('userRole').value,
-                            isActive: document.getElementById('userIsActive').checked
-                        });
+                        //     id: document.getElementById('userId').value,
+                        //     email: document.getElementById('userEmail').value,
+                        //     name: document.getElementById('userName').value,
+                        //     role: document.getElementById('userRole').value,
+                        //     isActive: document.getElementById('userIsActive').checked
+                        // });
                         
                         // モーダル表示
                         document.getElementById('userModal').style.display = 'block';

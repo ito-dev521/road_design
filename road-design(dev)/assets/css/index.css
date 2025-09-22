@@ -85,6 +85,16 @@ body {
     gap: 0.5rem;
 }
 
+.left-column-actions {
+    margin-top: 0.75rem;
+    display: flex;
+    justify-content: center;
+}
+
+.left-column-actions #newProjectBtn {
+    width: 100%;
+}
+
 .project-item {
     background: #f8f9fa;
     border: 1px solid #e0e0e0;
